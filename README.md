@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PocketClerk
 
-## Getting Started
+[![CI](https://github.com/colinhendrickson/pocketclerk/actions/workflows/ci.yml/badge.svg)](https://github.com/colinhendrickson/pocketclerk/actions/workflows/ci.yml)
 
-First, run the development server:
+A white-label point-of-sale and workforce-training app for student-run carts. Students clock in, take orders from customers they learn to remember, count change, print receipts, run inventory, and clock out to earn simulated wages.
+
+The first deployment is a special-education work program at a K-8 school. The app ships brand-neutral: names, colours, logo, and reward currency are deployment config, so another program can run it without touching code.
+
+> **Status:** in development. V1 is the core shift loop. See [`docs/GAME_PLAN.md`](docs/GAME_PLAN.md) for tickets and acceptance criteria.
+
+---
+
+## Why it looks the way it does
+
+The primary users are students with disabilities, so accessibility was an engineering constraint rather than a finishing pass. It drove the information architecture:
+
+- One primary action per screen. The app advances itself to the next step.
+- Touch targets at least 60px; no hover-only affordances.
+- Sentence case on student screens, even where the deployment's brand style uses capitals, because capitals measurably slow emerging readers.
+- The change amount is the largest text in the app and appears at that size nowhere else.
+- Every screen answers "what do I do next?" without being read closely.
+
+## Architecture
+
+**Effects sit behind interfaces.** Printing, email, and document rendering are provider interfaces in `src/providers/`, so business logic depends on contracts rather than vendors. Swapping the receipt printer for a specific model is one new file and zero changed call sites.
+
+**Receipts never block a sale.** The cart roams classrooms on school WiFi. Completing an order writes the order, its items, and a `receipt_jobs` row in one transaction; delivery is an asynchronous consumer with retries. A dropped connection delays a receipt and never loses an order or miscounts money.
+
+**Money is integer cents, everywhere.** No floats, no `numeric` columns. Hours are integer hundredths. Formatting happens only at the display edge. Change calculation is a pure function, unit-tested, because it is the one bug that would teach a student the wrong answer.
+
+**Invariants live in the database.** One open shift per student is a partial unique index, not an `if` statement, because two concurrent requests can both pass a check but cannot both satisfy an index. Cash and card field rules are a `CHECK` constraint. Row Level Security is enabled on every table in the migration that creates it.
+
+**History is immutable.** Prices are snapshotted onto order rows at sale time, and menu, teacher, and student records soft-delete. Editing today's menu can never rewrite last month's sales.
+
+## Stack
+
+Next.js (App Router) · TypeScript · Tailwind 4 + daisyUI 5 · Supabase Postgres + Drizzle · Resend · react-pdf · Vercel
+
+## Run locally
+
+Requires Node 22.12 or newer and pnpm.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+cp .env.example .env.local   # fill in Supabase and Resend values
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Command | Does |
+|---|---|
+| `pnpm dev` | Development server |
+| `pnpm typecheck` | TypeScript, no emit |
+| `pnpm lint` | ESLint |
+| `pnpm test` | Vitest unit tests |
+| `pnpm build` | Production build |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## White-label
 
-## Learn More
+Branding is configuration with fictional defaults. A deployment supplies its own values through environment variables; nothing school-specific is committed.
 
-To learn more about Next.js, take a look at the following resources:
+| Config | Repo default |
+|---|---|
+| `PROGRAM_NAME` / `CART_NAME` | Maple Grove Learning Program / Sunrise Snack Cart |
+| `REWARD_NAME` | Tickets |
+| `LOGO_URL` | Text wordmark fallback |
+| `THEME` | `pocketclerk` |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Themes are daisyUI themes, which are plain CSS custom properties. Two ship in the repo: `pocketclerk` and a `sample` proof theme. A deployment skin overrides the same properties at runtime from private config, so a real school's colours never enter this repository.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Documentation
 
-## Deploy on Vercel
+| Document | Contents |
+|---|---|
+| [`docs/GAME_PLAN.md`](docs/GAME_PLAN.md) | Goals, data model, tickets, acceptance criteria |
+| [`docs/DESIGN.md`](docs/DESIGN.md) | Design system: themes, type scale, breakpoints, component primitives |
+| `docs/adr/` | Architecture decision records |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Licence
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Not yet chosen.
