@@ -93,7 +93,7 @@ Decisions baked in:
 
 - **Admin + customer = same person.** The program admin is one `persons` row with both a `teacher_profile` and an `admin_users` entry. Revoking admin never touches their order history.
 - **Money in integer cents.** Always. No floats.
-- **Payment method per order** (`cash` | `card`). Card = teacher's fake badge, no change math; `received_cents`/`change_cents` are nullable and only set for cash. Which methods are enabled is an admin toggle, so teachers can keep cash days for change-making practice.
+- **Payment method per order** (`cash` | `card`). V1 only ever writes `cash`; the column and the nullable `received_cents`/`change_cents` exist so a card/badge method (ticket 3.7) can be added without a migration. Card is deferred because the client's spec is cash-only and making change is the core lesson.
 - **Paychecks are derived** from shifts; the `paychecks` table just snapshots what was generated and signed.
 - **Soft deletes** (`active` flags) on menu, students, teachers. School data never hard-deletes.
 - Every price is copied onto the order row at sale time so menu edits never rewrite history.
@@ -112,7 +112,7 @@ Decisions baked in:
 | 1.4 | Employee dashboard | Shows date, clock-in time, live hours; 5 big buttons |
 | 1.5 | Teacher lookup + create | Search/select or add new (name, room, email); notes shown prominently |
 | 1.6 | Order builder | Menu grid, add-ons, special treat toggle, qty, running total |
-| 1.7 | Payment screen | "How is [teacher] paying?" → CASH or CARD. Cash: enter received → change displayed HUGE, wrong-amount guardrails. Card: badge tap confirmation → PAID BY CARD |
+| 1.7 | Make change screen | Enter money received (bill buttons + keypad) → change displayed HUGE with denomination hint; received < owed cannot continue. Cash only in V1 |
 | 1.8 | Complete order + receipt job | Order saved with full snapshot; receipt_jobs row queued |
 | 1.9 | PDF receipt + print sheet | 80mm PDF renders, iOS print sheet opens |
 | 1.10 | Email receipt (Resend) | Uses saved email; prompts once if missing; status visible |
@@ -130,7 +130,7 @@ Decisions baked in:
 | 2.4 | Admin auth (magic link + allowlist) |
 | 2.5 | Admin: students CRUD, hours, ticket totals |
 | 2.6 | Admin: teachers CRUD, notes, order history, favorites |
-| 2.7 | Admin: menu + special treat + add-on pricing + payment methods toggle (cash/card/both) |
+| 2.7 | Admin: menu + special treat + add-on pricing |
 | 2.8 | Admin: orders browser (by date/student/teacher) |
 | 2.9 | Receipt job monitor + retry |
 
@@ -144,7 +144,7 @@ Decisions baked in:
 | 3.4 | Weekly backup cron → JSON dump emailed to admin |
 | 3.5 | Real printer integration (deployment's printer model) behind ReceiptPrinter |
 | 3.6 | Demo mode banner + nightly demo reset |
-| 3.7 | Badge QR "card reader": iPad camera scans a QR printed on the teacher's fake badge to complete card payment |
+| 3.7 | Card/badge payment (deferred from V1, client to opt in): "How is [teacher] paying?" screen, badge confirmation modal, admin toggle for enabled methods, later a QR "card reader" via the iPad camera |
 
 ---
 

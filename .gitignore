@@ -42,3 +42,6 @@ next-env.d.ts
 
 # private planning notes, never committed
 docs/private/
+
+# browser automation logs
+.playwright-mcp/
