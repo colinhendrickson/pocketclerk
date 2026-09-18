@@ -1,26 +1,101 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@plugin "daisyui" {
+  themes: false;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Default product theme: warmed Shift Ledger */
+@plugin "daisyui/theme" {
+  name: "pocketclerk";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: #fffcf7;
+  --color-base-200: #f5f0e8;
+  --color-base-300: #e2d9cc;
+  --color-base-content: #1c2624;
+
+  --color-primary: #0b6e5f;
+  --color-primary-content: #ffffff;
+  --color-secondary: #4a5f5a;
+  --color-secondary-content: #ffffff;
+  --color-accent: #2e5e8f;
+  --color-accent-content: #ffffff;
+  --color-neutral: #1f2e2b;
+  --color-neutral-content: #f5f0e8;
+
+  --color-info: #2e5e8f;
+  --color-info-content: #ffffff;
+  --color-success: #1f7a3e;
+  --color-success-content: #ffffff;
+  --color-warning: #b45309;
+  --color-warning-content: #ffffff;
+  --color-error: #b42318;
+  --color-error-content: #ffffff;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.625rem;
+  --radius-box: 0.875rem;
+  --size-selector: 0.3125rem;
+  --size-field: 0.3125rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Proof theme: plum / rose-grey. Exists to show the layout never names a colour. */
+@plugin "daisyui/theme" {
+  name: "sample";
+  default: false;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: #fcfafb;
+  --color-base-200: #f3eef1;
+  --color-base-300: #dcd1d8;
+  --color-base-content: #24192a;
+
+  --color-primary: #6b3a7a;
+  --color-primary-content: #ffffff;
+  --color-secondary: #5b4f60;
+  --color-secondary-content: #ffffff;
+  --color-accent: #8a5e12;
+  --color-accent-content: #ffffff;
+  --color-neutral: #2a1f30;
+  --color-neutral-content: #f3eef1;
+
+  --color-info: #2f6f9f;
+  --color-info-content: #ffffff;
+  --color-success: #2e7d4f;
+  --color-success-content: #ffffff;
+  --color-warning: #b45309;
+  --color-warning-content: #ffffff;
+  --color-error: #b42318;
+  --color-error-content: #ffffff;
+
+  --radius-selector: 0.75rem;
+  --radius-field: 0.875rem;
+  --radius-box: 1.25rem;
+  --size-selector: 0.3125rem;
+  --size-field: 0.3125rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Fonts are theme-owned so layouts never name one. A deployment skin may override this. */
+[data-theme="pocketclerk"],
+[data-theme="sample"] {
+  font-family: var(--font-manrope), system-ui, sans-serif;
+}
+
+/* Sentence case everywhere. No brand override on student screens. */
+.btn {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Every money and time value uses this. */
+@utility tabular {
+  font-variant-numeric: tabular-nums;
 }
