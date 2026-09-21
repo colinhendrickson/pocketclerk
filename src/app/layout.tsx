@@ -13,7 +13,10 @@ export const metadata: Metadata = {
   description: "Student-run cart POS and work-readiness training",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+// Typed explicitly rather than with Next's generated `LayoutProps`, which only
+// exists after a build has written .next/types and therefore breaks `tsc` on a
+// clean checkout — including in CI, where typecheck runs before build.
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"

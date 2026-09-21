@@ -1,0 +1,27 @@
+import { redirect } from "next/navigation";
+
+import { getActiveShift, listAddons, listMenu, listTeachers } from "@/lib/queries";
+import { getShiftSession } from "@/lib/session";
+
+import { OrderFlow } from "./order-flow";
+
+export const dynamic = "force-dynamic";
+
+/**
+ * Fetches everything the order needs in one round trip, then hands it to the
+ * client flow. The menu does not change mid-order, so loading it once here
+ * avoids a spinner between every step of a sale that should feel instant.
+ */
+export default async function OrderPage() {
+  const shiftId = await getShiftSession();
+  if (!shiftId) redirect("/");
+  if (!(await getActiveShift(shiftId))) redirect("/");
+
+  const [teachers, menu, extras] = await Promise.all([
+    listTeachers(),
+    listMenu(),
+    listAddons(),
+  ]);
+
+  return <OrderFlow teachers={teachers} menu={menu} addons={extras} />;
+}

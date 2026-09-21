@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * TeacherCard — one pickable teacher in the classroom-order flow.
  *
@@ -30,6 +32,16 @@ export interface TeacherCardProps {
   icon?: LucideIcon;
   /** Makes the card a tap target that navigates. Omit for a static summary. */
   href?: string;
+  /**
+   * Selection handler for flows that keep their state in the client rather than
+   * in the URL. Ignored when `href` is given.
+   */
+  onSelect?: () => void;
+  /**
+   * Number of saved notes about this teacher. Surfaced on the card so a student
+   * knows before tapping that there is something to read.
+   */
+  noteCount?: number;
 }
 
 function deriveInitials(name: string): string {
@@ -46,6 +58,8 @@ export function TeacherCard({
   initials,
   icon: Icon,
   href,
+  onSelect,
+  noteCount = 0,
 }: TeacherCardProps) {
   const body = (
     <div className="card-body flex-row items-center gap-4 min-h-[60px] py-4">
@@ -64,19 +78,37 @@ export function TeacherCard({
         ) : null}
       </div>
 
+      {noteCount > 0 ? (
+        <span className="badge badge-warning ml-auto shrink-0 text-[16px] font-extrabold">
+          {noteCount} {noteCount === 1 ? "note" : "notes"}
+        </span>
+      ) : null}
+
       {Icon ? (
         <Icon size={34} aria-hidden="true" className="ml-auto shrink-0" />
       ) : null}
     </div>
   );
 
-  if (!href) {
-    return <div className="card card-border bg-base-100">{body}</div>;
+  if (href) {
+    return (
+      <Link href={href} className="card card-border bg-base-100 text-left">
+        {body}
+      </Link>
+    );
   }
 
-  return (
-    <Link href={href} className="card card-border bg-base-100 text-left">
-      {body}
-    </Link>
-  );
+  if (onSelect) {
+    return (
+      <button
+        type="button"
+        onClick={onSelect}
+        className="card card-border bg-base-100 text-left w-full"
+      >
+        {body}
+      </button>
+    );
+  }
+
+  return <div className="card card-border bg-base-100">{body}</div>;
 }

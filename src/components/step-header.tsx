@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * StepHeader — where the student is, and the only way back.
  *
@@ -30,6 +32,11 @@ export interface StepHeaderProps {
   subtitle?: string;
   /** Where the back button goes. Omit to render the header without one. */
   backHref?: string;
+  /**
+   * Back handler for flows that hold their step in client state rather than in
+   * the URL, such as the classroom order. Ignored when `backHref` is given.
+   */
+  onBack?: () => void;
   /** Accessible name for the back control; sentence case. */
   backLabel?: string;
   /** Step labels for the daisyUI `steps` strip. Steps up to `step` are marked done. */
@@ -43,6 +50,7 @@ export function StepHeader({
   title,
   subtitle,
   backHref,
+  onBack,
   backLabel = "Go back",
   steps,
   orientation = "horizontal",
@@ -57,6 +65,15 @@ export function StepHeader({
         >
           <ArrowLeft size={34} aria-hidden="true" />
         </Link>
+      ) : onBack ? (
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label={backLabel}
+          className="btn btn-ghost min-h-[60px] h-[60px] w-[60px] p-0 shrink-0"
+        >
+          <ArrowLeft size={34} aria-hidden="true" />
+        </button>
       ) : null}
 
       <div className="min-w-0">
