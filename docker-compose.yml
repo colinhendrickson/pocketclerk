@@ -1,0 +1,23 @@
+# Local Postgres for development, so the app runs with no cloud account.
+# Production uses Supabase; nothing here ships to it.
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: pocketclerk-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pocketclerk
+      POSTGRES_PASSWORD: pocketclerk
+      POSTGRES_DB: pocketclerk
+    ports:
+      - "54329:5432"
+    volumes:
+      - pocketclerk-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pocketclerk"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pocketclerk-data:

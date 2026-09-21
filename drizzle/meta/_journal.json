@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790031917656,
+      "tag": "0000_minor_katie_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790031929430,
+      "tag": "0001_constraints_and_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790032112816,
+      "tag": "0002_lumpy_wendigo",
+      "breakpoints": true
+    }
+  ]
+}

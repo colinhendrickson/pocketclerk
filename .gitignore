@@ -45,3 +45,6 @@ docs/private/
 
 # browser automation logs
 .playwright-mcp/
+
+# ...but the template belongs in the repo
+!.env.example
