@@ -17,5 +17,8 @@ export default defineConfig({
     // Database tests share one Postgres, so they must not race each other.
     fileParallelism: false,
     include: ["tests/**/*.test.ts"],
+    // Playwright owns tests/e2e and uses its own runner; Vitest would try to
+    // execute those specs and fail on the missing test context.
+    exclude: ["tests/e2e/**"],
   },
 });

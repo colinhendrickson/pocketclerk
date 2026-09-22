@@ -48,3 +48,9 @@ docs/private/
 
 # ...but the template belongs in the repo
 !.env.example
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
