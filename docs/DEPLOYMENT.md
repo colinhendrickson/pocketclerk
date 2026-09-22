@@ -37,6 +37,18 @@ DIRECT_URL="postgresql://postgres:...@...:5432/postgres" pnpm db:migrate
 Do **not** run `pnpm seed` against production. It truncates every table, and it
 creates fictional people. Real names enter through the admin interface.
 
+### Using the Vercel integration instead
+
+Vercel's Supabase integration provisions `POSTGRES_URL` (pooled) and
+`POSTGRES_URL_NON_POOLING` (direct), among others. The app reads those names as
+well, so switching the integration on means you can skip setting `DATABASE_URL`
+and `DIRECT_URL` by hand, and the credentials stay in sync if the database
+password is ever rotated.
+
+It also creates several `SUPABASE_*` variables that this app does not use. They
+are harmless; this project talks to Postgres directly rather than through the
+Supabase client library.
+
 ## 3. Vercel: the app
 
 1. Import the repository at [vercel.com](https://vercel.com). It detects
@@ -45,8 +57,8 @@ creates fictional people. Real names enter through the admin interface.
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | Supabase pooler string, port 6543 |
-| `DIRECT_URL` | Supabase direct string, port 5432 |
+| `DATABASE_URL` | Supabase pooler string, port 6543. Skip if using the integration |
+| `DIRECT_URL` | Supabase direct string, port 5432. Skip if using the integration |
 | `SESSION_SECRET` | 32+ random bytes, see below |
 | `NEXT_PUBLIC_APP_URL` | The deployment's own address |
 | `CRON_SECRET` | Another random string |
@@ -80,6 +92,10 @@ else. Nothing secret uses that prefix.
 
 Without `RESEND_API_KEY` the app logs receipts instead of sending them, and
 everything else works. Add it when you are ready.
+
+The Resend integration on the Vercel marketplace sets `RESEND_API_KEY` for you,
+which is exactly the variable this app reads, so it is worth using. You still
+have to set `EMAIL_FROM` and `EMAIL_REPLY_TO` yourself.
 
 1. Create a [Resend](https://resend.com) account and add your domain.
 2. Add the DNS records it gives you. Allow up to a day to verify.

@@ -27,8 +27,21 @@ const globalForDb = globalThis as unknown as {
   pocketclerkDb?: ReturnType<typeof drizzle<typeof schema>>;
 };
 
+/**
+ * The pooled runtime connection.
+ *
+ * `POSTGRES_URL` is the fallback because that is the name Vercel's Supabase
+ * integration provisions, along with `POSTGRES_URL_NON_POOLING` for the direct
+ * one. Reading both means the integration can be switched on and the app simply
+ * works, and the credentials stay in sync when the database password is
+ * rotated, instead of two variables quietly going stale.
+ */
+export function runtimeConnectionString(): string | undefined {
+  return process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
+}
+
 function connect() {
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = runtimeConnectionString();
   if (!connectionString) {
     throw new Error(
       "DATABASE_URL is not set. Copy .env.example to .env.local, then run `pnpm db:up`.",
