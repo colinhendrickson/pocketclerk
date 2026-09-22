@@ -13,9 +13,21 @@ export interface SendResult {
   error?: string;
 }
 
+export interface TextMessage {
+  to: string;
+  subject: string;
+  body: string;
+}
+
 export interface EmailSender {
   readonly name: string;
+  /** A rendered receipt, the common case. */
   send(to: string, receipt: Receipt): Promise<SendResult>;
+  /**
+   * Any other message, such as an administrator sign-in link. Kept on the same
+   * interface so a deployment configures one email provider, not two.
+   */
+  sendText(message: TextMessage): Promise<SendResult>;
 }
 
 import { ConsoleSender } from "./console";

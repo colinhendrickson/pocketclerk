@@ -70,15 +70,41 @@ export const teacherProfiles = pgTable(
   (t) => [index("teacher_profiles_active_idx").on(t.active)],
 );
 
-/** Allowlist. Presence of a row is what grants admin access; there is no role column. */
+/**
+ * Allowlist. Presence of a row is what grants admin access; there is no role
+ * column, because there is exactly one level of privilege and a boolean column
+ * would only invite a second.
+ */
 export const adminUsers = pgTable("admin_users", {
   personId: uuid("person_id")
     .primaryKey()
     .references(() => persons.id, { onDelete: "restrict" }),
-  authId: uuid("auth_id").notNull().unique(),
   addedBy: uuid("added_by").references(() => persons.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Single-use sign-in links.
+ *
+ * Only the hash is stored, for the same reason student PINs are hashed: a
+ * leaked table must not be a set of working sign-in links. `usedAt` makes a
+ * link single-use, and it is set in the same statement that redeems it so two
+ * simultaneous clicks cannot both succeed.
+ */
+export const adminLoginTokens = pgTable(
+  "admin_login_tokens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    personId: uuid("person_id")
+      .notNull()
+      .references(() => persons.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("admin_login_tokens_person_idx").on(t.personId, t.createdAt)],
+);
 
 /**
  * Students deliberately have no auth identity. Accounts mean emails, passwords
@@ -339,3 +365,4 @@ export type OrderItem = typeof orderItems.$inferSelect;
 export type ReceiptJob = typeof receiptJobs.$inferSelect;
 export type InventoryItem = typeof inventoryItems.$inferSelect;
 export type InventoryCount = typeof inventoryCounts.$inferSelect;
+export type AdminUser = typeof adminUsers.$inferSelect;

@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 
 import { renderReceiptText, type Receipt } from "../renderer/receipt";
-import type { EmailSender, SendResult } from "./index";
+import type { EmailSender, SendResult, TextMessage } from "./index";
 
 /**
  * Sends receipts through Resend.
@@ -39,6 +39,27 @@ export class ResendSender implements EmailSender {
         jobId ? { idempotencyKey: jobId } : undefined,
       );
 
+      return error ? { ok: false, error: error.message } : { ok: true };
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : "Send failed.",
+      };
+    }
+  }
+
+  async sendText(message: TextMessage): Promise<SendResult> {
+    const from = process.env.EMAIL_FROM;
+    if (!from) return { ok: false, error: "EMAIL_FROM is not configured." };
+
+    try {
+      const { error } = await this.client.emails.send({
+        from,
+        to: message.to,
+        replyTo: process.env.EMAIL_REPLY_TO ?? from,
+        subject: message.subject,
+        text: message.body,
+      });
       return error ? { ok: false, error: error.message } : { ok: true };
     } catch (error) {
       return {

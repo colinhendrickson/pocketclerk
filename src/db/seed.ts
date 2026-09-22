@@ -9,6 +9,7 @@ import { sql } from "drizzle-orm";
 import { db, getClient } from "./index";
 import {
   addons,
+  adminUsers,
   inventoryItems,
   menuItems,
   persons,
@@ -139,6 +140,13 @@ async function main() {
       notes: teacherRows[i].notes,
     })),
   );
+
+  // --- Administrator -------------------------------------------------------
+  // The first teacher is also the administrator, which exercises the "one
+  // person, two roles" shape the schema was built around: she buys coffee and
+  // she manages the cart, and revoking one does not touch the other.
+  const [adminPerson] = seededPersons;
+  await db.insert(adminUsers).values({ personId: adminPerson.id });
 
   console.log(`  ${menu.length} menu items`);
   console.log(`  ${extras.length} add-ons`);
