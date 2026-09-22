@@ -1,4 +1,10 @@
+import { config as loadEnv } from "dotenv";
 import { defineConfig, devices } from "@playwright/test";
+
+// Playwright runs outside Next.js, so it does not read .env.local on its own.
+// Without this the suite cannot pair with a deployment that requires it, and
+// every student test fails at the door for a reason that looks like a bug.
+loadEnv({ path: [".env.local", ".env"] });
 
 /**
  * End-to-end configuration.

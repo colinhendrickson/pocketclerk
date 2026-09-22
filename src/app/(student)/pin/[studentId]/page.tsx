@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getStudent } from "@/lib/queries";
 
 import { PinForm } from "./pin-form";
+import { requirePairedDevice } from "@/app/(student)/require-device";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,7 @@ export default async function PinPage({
 }: {
   params: Promise<{ studentId: string }>;
 }) {
+  await requirePairedDevice();
   const { studentId } = await params;
   const student = await getStudent(studentId);
   if (!student || !student.active) notFound();

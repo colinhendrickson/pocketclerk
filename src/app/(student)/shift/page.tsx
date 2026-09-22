@@ -7,6 +7,7 @@ import { getShiftSession } from "@/lib/session";
 import { DashboardActions } from "./dashboard-actions";
 import { LiveHours } from "./live-hours";
 import { PrinterBar } from "./printer-bar";
+import { requirePairedDevice } from "@/app/(student)/require-device";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export const dynamic = "force-dynamic";
  * student can see where they are without being told.
  */
 export default async function ShiftPage() {
+  await requirePairedDevice();
   const shiftId = await getShiftSession();
   if (!shiftId) redirect("/");
 

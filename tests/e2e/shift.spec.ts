@@ -17,8 +17,22 @@ import { expect, test } from "@playwright/test";
 
 const PIN = ["1", "2", "3", "4"];
 
+/**
+ * Pair the browser with the cart, the way an adult sets up the iPad once.
+ *
+ * Skipped when the deployment under test has no DEVICE_CODE, which is the case
+ * for the public demo, so the same spec covers both shapes.
+ */
+async function pairDevice(page: import("@playwright/test").Page) {
+  const code = process.env.DEVICE_CODE;
+  if (!code) return;
+  await page.goto(`/setup?code=${encodeURIComponent(code)}`);
+  await expect(page).toHaveURL(/\/$/);
+}
+
 test("a student works a whole shift", async ({ page }) => {
   await test.step("sign in and clock in", async () => {
+    await pairDevice(page);
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
@@ -119,6 +133,7 @@ test("a student works a whole shift", async ({ page }) => {
 test("a wrong PIN is refused, with a message a student can act on", async ({
   page,
 }) => {
+  await pairDevice(page);
   await page.goto("/");
   await page.locator('a[href^="/pin/"]').first().click();
 
@@ -143,4 +158,28 @@ test("a wrong PIN is refused, with a message a student can act on", async ({
 
   // And, most importantly, no shift was started.
   await expect(page).toHaveURL(/\/pin\//);
+});
+
+test("an unpaired device is shown nothing about the students", async ({ page }) => {
+  test.skip(!process.env.DEVICE_CODE, "pairing is not enabled on this deployment");
+
+  await page.context().clearCookies();
+  await page.goto("/");
+
+  // The roster is the part that matters. A stranger who finds the address must
+  // not learn the first names of the children who work the cart.
+  await expect(page).toHaveURL(/not-set-up/);
+  await expect(page.getByText(/not set up for the cart yet/)).toBeVisible();
+  await expect(page.locator('a[href^="/pin/"]')).toHaveCount(0);
+});
+
+test("a wrong setup code does not pair the device", async ({ page }) => {
+  test.skip(!process.env.DEVICE_CODE, "pairing is not enabled on this deployment");
+
+  await page.context().clearCookies();
+  await page.goto("/setup?code=definitely-not-the-code");
+  await expect(page).toHaveURL(/not-set-up/);
+
+  await page.goto("/");
+  await expect(page).toHaveURL(/not-set-up/);
 });

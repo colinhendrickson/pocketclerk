@@ -5,6 +5,7 @@ import { getActiveShift, getFinishedShift } from "@/lib/queries";
 import { getShiftSession } from "@/lib/session";
 
 import { ClockOutForm } from "./clock-out-form";
+import { requirePairedDevice } from "@/app/(student)/require-device";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ export const dynamic = "force-dynamic";
  * because it is read from the shift rather than held in component state.
  */
 export default async function ClockOutPage() {
+  await requirePairedDevice();
   const shiftId = await getShiftSession();
   if (!shiftId) redirect("/");
 

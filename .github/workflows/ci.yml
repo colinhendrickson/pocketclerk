@@ -87,6 +87,9 @@ jobs:
       DATABASE_URL: postgresql://pocketclerk:pocketclerk@localhost:5432/pocketclerk
       DIRECT_URL: postgresql://pocketclerk:pocketclerk@localhost:5432/pocketclerk
       SESSION_SECRET: ci-session-secret-that-is-at-least-32-chars
+      # Exercises the paired path, which is how a real deployment runs. The
+      # suite also asserts what an unpaired visitor can see, which is nothing.
+      DEVICE_CODE: ci-device-pairing-code
 
     steps:
       - uses: actions/checkout@v4

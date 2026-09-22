@@ -4,6 +4,7 @@ import { getActiveShift, listAddons, listMenu, listTeachers } from "@/lib/querie
 import { getShiftSession } from "@/lib/session";
 
 import { OrderFlow } from "./order-flow";
+import { requirePairedDevice } from "@/app/(student)/require-device";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ export const dynamic = "force-dynamic";
  * avoids a spinner between every step of a sale that should feel instant.
  */
 export default async function OrderPage() {
+  await requirePairedDevice();
   const shiftId = await getShiftSession();
   if (!shiftId) redirect("/");
   if (!(await getActiveShift(shiftId))) redirect("/");

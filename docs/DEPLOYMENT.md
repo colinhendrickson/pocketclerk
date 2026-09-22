@@ -132,7 +132,38 @@ interface. Never through the seed.
 Each student needs a four-digit PIN. Pick something they can remember; it is not
 protecting anything valuable, and being locked out mid-shift is the real cost.
 
-## 7. The iPad
+## 7. Lock the cart to the school's iPad
+
+Without this, anyone who finds the address can read the first names of every
+student on the roster and sit guessing four-digit PINs. Rate limiting makes the
+guessing impractical; it does nothing about the names, and the names are the
+part that matters.
+
+Set one more variable in Vercel, type **Secret**, and redeploy:
+
+```
+DEVICE_CODE = <a long random value>
+```
+
+Generate one with the same command as the other secrets. Then, once on each iPad
+that should run the cart, open:
+
+```
+https://your-domain/setup?code=<that value>
+```
+
+That stores a signed cookie on the device and lasts a school year. Every student
+screen requires it. A visitor without it sees only "this device is not set up",
+with no names, no menu and no way in.
+
+Changing `DEVICE_CODE` un-pairs every device at once, which is how to revoke a
+lost iPad.
+
+The administrator side is deliberately unaffected: it is gated by an emailed
+link to an allowlisted address, which is a stronger check and has to work from
+any laptop.
+
+## 8. The iPad
 
 Follow [`IPAD_SETUP.md`](IPAD_SETUP.md): add to the home screen, turn on Guided
 Access, set auto-lock to never.

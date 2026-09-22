@@ -6,6 +6,7 @@ import { getActiveShift } from "@/lib/queries";
 import { getShiftSession } from "@/lib/session";
 
 import { InventorySheet } from "./inventory-sheet";
+import { requirePairedDevice } from "@/app/(student)/require-device";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,7 @@ export const dynamic = "force-dynamic";
  * anything, so a student who wanders off and comes back finds their work.
  */
 export default async function InventoryPage() {
+  await requirePairedDevice();
   const shiftId = await getShiftSession();
   if (!shiftId) redirect("/");
 

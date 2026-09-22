@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { branding } from "@/lib/branding";
 import { listActiveStudents } from "@/lib/queries";
+import { requirePairedDevice } from "@/app/(student)/require-device";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ export const dynamic = "force-dynamic";
  * a student has to produce from memory is four digits, on the next screen.
  */
 export default async function SignInPage() {
+  await requirePairedDevice();
   const students = await listActiveStudents();
 
   return (

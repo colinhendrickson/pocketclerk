@@ -38,6 +38,9 @@ export async function GET(): Promise<NextResponse> {
   }
 
   const optional = {
+    devicePairing: process.env.DEVICE_CODE
+      ? "on, student screens require a paired device"
+      : "OFF, student screens are open to anyone with the address",
     email: process.env.RESEND_API_KEY
       ? process.env.EMAIL_FROM
         ? "configured"

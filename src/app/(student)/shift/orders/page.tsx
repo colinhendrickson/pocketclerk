@@ -4,6 +4,7 @@ import { StepHeader } from "@/components";
 import { formatUSD } from "@/lib/money";
 import { getActiveShift, getShiftTotals, listShiftOrders } from "@/lib/queries";
 import { getShiftSession } from "@/lib/session";
+import { requirePairedDevice } from "@/app/(student)/require-device";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,7 @@ export const dynamic = "force-dynamic";
  * detail.
  */
 export default async function TodaysOrdersPage() {
+  await requirePairedDevice();
   const shiftId = await getShiftSession();
   if (!shiftId) redirect("/");
 
