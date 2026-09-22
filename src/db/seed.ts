@@ -6,7 +6,7 @@ import { faker } from "@faker-js/faker";
 import { hashPin } from "../lib/auth";
 import { sql } from "drizzle-orm";
 
-import { client, db } from "./index";
+import { db, getClient } from "./index";
 import { addons, menuItems, persons, students, teacherProfiles } from "./schema";
 
 /**
@@ -124,9 +124,9 @@ async function main() {
 }
 
 main()
-  .then(() => client.end())
+  .then(() => getClient().end())
   .catch(async (error) => {
     console.error("\nSeed failed:", error);
-    await client.end();
+    await getClient().end();
     process.exit(1);
   });

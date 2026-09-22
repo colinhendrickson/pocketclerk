@@ -8,6 +8,31 @@ on:
 jobs:
   checks:
     runs-on: ubuntu-latest
+
+    # A real Postgres, so the migration and its constraints are exercised rather
+    # than assumed. The invariants in 0001 are the ones worth proving on every
+    # push: they are the difference between "we check that in the app" and
+    # "the database will not allow it".
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: pocketclerk
+          POSTGRES_PASSWORD: pocketclerk
+          POSTGRES_DB: pocketclerk
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pocketclerk"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://pocketclerk:pocketclerk@localhost:5432/pocketclerk
+      DIRECT_URL: postgresql://pocketclerk:pocketclerk@localhost:5432/pocketclerk
+      SESSION_SECRET: ci-session-secret-that-is-at-least-32-chars
+
     steps:
       - uses: actions/checkout@v4
 
@@ -15,7 +40,6 @@ jobs:
       - uses: pnpm/action-setup@v4
 
       # .nvmrc is the single source of truth for Node, shared with local dev.
-      # Vite 8 / rolldown require ^20.19.0 || >=22.12.0.
       - uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
@@ -27,5 +51,12 @@ jobs:
 
       - run: pnpm typecheck
       - run: pnpm lint
+
+      - name: Apply migrations
+        run: pnpm db:migrate
+
+      - name: Seed
+        run: pnpm seed
+
       - run: pnpm test
       - run: pnpm build

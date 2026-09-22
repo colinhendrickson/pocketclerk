@@ -13,9 +13,9 @@ export default defineConfig({
     // Money math is pure: no DOM, no React, no mocks. Component behaviour is
     // covered by the Playwright flow instead, so jsdom is not a dependency.
     environment: "node",
+    setupFiles: ["./tests/setup.ts"],
+    // Database tests share one Postgres, so they must not race each other.
+    fileParallelism: false,
     include: ["tests/**/*.test.ts"],
-    // Remove once the money tests land in ticket 1.6. Until then CI has no
-    // spec files to run, and a bare "vitest run" would exit non-zero.
-    passWithNoTests: true,
   },
 });
