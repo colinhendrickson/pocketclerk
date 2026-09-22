@@ -82,3 +82,46 @@ export function parseClockIn(input: unknown): ClockInInput | null {
   if (!isUuid(studentId) || !isFourDigitPin(pin)) return null;
   return { studentId, pin };
 }
+
+export interface NewTeacherInput {
+  name: string;
+  room: string | null;
+  email: string | null;
+}
+
+/**
+ * Validates a teacher added mid-shift.
+ *
+ * The email check is deliberately loose. A strict pattern rejects addresses
+ * that are perfectly valid, and the cost of a typo here is one undelivered
+ * receipt, which the job monitor already surfaces. Refusing to serve a teacher
+ * because a regex disliked their address is the worse failure.
+ */
+export function parseNewTeacher(input: unknown): NewTeacherInput | null {
+  if (typeof input !== "object" || input === null) return null;
+  const { name, room, email } = input as Record<string, unknown>;
+
+  if (typeof name !== "string") return null;
+  const trimmedName = name.trim();
+  if (trimmedName.length < 2 || trimmedName.length > 80) return null;
+
+  let trimmedRoom: string | null = null;
+  if (room !== undefined && room !== null && room !== "") {
+    if (typeof room !== "string") return null;
+    trimmedRoom = room.trim().slice(0, 20);
+    if (trimmedRoom.length === 0) trimmedRoom = null;
+  }
+
+  let trimmedEmail: string | null = null;
+  if (email !== undefined && email !== null && email !== "") {
+    if (typeof email !== "string") return null;
+    const candidate = email.trim().toLowerCase();
+    if (candidate.length > 120) return null;
+    if (!candidate.includes("@") || candidate.startsWith("@") || candidate.endsWith("@")) {
+      return null;
+    }
+    trimmedEmail = candidate;
+  }
+
+  return { name: trimmedName, room: trimmedRoom, email: trimmedEmail };
+}

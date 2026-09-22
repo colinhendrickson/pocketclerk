@@ -12,13 +12,13 @@ import {
   MoneyDisplay,
   NoteBanner,
   StepHeader,
-  TeacherCard,
 } from "@/components";
 import type { Addon, MenuItem } from "@/db/schema";
 import { formatUSD, orderTotalCents } from "@/lib/money";
 import type { TeacherSummary } from "@/lib/queries";
 
 import { completeOrder } from "../../actions";
+import { TeacherPicker } from "./teacher-picker";
 
 const STEPS = ["Teacher", "Order", "Pay", "Receipt"] as const;
 
@@ -167,20 +167,13 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
           backLabel="Back to your shift"
           steps={STEPS}
         />
-        <div className="grid flex-1 grid-cols-1 gap-4 overflow-y-auto p-6 sm:grid-cols-2 lg:grid-cols-3">
-          {teachers.map((t) => (
-            <TeacherCard
-              key={t.id}
-              name={t.name}
-              room={t.room ? `Room ${t.room}` : undefined}
-              noteCount={t.notes.length}
-              onSelect={() => {
-                setTeacher(t);
-                setStage("build");
-              }}
-            />
-          ))}
-        </div>
+        <TeacherPicker
+          teachers={teachers}
+          onPick={(picked) => {
+            setTeacher(picked);
+            setStage("build");
+          }}
+        />
       </div>
     );
   }
