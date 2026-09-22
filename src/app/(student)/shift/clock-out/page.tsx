@@ -1,22 +1,48 @@
 import { redirect } from "next/navigation";
 
-import { getActiveShift } from "@/lib/queries";
+import { getChecklist } from "@/lib/inventory";
+import { getActiveShift, getFinishedShift } from "@/lib/queries";
 import { getShiftSession } from "@/lib/session";
 
 import { ClockOutForm } from "./clock-out-form";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Two states behind one route.
+ *
+ * While the shift is open this is the end-of-shift checklist. Once it is closed
+ * it is the summary of what the student earned, which survives a refresh
+ * because it is read from the shift rather than held in component state.
+ */
 export default async function ClockOutPage() {
   const shiftId = await getShiftSession();
   if (!shiftId) redirect("/");
 
   const shift = await getActiveShift(shiftId);
-  if (!shift) redirect("/");
+
+  if (!shift) {
+    const finished = await getFinishedShift(shiftId);
+    if (!finished) redirect("/");
+    return (
+      <main className="flex flex-1 items-center justify-center p-8">
+        <ClockOutForm
+          studentName={finished.studentName}
+          initialDone={[]}
+          finished={{
+            hoursHundredths: finished.hoursHundredths,
+            tickets: finished.rewardTickets,
+          }}
+        />
+      </main>
+    );
+  }
+
+  const done = await getChecklist(shift.id);
 
   return (
     <main className="flex flex-1 items-center justify-center p-8">
-      <ClockOutForm studentName={shift.studentName} />
+      <ClockOutForm studentName={shift.studentName} initialDone={done} />
     </main>
   );
 }

@@ -7,7 +7,14 @@ import { hashPin } from "../lib/auth";
 import { sql } from "drizzle-orm";
 
 import { db, getClient } from "./index";
-import { addons, menuItems, persons, students, teacherProfiles } from "./schema";
+import {
+  addons,
+  inventoryItems,
+  menuItems,
+  persons,
+  students,
+  teacherProfiles,
+} from "./schema";
 
 /**
  * Development and demo seed.
@@ -31,8 +38,9 @@ async function main() {
 
   // Order matters: children before parents.
   await db.execute(
-    sql`TRUNCATE order_item_addons, order_items, receipt_jobs, orders, shifts,
-        students, teacher_profiles, admin_users, persons, menu_items, addons
+    sql`TRUNCATE order_item_addons, order_items, receipt_jobs, orders,
+        inventory_counts, inventory_items, shifts, students, teacher_profiles,
+        admin_users, persons, menu_items, addons
         RESTART IDENTITY CASCADE`,
   );
 
@@ -67,6 +75,22 @@ async function main() {
       { name: "Sugar", priceCents: 0, sortOrder: 3 },
       { name: "Sweetener", priceCents: 0, sortOrder: 4 },
       { name: "Vanilla syrup", priceCents: 25, sortOrder: 5 },
+    ])
+    .returning();
+
+  // --- Inventory ----------------------------------------------------------
+  // Supplies, not menu items: what the cart consumes rather than what it sells.
+  // Par levels are the quantity a full cart carries.
+  const supplies = await db
+    .insert(inventoryItems)
+    .values([
+      { name: "Coffee cups", unit: "cups", parLevel: 50, sortOrder: 1 },
+      { name: "Lids", unit: "lids", parLevel: 50, sortOrder: 2 },
+      { name: "Napkins", unit: "napkins", parLevel: 100, sortOrder: 3 },
+      { name: "Stirrers", unit: "stirrers", parLevel: 100, sortOrder: 4 },
+      { name: "Creamers", unit: "cups", parLevel: 40, sortOrder: 5 },
+      { name: "Sugar packets", unit: "packets", parLevel: 60, sortOrder: 6 },
+      { name: "Treats", unit: "treats", parLevel: 20, sortOrder: 7 },
     ])
     .returning();
 
@@ -120,6 +144,7 @@ async function main() {
   console.log(`  ${extras.length} add-ons`);
   console.log(`  ${seededStudents.length} students`);
   console.log(`  ${seededPersons.length} teachers`);
+  console.log(`  ${supplies.length} inventory items`);
   console.log(`\nDone. Every student's PIN is ${DEMO_PIN}.`);
 }
 

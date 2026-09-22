@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -150,4 +150,42 @@ export async function listShiftOrders(shiftId: string) {
     .innerJoin(persons, eq(persons.id, teacherProfiles.personId))
     .where(eq(orders.shiftId, shiftId))
     .orderBy(desc(orders.createdAt));
+}
+
+export interface ShiftSummary {
+  id: string;
+  studentName: string;
+  hoursHundredths: number;
+  rewardTickets: number;
+}
+
+/**
+ * A finished shift, looked up by the session cookie after clock-out.
+ *
+ * The cookie deliberately outlives the shift by one screen so the student can
+ * see what they earned. `getActiveShift` returns null for a closed shift, which
+ * is what every other screen wants; this is the one place that wants the
+ * opposite.
+ */
+export async function getFinishedShift(shiftId: string): Promise<ShiftSummary | null> {
+  const rows = await db
+    .select({
+      id: shifts.id,
+      studentName: students.displayName,
+      hoursHundredths: shifts.hoursHundredths,
+      rewardTickets: shifts.rewardTickets,
+    })
+    .from(shifts)
+    .innerJoin(students, eq(students.id, shifts.studentId))
+    .where(and(eq(shifts.id, shiftId), isNotNull(shifts.clockOut)))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row || row.hoursHundredths === null || row.rewardTickets === null) return null;
+  return {
+    id: row.id,
+    studentName: row.studentName,
+    hoursHundredths: row.hoursHundredths,
+    rewardTickets: row.rewardTickets,
+  };
 }

@@ -1,16 +1,22 @@
 "use client";
 
+import { Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { BigButton } from "@/components";
 import { branding } from "@/lib/branding";
+import { CHECKLIST } from "@/lib/inventory-rules";
 import { formatHours } from "@/lib/money";
 
-import { clockOut } from "../../actions";
+import { clockOut, finishShift } from "../../actions";
+import { toggleChecklistItem } from "../../inventory-actions";
 
 export interface ClockOutFormProps {
   studentName: string;
+  initialDone: string[];
+  /** Present once the shift is closed; the screen becomes a summary. */
+  finished?: Summary;
 }
 
 interface Summary {
@@ -19,16 +25,39 @@ interface Summary {
 }
 
 /**
- * Clock out, and the one screen that asks for confirmation.
+ * The end-of-shift checklist, then clocking out.
  *
- * Ending a shift is the single destructive action a student can take: it stops
- * the clock and closes the day's record. Everything else in the flow advances
- * by itself, so the extra tap here is deliberate rather than inconsistent.
+ * The checklist is a gate rather than a suggestion: the clock-out button stays
+ * disabled until every task is ticked. That is the client's specification and
+ * it is also the lesson, which is that a shift ends when the work is finished
+ * rather than when the clock says so.
+ *
+ * Each tick saves immediately, so a student who gets interrupted halfway
+ * through comes back to the boxes they already checked.
  */
-export function ClockOutForm({ studentName }: ClockOutFormProps) {
+export function ClockOutForm({
+  studentName,
+  initialDone,
+  finished,
+}: ClockOutFormProps) {
   const router = useRouter();
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const [done, setDone] = useState<string[]>(initialDone);
+  const [summary, setSummary] = useState<Summary | null>(finished ?? null);
   const [pending, startTransition] = useTransition();
+
+  const allDone = CHECKLIST.every((entry) => done.includes(entry.key));
+
+  function toggle(key: string) {
+    const next = !done.includes(key);
+    setDone((current) =>
+      next ? [...current, key] : current.filter((k) => k !== key),
+    );
+    startTransition(async () => {
+      const result = await toggleChecklistItem(key, next);
+      if (result.ok) setDone(result.done);
+      else if (result.error === "no_shift") router.replace("/");
+    });
+  }
 
   if (summary) {
     return (
@@ -51,7 +80,16 @@ export function ClockOutForm({ studentName }: ClockOutFormProps) {
         <p className="text-[20px] font-bold opacity-70">
           Your shift is saved. You can close the cart now.
         </p>
-        <BigButton variant="primary" onClick={() => router.replace("/")}>
+        <BigButton
+          variant="primary"
+          disabled={pending}
+          onClick={() =>
+            startTransition(async () => {
+              await finishShift();
+              router.replace("/");
+            })
+          }
+        >
           Finish
         </BigButton>
       </div>
@@ -59,15 +97,45 @@ export function ClockOutForm({ studentName }: ClockOutFormProps) {
   }
 
   return (
-    <div className="flex w-full max-w-xl flex-col items-center gap-8 text-center">
-      <h1 className="text-[44px] font-extrabold">Are you done for today?</h1>
-      <p className="text-[22px] font-bold opacity-70">
-        Clocking out stops your hours and saves your shift.
-      </p>
-      <div className="flex w-full flex-col gap-4">
+    <div className="flex w-full max-w-2xl flex-col gap-8">
+      <h1 className="text-[44px] font-extrabold">Before you clock out</h1>
+
+      <ul className="flex flex-col gap-3">
+        {CHECKLIST.map((entry) => {
+          const checked = done.includes(entry.key);
+          return (
+            <li key={entry.key}>
+              <button
+                type="button"
+                role="checkbox"
+                aria-checked={checked}
+                disabled={pending}
+                onClick={() => toggle(entry.key)}
+                className={`btn min-h-[72px] w-full justify-start gap-4 rounded-box text-[22px] font-extrabold ${
+                  checked
+                    ? "btn-success"
+                    : "border-base-300 bg-base-100"
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`grid size-[40px] shrink-0 place-items-center rounded-field border-2 ${
+                    checked ? "border-success-content" : "border-base-300"
+                  }`}
+                >
+                  {checked ? <Check size={28} /> : null}
+                </span>
+                {entry.label}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="flex flex-col gap-4">
         <BigButton
           variant="primary"
-          disabled={pending}
+          disabled={!allDone || pending}
           onClick={() =>
             startTransition(async () => {
               const result = await clockOut();
@@ -82,10 +150,14 @@ export function ClockOutForm({ studentName }: ClockOutFormProps) {
             })
           }
         >
-          {pending ? "Saving…" : "Yes, clock out"}
+          {pending
+            ? "Saving…"
+            : allDone
+              ? "Clock out"
+              : "Finish the list above first"}
         </BigButton>
         <BigButton disabled={pending} onClick={() => router.push("/shift")}>
-          No, keep working
+          Back to your shift
         </BigButton>
       </div>
     </div>

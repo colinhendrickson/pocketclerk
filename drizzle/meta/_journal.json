@@ -22,6 +22,20 @@
       "when": 1790032112816,
       "tag": "0002_lumpy_wendigo",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790037208460,
+      "tag": "0003_big_starfox",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790037221448,
+      "tag": "0004_inventory_constraints",
+      "breakpoints": true
     }
   ]
 }

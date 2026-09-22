@@ -279,8 +279,16 @@ export async function clockOut(): Promise<ClockOutResult> {
     .set({ clockOut: now, hoursHundredths, rewardTickets: tickets })
     .where(eq(shifts.id, shift.id));
 
-  await clearShiftSession();
+  // The cookie is deliberately left in place. Clearing it here would make the
+  // next render of this page find no shift and bounce the student to sign-in
+  // before they ever saw what they earned. `finishShift` clears it when they
+  // tap through.
   return { ok: true, hoursHundredths, tickets };
+}
+
+/** Ends the session once the student has seen their shift summary. */
+export async function finishShift(): Promise<void> {
+  await clearShiftSession();
 }
 
 /* -------------------------------------------------------------------------- */

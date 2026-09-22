@@ -37,7 +37,11 @@ export function DashboardActions() {
         >
           Today&rsquo;s orders
         </BigButton>
-        <BigButton layout="tile" icon={Package} disabled>
+        <BigButton
+          layout="tile"
+          icon={Package}
+          onClick={() => router.push("/shift/inventory")}
+        >
           Inventory
         </BigButton>
         <BigButton layout="tile" icon={Clock} disabled>

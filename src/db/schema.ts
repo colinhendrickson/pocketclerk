@@ -127,6 +127,12 @@ export const shifts = pgTable(
      * "Blue Tickets"; that label is white-label config, so the column is not.
      */
     rewardTickets: integer("reward_tickets"),
+    /**
+     * Keys of the end-of-shift tasks the student has ticked off. Stored as
+     * completed keys rather than a row per task so that changing the checklist
+     * never rewrites the history of shifts that used the old one.
+     */
+    checklist: text("checklist").array().notNull().default([]),
   },
   (t) => [index("shifts_student_idx").on(t.studentId, t.clockIn)],
 );
@@ -231,6 +237,59 @@ export const orderItemAddons = pgTable(
 );
 
 /* -------------------------------------------------------------------------- */
+/* Inventory                                                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Supplies the cart consumes: cups, lids, napkins, the treat of the week.
+ * Separate from `menu_items` because what is sold and what is stocked are
+ * different lists; one cookie is a menu item and a napkin is not.
+ */
+export const inventoryItems = pgTable(
+  "inventory_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    /** What one unit is, e.g. "cups". Shown next to the number. */
+    unit: text("unit").notNull().default("items"),
+    /** The level the cart should be restocked back up to. */
+    parLevel: integer("par_level").notNull(),
+    active: boolean("active").notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (t) => [index("inventory_items_active_idx").on(t.active, t.sortOrder)],
+);
+
+/**
+ * One count per item per shift.
+ *
+ * `starting` is snapshotted when the count opens rather than derived on read,
+ * because it is a claim about what was on the cart at that moment. Used is
+ * `starting - remaining` and is deliberately not stored: a derived value that
+ * is also stored is a value that can disagree with itself.
+ */
+export const inventoryCounts = pgTable(
+  "inventory_counts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    shiftId: uuid("shift_id")
+      .notNull()
+      .references(() => shifts.id, { onDelete: "cascade" }),
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => inventoryItems.id, { onDelete: "restrict" }),
+    starting: integer("starting").notNull(),
+    /** Null until the student counts. */
+    remaining: integer("remaining"),
+    restocked: boolean("restocked").notNull().default(false),
+    countedAt: timestamp("counted_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("inventory_counts_shift_item_key").on(t.shiftId, t.itemId),
+  ],
+);
+
+/* -------------------------------------------------------------------------- */
 /* Receipt delivery queue                                                     */
 /* -------------------------------------------------------------------------- */
 
@@ -278,3 +337,5 @@ export type Addon = typeof addons.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type ReceiptJob = typeof receiptJobs.$inferSelect;
+export type InventoryItem = typeof inventoryItems.$inferSelect;
+export type InventoryCount = typeof inventoryCounts.$inferSelect;
