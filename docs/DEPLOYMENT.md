@@ -196,7 +196,8 @@ is ready and 503 when it is not.
 It reports names, never values. Use it before anything else; it turns "the site
 is broken" into a specific missing variable.
 
-1. `/admin/sign-in` sends you a link, and the link signs you in.
+1. `/admin/sign-in` emails a six-digit code, and typing it signs you in. The
+   same mail carries a link, which does the same thing on a computer.
 2. A test order completes and shows the right change.
 3. `/admin/receipts` shows the receipt as `sent`, or shows why it is not.
 4. `/admin/orders` shows the order.

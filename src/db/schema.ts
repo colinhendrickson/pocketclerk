@@ -99,6 +99,14 @@ export const adminLoginTokens = pgTable(
       .notNull()
       .references(() => persons.id, { onDelete: "cascade" }),
     tokenHash: text("token_hash").notNull().unique(),
+    /**
+     * The same sign-in, typed instead of clicked. The cart's iPad must never
+     * have a personal mailbox signed into it, so the mail goes to a phone and
+     * the code is typed on the iPad. Hashed like the token; guessing is bounded
+     * by `attempts` rather than by the length of a six-digit secret.
+     */
+    codeHash: text("code_hash"),
+    attempts: integer("attempts").notNull().default(0),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     usedAt: timestamp("used_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

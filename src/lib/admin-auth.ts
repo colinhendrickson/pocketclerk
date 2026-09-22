@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { db } from "@/db";
 import { adminLoginTokens, adminUsers, persons } from "@/db/schema";
 import { ConfigurationError } from "@/lib/config";
+import { newSignInCode, normalizeSignInCode } from "@/lib/sign-in-code";
 
 /**
  * Administrator sign-in, by emailed single-use link.
@@ -32,6 +33,14 @@ const SESSION_SECONDS = 60 * 60 * 10;
 const TOKEN_MINUTES = 15;
 /** Sign-in links requestable per address per hour, to stop mailbox flooding. */
 const MAX_LINKS_PER_HOUR = 5;
+/**
+ * Wrong code entries allowed against one outstanding token.
+ *
+ * This, not the length of the code, is what makes a six-digit secret safe. Five
+ * guesses at a million, against a code that belongs to one address and dies in
+ * fifteen minutes, is not an attack worth mounting.
+ */
+const MAX_CODE_ATTEMPTS = 5;
 
 function secret(): string {
   const value = process.env.SESSION_SECRET;
@@ -53,6 +62,11 @@ function secret(): string {
  * matters for a secret a human chose. This secret is 32 random bytes, so
  * guessing is already hopeless and the only job left is making a stolen
  * database useless. HMAC does that, and it is fast enough to look up by hash.
+ *
+ * It holds for the six-digit code too, whose keyspace a laptop could otherwise
+ * exhaust instantly: HMAC's key is `SESSION_SECRET`, which lives in the
+ * environment and not in the table, so a stolen dump has nothing to grind
+ * against.
  */
 function hashToken(token: string): string {
   return createHmac("sha256", secret()).update(token).digest("hex");
@@ -65,11 +79,20 @@ export interface AdminIdentity {
 }
 
 export type RequestLinkResult =
-  | { ok: true; token: string; identity: AdminIdentity }
+  | { ok: true; token: string; code: string; identity: AdminIdentity }
   | { ok: false; error: "not_allowed" | "rate_limited" };
 
 /**
- * Issues a sign-in link for an allowlisted address.
+ * Issues a sign-in link, and a short code that redeems the same row.
+ *
+ * Two ways in, one secret's worth of trust: whichever is used spends the row,
+ * so a code cannot outlive the link it was mailed with.
+ *
+ * The code exists because the link assumes you can open your email on the
+ * device you are signing in on, and on the cart's iPad that is precisely what
+ * should not happen. It is a shared device a student uses; a personal mailbox
+ * signed into it to read one link stays signed in afterwards. So the mail goes
+ * to a phone and the code is typed on the iPad.
  *
  * Returns `not_allowed` for an address that is not an administrator. The caller
  * must not reveal which of the two happened: the sign-in page says the same
@@ -103,15 +126,18 @@ export async function requestSignInLink(
   if (count >= MAX_LINKS_PER_HOUR) return { ok: false, error: "rate_limited" };
 
   const token = randomBytes(32).toString("base64url");
+  const code = newSignInCode();
   await db.insert(adminLoginTokens).values({
     personId: row.personId,
     tokenHash: hashToken(token),
+    codeHash: hashToken(code),
     expiresAt: new Date(Date.now() + TOKEN_MINUTES * 60_000),
   });
 
   return {
     ok: true,
     token,
+    code,
     identity: { personId: row.personId, name: row.name, email: row.email },
   };
 }
@@ -134,16 +160,107 @@ export async function redeemSignInLink(token: string): Promise<AdminIdentity | n
   `);
 
   if (!claimed) return null;
+  return startSessionFor(claimed.person_id);
+}
 
+export type RedeemCodeResult =
+  | { ok: true; identity: AdminIdentity }
+  | { ok: false; error: "invalid" | "too_many" };
+
+/**
+ * Redeems a typed code and starts a session.
+ *
+ * The code is scoped to the address it was sent to, so a guess has to be right
+ * for a specific person's single outstanding token. The `attempts` ceiling is
+ * enforced inside the statement that claims the row, so a burst of parallel
+ * guesses cannot slip past a count that was read a moment earlier.
+ *
+ * Only the newest outstanding token is considered. Asking for a second code
+ * retires the first, which matches what the person expects when they give up on
+ * one mail and request another.
+ *
+ * `invalid` covers a wrong code, an unknown address, an expired row and a spent
+ * one alike. Telling them apart would tell a stranger which addresses are
+ * administrators and whether a code is still live.
+ */
+export async function redeemSignInCode(
+  email: string,
+  code: string,
+): Promise<RedeemCodeResult> {
+  const normalizedCode = normalizeSignInCode(code);
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const [row] = await db
+    .select({ personId: persons.id })
+    .from(adminUsers)
+    .innerJoin(persons, eq(persons.id, adminUsers.personId))
+    .where(sql`lower(${persons.email}) = ${normalizedEmail}`)
+    .limit(1);
+
+  // A wrong code still costs an attempt on the outstanding token, so a
+  // malformed guess cannot be used as a free probe. An unknown address has no
+  // token to charge, and looks identical from outside.
+  if (!row) return { ok: false, error: "invalid" };
+
+  if (normalizedCode) {
+    const [claimed] = await db.execute<{ person_id: string }>(sql`
+      UPDATE admin_login_tokens
+      SET used_at = now()
+      WHERE id = (
+        SELECT id FROM admin_login_tokens
+        WHERE person_id = ${row.personId}
+          AND used_at IS NULL
+          AND expires_at > now()
+        ORDER BY created_at DESC
+        LIMIT 1
+      )
+        AND used_at IS NULL
+        AND code_hash = ${hashToken(normalizedCode)}
+        AND attempts < ${MAX_CODE_ATTEMPTS}
+      RETURNING person_id
+    `);
+
+    if (claimed) {
+      const identity = await startSessionFor(claimed.person_id);
+      return identity
+        ? { ok: true, identity }
+        : { ok: false, error: "invalid" };
+    }
+  }
+
+  const [spent] = await db.execute<{ attempts: number }>(sql`
+    UPDATE admin_login_tokens
+    SET attempts = attempts + 1
+    WHERE id = (
+      SELECT id FROM admin_login_tokens
+      WHERE person_id = ${row.personId}
+        AND used_at IS NULL
+        AND expires_at > now()
+      ORDER BY created_at DESC
+      LIMIT 1
+    )
+    RETURNING attempts
+  `);
+
+  return spent && spent.attempts >= MAX_CODE_ATTEMPTS
+    ? { ok: false, error: "too_many" }
+    : { ok: false, error: "invalid" };
+}
+
+/**
+ * Re-checks the allowlist and issues the session cookie.
+ *
+ * The check happens at redemption, not only at issue: access revoked in the
+ * fifteen minutes since the mail was sent must actually be revoked.
+ */
+async function startSessionFor(personId: string): Promise<AdminIdentity | null> {
   const [person] = await db
     .select({ id: persons.id, name: persons.name, email: persons.email })
     .from(persons)
     .innerJoin(adminUsers, eq(adminUsers.personId, persons.id))
-    .where(eq(persons.id, claimed.person_id))
+    .where(eq(persons.id, personId))
     .limit(1);
 
-  // Allowlist is re-checked at redemption, not only at issue: access revoked in
-  // the fifteen minutes since the link was sent must actually be revoked.
   if (!person?.email) return null;
 
   await setAdminSession(person.id);

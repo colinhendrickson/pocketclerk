@@ -27,7 +27,7 @@
 | Frontend/backend | Next.js (App Router) + TypeScript + Tailwind + daisyUI (custom theme) | Free |
 | Delivery | PWA, Add to Home Screen on iPad, run under Guided Access | Free |
 | Database | Supabase Postgres + Drizzle ORM | Free tier |
-| Auth (admins) | Supabase Auth magic links + allowlist table | Free |
+| Auth (admins) | Self-hosted emailed code or link + allowlist table | Free |
 | Auth (students) | Name tap + 4-digit PIN (no accounts) | Free |
 | Email | Resend, custom domain, reply-to = the program admin's school address | Free tier |
 | PDFs (receipt/paycheck) | @react-pdf/renderer | Free |
@@ -127,7 +127,7 @@ Decisions baked in:
 | 2.1 | Inventory count screen (per shift) |
 | 2.2 | Restock list + restocked checkoffs |
 | 2.3 | End-of-shift checklist gate before clock out |
-| 2.4 | Admin auth (magic link + allowlist) |
+| 2.4 | Admin auth (emailed code or link + allowlist) |
 | 2.5 | Admin: students CRUD, hours, ticket totals |
 | 2.6 | Admin: teachers CRUD, notes, order history, favorites |
 | 2.7 | Admin: menu + special treat + add-on pricing |

@@ -94,6 +94,20 @@ button to force a restart, which ends Guided Access.
 
 ---
 
+## Signing in to the admin pages from the iPad
+
+Do not sign your email into the cart's iPad. It is a shared device a student
+uses, and a mailbox opened on it stays open.
+
+You do not have to. Go to the address and add **/admin**, type your email
+address, and a six-digit code arrives on your phone. Usually you can read it
+straight off the notification without opening the mail. Type the code on the
+iPad and you are in.
+
+The same email also has a link, which is the quicker option on a computer where
+your mail is already open. Either one works once and expires in fifteen minutes.
+After five wrong codes, ask for a new one.
+
 ## What the student sees
 
 1. **Tap your name**, then enter a four-digit PIN. That clocks them in.

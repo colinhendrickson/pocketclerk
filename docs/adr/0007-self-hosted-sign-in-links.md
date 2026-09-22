@@ -54,12 +54,50 @@ The properties that matter:
 - **Rate limited** to five links per address per hour, so the form cannot be
   used to flood a mailbox.
 
+### Amendment: a six-digit code beside the link
+
+The link assumes the person can open their email on the device they are signing
+in on. On the cart's iPad that assumption is wrong in a way that matters: it is
+a shared, student-facing device locked into one app, and signing a personal
+mailbox into it to read one link leaves the mailbox signed in there afterwards.
+
+So the same token row also carries a short code. The mail lands on a phone, the
+six digits are typed on the iPad, and no mailbox is ever opened on it. The code
+is put first in the subject line, so it is usually readable from a lock-screen
+notification without opening the mail at all.
+
+Six digits is a small secret, and the length is deliberately not the thing
+defending it:
+
+- **Scoped to one address.** A guess must be right for a specific person's
+  single outstanding token, not for any live code in the table.
+- **Five attempts, enforced in the claiming statement.** `attempts < 5` sits in
+  the same `UPDATE` that spends the row, so parallel guesses cannot slip past a
+  count read a moment earlier. The ceiling binds the correct code too, or five
+  wrong guesses would buy an attacker a free sixth.
+- **A malformed guess still costs an attempt.** Rejecting `12345` before the
+  database would make it a free probe while a real guess costs something.
+- **Newest token only.** Asking for another code retires the previous one,
+  which is what someone expects after giving up on one mail.
+- **Hashed with the same HMAC.** The key is `SESSION_SECRET`, which is in the
+  environment and not in the table, so a stolen dump cannot grind a million
+  candidates against a six-digit space.
+- **Never in a URL.** The code arrives by POST to a server action. An address
+  bar on a shared iPad is the last place a live secret should sit.
+
+Digits rather than letters because the keypad is what an iPad offers and `l`
+against `1` is what a transcription error looks like.
+
 `admin_users.auth_id` is dropped, since there is no external identity to join.
 
 ## Consequences
 
 The project still runs with no accounts, which is the property that makes it
 reviewable.
+
+The code path widens the sign-in surface from one secret to two, which is the
+cost of not signing a mailbox into a device children use. Both spend the same
+row, so neither outlives the other.
 
 Authentication is now code in this repository, and authentication code is worth
 being uncomfortable about. The mitigation is that the surface is small and each

@@ -3,8 +3,13 @@
 import { redirect } from "next/navigation";
 
 import { branding } from "@/lib/branding";
-import { clearAdminSession, requestSignInLink } from "@/lib/admin-auth";
+import {
+  clearAdminSession,
+  redeemSignInCode,
+  requestSignInLink,
+} from "@/lib/admin-auth";
 import { isConfigurationError } from "@/lib/config";
+import { formatSignInCode } from "@/lib/sign-in-code";
 import { getEmailSender } from "@/providers/email";
 
 /**
@@ -40,22 +45,76 @@ export async function sendSignInLink(formData: FormData): Promise<void> {
 
     // Reuses the receipt sender. Email is a provider, so a second kind of
     // message costs one call rather than a second integration.
+    // Both ways in, in one mail. The link is for a laptop, where clicking is
+    // the fastest thing available. The code is for the cart's iPad, where the
+    // point is that a personal mailbox never gets opened on a shared device: the
+    // mail lands on a phone and only the six digits make the trip.
     await sender.sendText({
       to: result.identity.email,
-      subject: `Sign in to ${branding.cartName}`,
+      // Code first, so a phone's lock screen shows it without the mail being
+      // opened at all. That is the whole point of it on a shared iPad.
+      subject: `${formatSignInCode(result.code)} is your ${branding.cartName} sign-in code`,
       body: [
         `Hello ${result.identity.name},`,
         "",
-        "Use this link to sign in. It works once and expires in 15 minutes.",
+        `Sign-in code:  ${formatSignInCode(result.code)}`,
+        "",
+        "Type that on the sign-in screen. This is the one to use on the cart's",
+        "iPad, so you never have to sign into your email on it.",
+        "",
+        "Or, on a computer where you already have your email open, use this",
+        "link instead:",
         "",
         link,
         "",
-        "If you did not ask for this, you can ignore it.",
+        "Either one works once and expires in 15 minutes. Asking for a new code",
+        "replaces this one.",
+        "",
+        "If you did not ask for this, you can ignore it. Nobody can sign in",
+        "without the code or the link.",
       ].join("\n"),
     });
   }
 
-  redirect("/admin/sign-in?sent=1");
+  // The address comes back with the redirect so the code form knows whose code
+  // it is checking. It is the address they just typed, not a secret, and the
+  // page says the same thing whether or not it belongs to an administrator.
+  const sent = new URLSearchParams({ sent: "1", email: email.trim() });
+  redirect(`/admin/sign-in?${sent}`);
+}
+
+/**
+ * Signs in with the code from the email.
+ *
+ * A server action rather than a route handler, because the code arrives by POST
+ * and never belongs in a URL: an address bar on a shared iPad is the one place
+ * a still-live secret should not be left sitting.
+ */
+export async function signInWithCode(formData: FormData): Promise<void> {
+  const email = String(formData.get("email") ?? "");
+  const code = String(formData.get("code") ?? "");
+
+  let result: Awaited<ReturnType<typeof redeemSignInCode>>;
+  try {
+    result = await redeemSignInCode(email, code);
+  } catch (error) {
+    if (isConfigurationError(error)) {
+      console.error(
+        `[config] ${error.variable} is missing or invalid. Set it in the deployment environment and redeploy.`,
+      );
+      redirect("/admin/sign-in?error=config");
+    }
+    throw error;
+  }
+
+  if (result.ok) redirect("/admin");
+
+  const failed = new URLSearchParams({
+    sent: "1",
+    email: email.trim(),
+    error: result.error === "too_many" ? "attempts" : "code",
+  });
+  redirect(`/admin/sign-in?${failed}`);
 }
 
 

@@ -57,6 +57,13 @@
       "when": 1790040376479,
       "tag": "0007_name_uniqueness_and_single_special",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790040376480,
+      "tag": "0008_admin_sign_in_codes",
+      "breakpoints": true
     }
   ]
 }
