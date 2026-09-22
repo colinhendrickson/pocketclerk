@@ -43,7 +43,14 @@ export async function GET(): Promise<NextResponse> {
         ? "configured"
         : "RESEND_API_KEY set but EMAIL_FROM missing"
       : "not configured, receipts will be logged instead of sent",
-    appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "not set, sign-in links will be wrong",
+    // Deliberately not `?? fallback`: a variable that exists but holds an empty
+    // string is a different and more confusing failure than one that is absent,
+    // and `??` reports the empty one as configured. This deployment hit exactly
+    // that, and the distinction is what made it diagnosable.
+    appUrl:
+      (process.env.NEXT_PUBLIC_APP_URL ?? "").length > 0
+        ? process.env.NEXT_PUBLIC_APP_URL
+        : "set but empty, or not set at all. Sign-in links will be wrong",
   };
 
   const ready = missing.length === 0 && database === "ok";
