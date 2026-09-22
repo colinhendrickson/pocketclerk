@@ -40,7 +40,13 @@ export default async function AdminSignInPage({
           </p>
         ) : null}
 
-        {params.error ? (
+        {params.error === "config" ? (
+          <p role="alert" className="alert alert-error rounded-box">
+            This site is not finished being set up, so sign-in cannot work yet.
+            Whoever deployed it needs to check the server logs, which name the
+            missing setting.
+          </p>
+        ) : params.error ? (
           <p role="alert" className="alert alert-warning rounded-box">
             That link has expired or has already been used. Request another.
           </p>

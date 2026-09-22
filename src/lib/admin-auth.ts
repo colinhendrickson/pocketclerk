@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 
 import { db } from "@/db";
 import { adminLoginTokens, adminUsers, persons } from "@/db/schema";
+import { ConfigurationError } from "@/lib/config";
 
 /**
  * Administrator sign-in, by emailed single-use link.
@@ -35,7 +36,12 @@ const MAX_LINKS_PER_HOUR = 5;
 function secret(): string {
   const value = process.env.SESSION_SECRET;
   if (!value || value.length < 32) {
-    throw new Error("SESSION_SECRET must be at least 32 characters. See .env.example.");
+    // Typed, so a caller can tell a missing deployment variable apart from a
+    // genuine fault and say something useful instead of returning a blank 500.
+    throw new ConfigurationError(
+      "SESSION_SECRET",
+      "SESSION_SECRET must be at least 32 characters. See .env.example.",
+    );
   }
   return value;
 }

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { branding } from "@/lib/branding";
 import { clearAdminSession, requestSignInLink } from "@/lib/admin-auth";
+import { isConfigurationError } from "@/lib/config";
 import { getEmailSender } from "@/providers/email";
 
 /**
@@ -15,7 +16,22 @@ import { getEmailSender } from "@/providers/email";
  */
 export async function sendSignInLink(formData: FormData): Promise<void> {
   const email = String(formData.get("email") ?? "");
-  const result = await requestSignInLink(email);
+
+  let result: Awaited<ReturnType<typeof requestSignInLink>>;
+  try {
+    result = await requestSignInLink(email);
+  } catch (error) {
+    // A missing deployment variable is not a bug to hide behind a blank 500.
+    // Name it in the logs and tell the person at the keyboard that the problem
+    // is configuration rather than something they did.
+    if (isConfigurationError(error)) {
+      console.error(
+        `[config] ${error.variable} is missing or invalid. Set it in the deployment environment and redeploy.`,
+      );
+      redirect("/admin/sign-in?error=config");
+    }
+    throw error;
+  }
 
   if (result.ok) {
     const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";

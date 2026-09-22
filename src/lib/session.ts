@@ -2,6 +2,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { cookies } from "next/headers";
 
+import { ConfigurationError } from "@/lib/config";
+
 /**
  * Student session: a signed, httpOnly cookie holding the open shift id.
  *
@@ -22,7 +24,8 @@ const MAX_AGE_SECONDS = 60 * 60 * 12;
 function secret(): string {
   const value = process.env.SESSION_SECRET;
   if (!value || value.length < 32) {
-    throw new Error(
+    throw new ConfigurationError(
+      "SESSION_SECRET",
       "SESSION_SECRET must be set to at least 32 characters. See .env.example.",
     );
   }
