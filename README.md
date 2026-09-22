@@ -145,7 +145,8 @@ Open http://localhost:3000 and sign in as any student. Every seeded PIN is
 | `pnpm test:e2e` | Playwright, one full shift in a real browser |
 | `pnpm build` | Production build |
 | `pnpm db:up` / `db:down` | Local Postgres in Docker |
-| `pnpm seed` | Fake data, fixed seed, reproducible |
+| `pnpm seed` | Fake data, fixed seed, reproducible. Never in production |
+| `pnpm admin:add "Name" email` | Grant admin access. Safe against production |
 
 CI runs typecheck, lint, migrations, seed, unit tests and build against a real
 Postgres on every push, with the browser flow as a second job so a flaky
@@ -173,6 +174,7 @@ Visit `/themes` to see the same components under both committed themes.
 | [`docs/DESIGN.md`](docs/DESIGN.md) | Design system: themes, type scale, breakpoints, primitives |
 | [`docs/adr/`](docs/adr) | Architecture decision records |
 | [`docs/IPAD_SETUP.md`](docs/IPAD_SETUP.md) | One-page iPad guide for whoever runs the cart |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Deploying to Vercel and Supabase, free tier |
 
 ## Status
 

@@ -19,7 +19,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "seed": "tsx src/db/seed.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "admin:add": "tsx src/db/add-admin.ts"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.9.0",

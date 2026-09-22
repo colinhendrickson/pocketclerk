@@ -35,11 +35,22 @@ function connect() {
     );
   }
 
+  // Supabase's transaction pooler (Supavisor) hands a different backend
+  // connection to each statement, so a prepared statement created on one is not
+  // there for the next. Leaving prepared statements on produces failures that
+  // appear only in production and never locally, which is the worst shape a bug
+  // can have. Detected from the connection string rather than from NODE_ENV so
+  // that pointing a local process at the pooler behaves the same way.
+  const pooled =
+    connectionString.includes("pooler.supabase.com") ||
+    connectionString.includes(":6543");
+
   const client =
     globalForDb.pocketclerkSql ??
     postgres(connectionString, {
       // One connection per serverless invocation; the pooler handles concurrency.
       max: process.env.NODE_ENV === "production" ? 1 : 5,
+      prepare: !pooled,
     });
 
   if (process.env.NODE_ENV !== "production") {

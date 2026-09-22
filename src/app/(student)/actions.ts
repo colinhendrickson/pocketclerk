@@ -2,6 +2,7 @@
 
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 
 import { db } from "@/db";
 import {
@@ -22,6 +23,7 @@ import {
   verifyPin,
 } from "@/lib/auth";
 import { changeCents, hoursHundredthsBetween, orderTotalCents, rewardTickets } from "@/lib/money";
+import { deliverQueuedEmails } from "@/lib/deliver-receipts";
 import { getActiveShift } from "@/lib/queries";
 import { parseClockIn, parseCompleteOrder, parseNewTeacher } from "@/lib/validate";
 import { clearShiftSession, getShiftSession, setShiftSession } from "@/lib/session";
@@ -241,6 +243,21 @@ export async function completeOrder(input: unknown): Promise<CompleteOrderResult
     }
 
     return order.id;
+  });
+
+  // Deliver the emailed receipt once the response has already reached the
+  // student. The sale is committed and the screen has moved on, so a slow mail
+  // provider cannot make the cart feel slow, and a failure here leaves the job
+  // queued for the scheduled sweep rather than losing it.
+  //
+  // This is what makes the queue work on a free Vercel plan, where a cron job
+  // may only run once a day: without it a teacher would wait until tomorrow.
+  after(async () => {
+    try {
+      await deliverQueuedEmails();
+    } catch {
+      // Already recorded against the job row; nothing useful to do here.
+    }
   });
 
   revalidatePath("/shift");
