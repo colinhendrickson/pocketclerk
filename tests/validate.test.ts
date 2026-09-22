@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { parseCompleteOrder, parseNewTeacher } from "@/lib/validate";
+import {
+  dollarsToCents,
+  parseCompleteOrder,
+  parseNewMenuEntry,
+  parseNewTeacher,
+} from "@/lib/validate";
 
 /**
  * The trust boundary. These run on whatever the browser chose to send, so the
@@ -96,5 +101,81 @@ describe("parseCompleteOrder", () => {
         parseCompleteOrder({ ...valid, lines: [{ menuItemId: uuid, qty, addonIds: [] }] }),
       ).toBeNull();
     }
+  });
+});
+
+/**
+ * The admin price field is the only place in the application where a human
+ * types dollars, so it gets the same disproportionate coverage the change
+ * calculation does. A price parsed one cent wrong is snapshotted onto every
+ * future order and only noticed when the drawer does not balance.
+ */
+describe("dollarsToCents", () => {
+  it("reads the obvious shapes", () => {
+    expect(dollarsToCents("1.50")).toBe(150);
+    expect(dollarsToCents("3")).toBe(300);
+    expect(dollarsToCents("0")).toBe(0);
+    expect(dollarsToCents("0.00")).toBe(0);
+  });
+
+  it("treats one decimal place as tenths of a dollar, not cents", () => {
+    expect(dollarsToCents("3.5")).toBe(350);
+    expect(dollarsToCents(".5")).toBe(50);
+  });
+
+  it("tolerates what a person actually types", () => {
+    expect(dollarsToCents("$3.50")).toBe(350);
+    expect(dollarsToCents(" 3.50 ")).toBe(350);
+    expect(dollarsToCents("1,250.99")).toBe(125099);
+  });
+
+  it("is exact where multiplying a float is not", () => {
+    // parseFloat("8.20") * 100 is 819.9999999999999.
+    expect(dollarsToCents("8.20")).toBe(820);
+    expect(dollarsToCents("0.29")).toBe(29);
+    expect(dollarsToCents("1.15")).toBe(115);
+    expect(dollarsToCents("2.675")).toBeNull();
+  });
+
+  it("refuses a third decimal place instead of rounding it away", () => {
+    expect(dollarsToCents("1.005")).toBeNull();
+  });
+
+  it("refuses anything that is not a price", () => {
+    for (const bad of ["-1", "abc", "", ".", "1.", "1.2.3", "1e2", null, undefined, {}]) {
+      expect(dollarsToCents(bad)).toBeNull();
+    }
+  });
+
+  it("accepts a whole number of dollars but never a float", () => {
+    expect(dollarsToCents(3)).toBe(300);
+    expect(dollarsToCents(3.5)).toBeNull();
+    expect(dollarsToCents(-3)).toBeNull();
+  });
+});
+
+describe("parseNewMenuEntry", () => {
+  it("converts the typed price to cents", () => {
+    expect(parseNewMenuEntry({ kind: "item", name: "Cocoa", price: "1.25" })).toEqual({
+      kind: "item",
+      name: "Cocoa",
+      priceCents: 125,
+      isSpecial: false,
+    });
+  });
+
+  it("allows a free add-on, which must not move a total", () => {
+    expect(parseNewMenuEntry({ kind: "addon", name: "Cream", price: "0" })).toEqual({
+      kind: "addon",
+      name: "Cream",
+      priceCents: 0,
+      isSpecial: false,
+    });
+  });
+
+  it("rejects an unknown list, a short name and a bad price", () => {
+    expect(parseNewMenuEntry({ kind: "drink", name: "Cocoa", price: "1" })).toBeNull();
+    expect(parseNewMenuEntry({ kind: "item", name: " C ", price: "1" })).toBeNull();
+    expect(parseNewMenuEntry({ kind: "item", name: "Cocoa", price: "one" })).toBeNull();
   });
 });
