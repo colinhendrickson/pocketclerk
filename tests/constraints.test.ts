@@ -57,10 +57,14 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  // Children before parents: orders reference shifts, which reference students.
+  // Children before parents: orders reference both shifts and teachers, and
+  // shifts reference students. Anything left behind shows up as a real teacher
+  // in the running application, so the cleanup covers every row that points at
+  // these fixtures rather than only the ones this file created.
   await db.execute(
-    sql`DELETE FROM orders WHERE shift_id IN (
-          SELECT id FROM shifts WHERE student_id = ${studentId})`,
+    sql`DELETE FROM orders
+        WHERE teacher_id = ${teacherId}
+           OR shift_id IN (SELECT id FROM shifts WHERE student_id = ${studentId})`,
   );
   await db.execute(sql`DELETE FROM shifts WHERE student_id = ${studentId}`);
   await db.execute(sql`DELETE FROM students WHERE id = ${studentId}`);

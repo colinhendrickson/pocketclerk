@@ -6,6 +6,7 @@ import { getShiftSession } from "@/lib/session";
 
 import { DashboardActions } from "./dashboard-actions";
 import { LiveHours } from "./live-hours";
+import { PrinterBar } from "./printer-bar";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,8 @@ export default async function ShiftPage() {
           </div>
           <LiveHours clockInIso={shift.clockIn.toISOString()} />
         </header>
+
+        <PrinterBar />
 
         <DashboardActions />
       </main>

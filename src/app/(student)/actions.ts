@@ -34,14 +34,18 @@ import { clearShiftSession, getShiftSession, setShiftSession } from "@/lib/sessi
  * drizzle/0001_constraints_and_rls.sql.
  */
 
-/** Postgres unique-violation. A double clock-in surfaces here, not as a bug. */
+/**
+ * Postgres unique-violation (SQLSTATE 23505). A double clock-in surfaces here,
+ * not as a bug.
+ *
+ * The code is read from `cause`, not from the error itself: Drizzle wraps
+ * driver errors in its own "Failed query" error and the SQLSTATE lives on the
+ * wrapped original. Checking the outer error silently never matches, which
+ * turns the resume path into a 500 in front of a student.
+ */
 function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: string }).code === "23505"
-  );
+  const cause = (error as { cause?: { code?: string } } | null)?.cause;
+  return cause?.code === "23505";
 }
 
 /* -------------------------------------------------------------------------- */
