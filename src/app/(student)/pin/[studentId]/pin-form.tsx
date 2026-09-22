@@ -78,7 +78,15 @@ export function PinForm({ studentId, studentName }: PinFormProps) {
       </div>
 
       {message ? (
-        <p role="alert" className="alert alert-warning rounded-box text-[22px] font-extrabold">
+        // A stable id, because "the element with role=alert" is ambiguous: the
+        // framework renders its own live region for route announcements, and on
+        // this page that region reads "enter your PIN", which matches anything
+        // looking for the word.
+        <p
+          id="pin-error"
+          role="alert"
+          className="alert alert-warning rounded-box text-[22px] font-extrabold"
+        >
           {message}
         </p>
       ) : null}

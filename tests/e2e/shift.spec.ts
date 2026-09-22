@@ -126,9 +126,11 @@ test("a wrong PIN is refused, with a message a student can act on", async ({
     await page.getByRole("button", { name: digit, exact: true }).click();
   }
 
-  // Scoped to the form's own alert. A bare getByRole("alert") also matches the
-  // framework's route announcer, which is present on every page.
-  const message = page.getByRole("alert").filter({ hasText: /PIN|tries/ });
+  // Targeted by id, not by role. The framework renders its own live region with
+  // role=alert, and on this page it announces "enter your PIN", so both a bare
+  // role query and a text filter mentioning PIN match two elements. That passed
+  // locally and failed in CI, which is the worst way to learn it.
+  const message = page.locator("#pin-error");
 
   // The exact wording depends on how many attempts this student has already
   // used, which persists in the database. All three outcomes are correct
