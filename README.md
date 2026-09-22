@@ -152,6 +152,12 @@ CI runs typecheck, lint, migrations, seed, unit tests and build against a real
 Postgres on every push, with the browser flow as a second job so a flaky
 browser cannot turn the fast checks red.
 
+## Deploying
+
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md). After deploying, `/api/health`
+reports whether the app is configured: which required settings are missing by
+name, whether the database is reachable, and whether migrations have run.
+
 ## White-label
 
 Branding is configuration with fictional defaults. A deployment supplies its own

@@ -157,6 +157,14 @@ iPad over Bluetooth, so the tablet claims its own print jobs; see the README.
 
 ## Checking it worked
 
+Load **`/api/health`** first. It answers, in one request, whether the deployment
+is configured: which required settings are missing by name, whether the database
+is reachable, and whether the migrations have run. It returns 200 when the app
+is ready and 503 when it is not.
+
+It reports names, never values. Use it before anything else; it turns "the site
+is broken" into a specific missing variable.
+
 1. `/admin/sign-in` sends you a link, and the link signs you in.
 2. A test order completes and shows the right change.
 3. `/admin/receipts` shows the receipt as `sent`, or shows why it is not.
