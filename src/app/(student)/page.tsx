@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { Logo } from "@/components";
 import { branding } from "@/lib/branding";
 import { listActiveStudents } from "@/lib/queries";
 import { requirePairedDevice } from "@/app/(student)/require-device";
@@ -20,6 +21,7 @@ export default async function SignInPage() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-10 p-8">
       <header className="flex flex-col items-center gap-2 text-center">
+        <Logo size={72} />
         <p className="text-[18px] font-bold opacity-70">{branding.programName}</p>
         <h1 className="text-[44px] font-extrabold leading-tight">
           {branding.cartName}

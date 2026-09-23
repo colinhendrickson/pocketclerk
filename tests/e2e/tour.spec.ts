@@ -43,7 +43,7 @@ for (const size of [
 
     for (const route of ADMIN_ROUTES) {
       await page.goto(route);
-      const start = page.getByRole("button", { name: "Show me around" });
+      const start = page.getByRole("button", { name: /^(Show me around|Tour)$/ });
       await start.click();
 
       const dialog = page.getByRole("dialog");
@@ -71,7 +71,7 @@ test("Escape ends the tour, and the open tour passes axe", async ({ page }) => {
   await signIn(page);
   await page.goto("/admin/students");
 
-  const start = page.getByRole("button", { name: "Show me around" });
+  const start = page.getByRole("button", { name: /^(Show me around|Tour)$/ });
   await start.click();
   await expect(page.getByRole("dialog")).toBeVisible();
 

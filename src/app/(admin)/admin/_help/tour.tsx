@@ -93,7 +93,11 @@ export function TourButton() {
         className="btn btn-ghost btn-sm shrink-0"
       >
         <Compass size={18} aria-hidden="true" />
-        Show me around
+        {/* Short on a phone, where the full label squeezes the cart's name
+            out of the header. Only one is ever displayed, so the button's
+            name is always the words on it. */}
+        <span className="sm:hidden">Tour</span>
+        <span className="hidden sm:inline">Show me around</span>
       </button>
 
       <dialog

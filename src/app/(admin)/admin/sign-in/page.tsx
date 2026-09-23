@@ -39,7 +39,7 @@ export default async function AdminSignInPage({
       <div className="flex w-full max-w-md flex-col gap-6 rounded-box border border-base-300 bg-base-100 p-8">
         <div>
           <p className="text-sm font-bold opacity-70">{branding.programName}</p>
-          <h1 className="text-3xl font-extrabold">Administrator sign-in</h1>
+          <h1 className="text-2xl font-extrabold sm:text-3xl">Administrator sign-in</h1>
         </div>
 
         {params.error === "config" ? (

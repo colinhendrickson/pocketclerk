@@ -56,8 +56,9 @@ export async function sendSignInLink(formData: FormData): Promise<void> {
       cartName: branding.cartName,
       programName: branding.programName,
       // A mail client has no page to resolve a relative path against, so a
-      // logo configured as "/logo.png" would arrive as a broken image.
-      logoUrl: branding.logoUrl ? new URL(branding.logoUrl, base).toString() : null,
+      // logo configured as "/logo.png" would arrive as a broken image. With
+      // no logo configured, the PocketClerk mark is used.
+      logoUrl: new URL(branding.logoUrl ?? "/icon-192.png", base).toString(),
       expiresMinutes: TOKEN_MINUTES,
     });
 

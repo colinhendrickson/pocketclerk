@@ -41,3 +41,5 @@ export type { ShiftStatsProps, ShiftStat } from "./shift-stats";
 export { TeacherCard } from "./teacher-card";
 export type { TeacherCardProps } from "./teacher-card";
 export { RouteFocus, SkipLink } from "./page-focus";
+export { Logo } from "./logo";
+export type { LogoProps } from "./logo";

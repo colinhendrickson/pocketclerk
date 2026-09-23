@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { Logo } from "@/components";
 import { branding } from "@/lib/branding";
 import { getAdmin } from "@/lib/admin-auth";
 
@@ -29,9 +30,12 @@ export default async function AdminLayout({
   const admin = await getAdmin();
 
   const title = (
-    <Link href="/admin" className="min-w-0 truncate text-xl font-extrabold">
-      {branding.cartName}
-      <span className="ml-2 text-sm font-bold opacity-75">admin</span>
+    <Link href="/admin" className="flex min-w-0 items-center gap-2 text-lg font-extrabold sm:text-xl">
+      <Logo size={28} />
+      <span className="truncate">
+        {branding.cartName}
+        <span className="ml-2 hidden text-sm font-bold opacity-75 sm:inline">admin</span>
+      </span>
     </Link>
   );
 
