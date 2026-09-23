@@ -4,6 +4,7 @@ import { listTeachersWithTotals } from "@/lib/admin-queries";
 import { requireAdmin } from "../require-admin";
 import { AddTeacherForm } from "./add-teacher-form";
 import { TeacherTable, type TeacherView } from "./teacher-table";
+import { HelpPanel } from "../_help/help-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,8 @@ export default async function AdminTeachersPage() {
           details, keep notes and see what they have bought.
         </p>
       </header>
+
+      <HelpPanel route="/admin/teachers" />
 
       <AddTeacherForm />
 

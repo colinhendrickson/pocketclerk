@@ -56,7 +56,7 @@ export function AddStudentForm({ heading }: AddStudentFormProps) {
       <h2 className="mb-3 text-lg font-extrabold">{heading}</h2>
 
       <form
-        className="flex flex-wrap items-end gap-3"
+        className="flex flex-wrap items-start gap-3"
         onSubmit={(event) => {
           event.preventDefault();
           if (ready) submit();
@@ -85,8 +85,12 @@ export function AddStudentForm({ heading }: AddStudentFormProps) {
             // Off, not "new-password": the browser must not save or suggest a
             // credential that belongs to someone other than the person typing.
             autoComplete="off"
+            aria-describedby="new-student-pin-hint"
             className="input input-bordered input-sm w-24 tabular"
           />
+          <span id="new-student-pin-hint" className="max-w-40 text-sm opacity-70">
+            Four digits. It cannot be shown again, so tell the student now.
+          </span>
         </label>
 
         <label htmlFor="new-student-pin-confirm" className="flex flex-col gap-1">
@@ -100,19 +104,23 @@ export function AddStudentForm({ heading }: AddStudentFormProps) {
             }
             inputMode="numeric"
             autoComplete="off"
+            aria-invalid={mismatch}
+            aria-describedby={mismatch ? "new-student-pin-mismatch" : undefined}
             className={`input input-bordered input-sm w-24 tabular ${
               mismatch ? "input-error" : ""
             }`}
           />
         </label>
 
-        <button type="submit" disabled={!ready || pending} className="btn btn-primary btn-sm">
+        <button type="submit" disabled={!ready || pending} className="btn btn-primary btn-sm mt-6">
           {pending ? "Adding…" : "Add student"}
         </button>
       </form>
 
       {mismatch ? (
-        <p className="mt-3 text-sm font-bold text-error">The two PINs do not match.</p>
+        <p id="new-student-pin-mismatch" role="alert" className="mt-3 text-sm font-bold text-error">
+          The two PINs do not match.
+        </p>
       ) : null}
       {error ? (
         <p role="alert" className="alert alert-warning mt-3 rounded-box py-2 text-sm">

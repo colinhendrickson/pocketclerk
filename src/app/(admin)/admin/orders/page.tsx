@@ -21,6 +21,7 @@ import {
 import { formatUSD } from "@/lib/money";
 
 import { requireAdmin } from "../require-admin";
+import { HelpPanel } from "../_help/help-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -99,7 +100,7 @@ export default async function AdminOrdersPage({
             }).format(day)}
           </p>
         </div>
-        <nav className="flex items-center gap-2">
+        <nav aria-label="Choose a day" className="flex items-center gap-2">
           <Link
             href={`/admin/orders?date=${addDays(date, -1)}`}
             className="btn btn-sm btn-outline"
@@ -117,6 +118,8 @@ export default async function AdminOrdersPage({
           </Link>
         </nav>
       </div>
+
+      <HelpPanel route="/admin/orders" />
 
       <div className="stats border border-base-300 bg-base-100">
         <div className="stat">

@@ -4,6 +4,7 @@ import { branding } from "@/lib/branding";
 import { requireAdmin } from "../require-admin";
 import { AddStudentForm } from "./add-student-form";
 import { StudentTable } from "./student-table";
+import { HelpPanel } from "../_help/help-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,8 @@ export default async function AdminStudentsPage() {
           <span className="tabular">{rows.length}</span> on the roster.
         </p>
       </header>
+
+      <HelpPanel route="/admin/students" />
 
       <AddStudentForm heading="Add a student" />
 

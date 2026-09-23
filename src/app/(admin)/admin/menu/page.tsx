@@ -2,6 +2,7 @@ import { listAddonsForAdmin, listMenuForAdmin } from "@/lib/admin-queries";
 
 import { requireAdmin } from "../require-admin";
 import { MenuSection, type MenuEntryView } from "./menu-section";
+import { HelpPanel } from "../_help/help-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,8 @@ export default async function AdminMenuPage() {
           a receipt already given out.
         </p>
       </header>
+
+      <HelpPanel route="/admin/menu" />
 
       <MenuSection
         kind="item"

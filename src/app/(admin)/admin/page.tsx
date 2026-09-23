@@ -6,6 +6,7 @@ import { formatUSD } from "@/lib/money";
 import { startOfLocalDay, today } from "@/lib/time";
 
 import { requireAdmin } from "./require-admin";
+import { HelpPanel } from "./_help/help-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,8 @@ export default async function AdminHomePage() {
   return (
     <main className="flex min-w-0 flex-1 flex-col gap-6 p-4 md:p-6">
       <h1 className="text-2xl font-extrabold">Hello, {admin.name}</h1>
+
+      <HelpPanel route="/admin" />
 
       <div className="stats stats-vertical border border-base-300 bg-base-100 lg:stats-horizontal">
         <div className="stat">

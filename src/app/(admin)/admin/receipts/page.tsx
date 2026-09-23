@@ -13,6 +13,7 @@ import {
 
 import { requireAdmin } from "../require-admin";
 import { ReceiptTable, type ReceiptJobRow } from "./receipt-table";
+import { HelpPanel } from "../_help/help-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +80,8 @@ export default async function AdminReceiptsPage() {
           that was mistyped shows up here rather than costing a sale.
         </p>
       </div>
+
+      <HelpPanel route="/admin/receipts" />
 
       <ReceiptTable
         rows={table}

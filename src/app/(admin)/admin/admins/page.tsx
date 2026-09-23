@@ -3,6 +3,7 @@ import { cartFormatter } from "@/lib/time";
 
 import { requireAdmin } from "../require-admin";
 import { AdminAccess, type AdminView } from "./admin-access";
+import { HelpPanel } from "../_help/help-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,8 @@ export default async function AdminAdminsPage() {
           they sign in with a code emailed to the address below.
         </p>
       </header>
+
+      <HelpPanel route="/admin/admins" />
 
       <AdminAccess admins={views} meId={me.personId} signInUrl={signInUrl} />
     </main>

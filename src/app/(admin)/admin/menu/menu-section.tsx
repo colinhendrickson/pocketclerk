@@ -128,6 +128,7 @@ function AddEntryForm({ kind, label }: AddEntryFormProps) {
   const [pending, startTransition] = useTransition();
 
   const priceCents = dollarsToCents(price);
+  const badPrice = price !== "" && priceCents === null;
   const ready = name.trim().length >= 2 && priceCents !== null;
 
   function submit() {
@@ -158,7 +159,7 @@ function AddEntryForm({ kind, label }: AddEntryFormProps) {
 
   return (
     <form
-      className="flex flex-wrap items-end gap-3 rounded-box border border-base-300 bg-base-100 p-4"
+      className="flex flex-wrap items-start gap-3 rounded-box border border-base-300 bg-base-100 p-4"
       onSubmit={(event) => {
         event.preventDefault();
         if (ready) submit();
@@ -182,30 +183,37 @@ function AddEntryForm({ kind, label }: AddEntryFormProps) {
           inputMode="decimal"
           placeholder="1.50"
           autoComplete="off"
-          className={`input input-bordered input-sm w-28 tabular ${
-            price !== "" && priceCents === null ? "input-error" : ""
-          }`}
+          aria-invalid={badPrice}
+          aria-describedby={`${kind}-price-hint${badPrice ? ` ${kind}-price-error` : ""}`}
+          className={`input input-bordered input-sm w-28 tabular ${badPrice ? "input-error" : ""}`}
         />
+        <span id={`${kind}-price-hint`} className="text-sm opacity-70">
+          {kind === "addon" ? "Like 0.50. Free extras are 0.00." : "Like 1.50."}
+        </span>
       </label>
 
       {kind === "item" ? (
-        <label className="flex items-center gap-2 pb-2">
+        <label className="mt-6 flex h-8 items-center gap-2">
           <input
             type="checkbox"
             checked={isSpecial}
             onChange={(event) => setIsSpecial(event.target.checked)}
+            aria-describedby="item-special-hint"
             className="checkbox checkbox-sm"
           />
           <span className="text-sm font-bold opacity-70">Special</span>
+          <span id="item-special-hint" className="sr-only">
+            Shown to students as this week&rsquo;s special treat.
+          </span>
         </label>
       ) : null}
 
-      <button type="submit" disabled={!ready || pending} className="btn btn-primary btn-sm">
+      <button type="submit" disabled={!ready || pending} className="btn btn-primary btn-sm mt-6">
         {pending ? "Adding…" : label}
       </button>
 
-      {price !== "" && priceCents === null ? (
-        <p className="w-full text-sm font-bold text-error">
+      {badPrice ? (
+        <p id={`${kind}-price-error`} className="w-full text-sm font-bold text-error">
           Prices are dollars and cents, like 1.50. Two decimal places at most.
         </p>
       ) : null}
