@@ -3,7 +3,15 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { ADMIN_ROUTES, GLOSSARY, GUIDES, PAGE_HELP, TOPICS, guideById } from "@/lib/help";
+import {
+  ADMIN_ROUTES,
+  GLOSSARY,
+  GUIDES,
+  PAGE_HELP,
+  SETUP_STEP_TEXT,
+  TOPICS,
+  guideById,
+} from "@/lib/help";
 
 /**
  * The help is checked against the app, not just against itself.
@@ -38,7 +46,9 @@ describe("admin pages and their help", () => {
   });
 
   it("shows the help panel on every admin page", () => {
-    for (const route of ADMIN_ROUTES) {
+    // Admin home is the exception: its whole lower half is every guide, which
+    // makes an "About this page" panel above it a second copy.
+    for (const route of ADMIN_ROUTES.filter((r) => r !== "/admin")) {
       const source = readFileSync(pageFile(route), "utf8");
       expect(source, `${route} does not render its help panel`).toContain(
         `<HelpPanel route="${route}"`,
@@ -92,6 +102,15 @@ describe("guides", () => {
       if (guide.page && guide.page !== "/admin") {
         expect(listed.has(guide.id), `${guide.id} is missing from ${guide.page}'s help`).toBe(true);
       }
+    }
+  });
+});
+
+describe("setup checklist wording", () => {
+  it("links every step to a guide that exists, and only to real pages", () => {
+    for (const [id, text] of Object.entries(SETUP_STEP_TEXT)) {
+      expect(guideById(text.guide), id).toBeDefined();
+      if (text.action) expect(ADMIN_ROUTES, id).toContain(text.action.href);
     }
   });
 });

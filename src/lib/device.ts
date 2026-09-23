@@ -107,3 +107,13 @@ export async function isPaired(): Promise<boolean> {
   // is over the code. That is the intended way to revoke a lost iPad.
   return constantTimeEquals(value, token());
 }
+
+/**
+ * The link that connects a device, for the setup checklist on Admin home, or
+ * null where no pairing is required. Shown only to administrators, who are
+ * exactly the people meant to connect the cart's iPad.
+ */
+export function pairingUrl(appUrl: string): string | null {
+  if (!pairingRequired()) return null;
+  return `${appUrl.replace(/\/$/, "")}/setup?code=${encodeURIComponent(process.env.DEVICE_CODE ?? "")}`;
+}

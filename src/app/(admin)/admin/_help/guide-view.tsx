@@ -1,7 +1,9 @@
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
-import { PAGE_NAMES, type AdminRoute, type Guide } from "@/lib/help";
+// From types directly: the help index also loads server-only rules, and this
+// component is used by the client-side guide search on Admin home.
+import { PAGE_NAMES, type AdminRoute, type Guide } from "@/lib/help/types";
 
 export interface GuideViewProps {
   guide: Guide;

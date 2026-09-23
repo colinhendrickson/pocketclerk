@@ -410,3 +410,48 @@ export const GLOSSARY: GlossaryEntry[] = [
 export function guideById(id: string): Guide | undefined {
   return GUIDES.find((guide) => guide.id === id);
 }
+
+/**
+ * The words for each setup checklist step. Whether a step is done comes from
+ * the data (src/lib/setup.ts); what it asks and why lives here with the rest
+ * of the help.
+ */
+export const SETUP_STEP_TEXT: Record<
+  "students" | "teachers" | "menu" | "ipad" | "first-sale" | "admins",
+  { title: string; why: string; action?: { label: string; href: AdminRoute }; guide: string }
+> = {
+  students: {
+    title: "Add your students",
+    why: "Each student signs in at the cart with their own four-digit PIN.",
+    action: { label: "Go to Students", href: "/admin/students" },
+    guide: "add-student",
+  },
+  teachers: {
+    title: "Add your teachers, with their emails",
+    why: "Students tap a teacher's name when they take an order. The email is where that teacher's receipt goes.",
+    action: { label: "Go to Teachers", href: "/admin/teachers" },
+    guide: "add-teacher",
+  },
+  menu: {
+    title: "Set up the menu",
+    why: "What students can sell, at what price. Add-ons such as milk or syrup are set up here too.",
+    action: { label: "Go to Menu", href: "/admin/menu" },
+    guide: "add-menu-item",
+  },
+  ipad: {
+    title: "Connect the cart's iPad",
+    why: "Only a connected device can show the students and take orders. Open the link below on the iPad itself; it only needs doing once.",
+    guide: "pair-ipad",
+  },
+  "first-sale": {
+    title: "Try a first sale",
+    why: "Have a student clock in on the iPad and sell one item. It proves everything is connected, and the receipt should arrive in the teacher's inbox.",
+    guide: "day-sales",
+  },
+  admins: {
+    title: "Give another member of staff access (optional)",
+    why: "So someone else can look after the cart when you are away.",
+    action: { label: "Go to Admins", href: "/admin/admins" },
+    guide: "give-access",
+  },
+};
