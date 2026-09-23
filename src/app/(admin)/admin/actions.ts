@@ -6,6 +6,7 @@ import { branding } from "@/lib/branding";
 import {
   clearAdminSession,
   redeemSignInCode,
+  redeemSignInLink,
   requestSignInLink,
   TOKEN_MINUTES,
 } from "@/lib/admin-auth";
@@ -137,6 +138,32 @@ export async function signInWithCode(formData: FormData): Promise<void> {
     error: result.error === "too_many" ? "attempts" : "code",
   });
   redirect(`/admin/sign-in?${failed}`);
+}
+
+/**
+ * Redeems an emailed link, from the button on /admin/verify.
+ *
+ * A POST, never the GET that opening the link makes: mail scanners open links
+ * to inspect them, and a GET that spent the token let the scanner sign in
+ * instead of the person. See the verify page.
+ */
+export async function redeemLink(formData: FormData): Promise<void> {
+  const token = String(formData.get("token") ?? "");
+
+  let identity: Awaited<ReturnType<typeof redeemSignInLink>> = null;
+  try {
+    identity = token ? await redeemSignInLink(token) : null;
+  } catch (error) {
+    if (isConfigurationError(error)) {
+      console.error(
+        `[config] ${error.variable} is missing or invalid. Set it in the deployment environment and redeploy.`,
+      );
+      redirect("/admin/sign-in?error=config");
+    }
+    throw error;
+  }
+
+  redirect(identity ? "/admin" : "/admin/sign-in?error=1");
 }
 
 

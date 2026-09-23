@@ -27,8 +27,8 @@ export default async function AdminSignInPage({
 }) {
   const params = await searchParams;
 
-  // Redeeming a link happens in /admin/verify, which is a route handler because
-  // setting a session cookie is not permitted while a page renders.
+  // An emailed link lands on /admin/verify, which shows a button rather than
+  // redeeming on arrival, so a mail scanner's visit cannot spend the token.
   if (await getAdmin()) redirect("/admin");
 
   const awaitingCode = Boolean(params.sent);

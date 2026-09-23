@@ -30,9 +30,15 @@ bytes, stores only an HMAC of them, and sends the link through the same
 `EmailSender` the receipts use. Without a provider key that sender logs to the
 console, so sign-in works on a fresh clone with nothing configured.
 
-Redemption is a route handler, not a page. Next.js only permits setting a cookie
-in an action or a route handler; a page that tried returned a 500 the first time
-a link was clicked, which is how this was found.
+Opening the link does not redeem it. It lands on a page with one button, and
+the button's POST redeems the token. Mail security scanners, Microsoft's Safe
+Links among them and most school mail sits behind it, open every link in
+incoming mail to inspect it; when a GET redeemed the token, the scanner's visit
+spent it, and the person clicking a moment later was told the link had expired.
+Scanners fetch pages and do not submit forms. It also keeps a state change off
+a GET, where it did not belong. (Redemption was first a GET route handler,
+because Next.js only permits setting a cookie in an action or a route handler;
+a page that tried returned a 500 the first time a link was clicked.)
 
 The properties that matter:
 
