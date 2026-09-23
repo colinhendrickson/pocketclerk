@@ -49,7 +49,7 @@ export async function sendSignInLink(formData: FormData): Promise<void> {
     // the fastest thing available. The code is for the cart's iPad, where the
     // point is that a personal mailbox never gets opened on a shared device: the
     // mail lands on a phone and only the six digits make the trip.
-    await sender.sendText({
+    const sent = await sender.sendText({
       to: result.identity.email,
       // Code first, so a phone's lock screen shows it without the mail being
       // opened at all. That is the whole point of it on a shared iPad.
@@ -74,13 +74,27 @@ export async function sendSignInLink(formData: FormData): Promise<void> {
         "without the code or the link.",
       ].join("\n"),
     });
+
+    // A rejected send used to vanish here. The provider returns a result rather
+    // than throwing, so ignoring it meant a deployment with a bad key or an
+    // unverified sender domain told the user a code was on its way, logged
+    // nothing, and left no trace anywhere except the provider's own dashboard.
+    //
+    // It stays a log line rather than a message on the page: the send is only
+    // attempted for an address that IS an administrator, so "we could not send
+    // that" on screen would answer the one question the form refuses to answer.
+    if (!sent.ok) {
+      console.error(
+        `[email] sign-in send failed via ${sender.name}: ${sent.error ?? "no reason given"}`,
+      );
+    }
   }
 
   // The address comes back with the redirect so the code form knows whose code
   // it is checking. It is the address they just typed, not a secret, and the
   // page says the same thing whether or not it belongs to an administrator.
-  const sent = new URLSearchParams({ sent: "1", email: email.trim() });
-  redirect(`/admin/sign-in?${sent}`);
+  const query = new URLSearchParams({ sent: "1", email: email.trim() });
+  redirect(`/admin/sign-in?${query}`);
 }
 
 /**
