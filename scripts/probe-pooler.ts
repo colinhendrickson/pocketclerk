@@ -16,6 +16,8 @@
  */
 import postgres from "postgres";
 
+import { clientOptions } from "../src/db";
+
 const url = process.env.PROBE_URL;
 if (!url) {
   console.error("Set PROBE_URL to the pooled connection string first.");
@@ -26,13 +28,9 @@ const started = Date.now();
 const t = () => `+${((Date.now() - started) / 1000).toFixed(1)}s`.padEnd(8);
 console.log(`host: ${new URL(url).host}`);
 
-// Mirrors src/db/index.ts in production.
+// The app's production settings, from the same function the app uses.
 const sql = postgres(url, {
-  max: 1,
-  prepare: !(url.includes("pooler.supabase.com") || url.includes(":6543")),
-  idle_timeout: 20,
-  max_lifetime: 60 * 5,
-  connect_timeout: 10,
+  ...clientOptions(url, true),
   onclose: (id) => console.log(`${t()} (connection ${id} closed)`),
 });
 

@@ -23,6 +23,7 @@
     "admin:add": "tsx src/db/add-admin.ts"
   },
   "dependencies": {
+    "@vercel/functions": "^3.9.9",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.47.0",
     "next": "16.3.4",
