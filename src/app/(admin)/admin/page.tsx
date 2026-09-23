@@ -70,7 +70,7 @@ export default async function AdminHomePage() {
         </section>
       ) : null}
 
-      <section aria-labelledby="today-heading" className="flex flex-col gap-2">
+      <section data-tour="today" aria-labelledby="today-heading" className="flex flex-col gap-2">
         <h2 id="today-heading" className="text-xl font-extrabold">
           Today
         </h2>
@@ -113,7 +113,7 @@ export default async function AdminHomePage() {
         </ul>
       </nav>
 
-      <section id="guides" aria-labelledby="guides-heading" className="flex flex-col gap-3">
+      <section id="guides" data-tour="guides" aria-labelledby="guides-heading" className="flex flex-col gap-3">
         <h2 id="guides-heading" className="text-xl font-extrabold">
           How do I…
         </h2>

@@ -51,6 +51,7 @@ export function TeacherTable({ rows }: TeacherTableProps) {
   return (
     <div
         role="region"
+        data-tour="teacher-table"
         aria-label="Teachers"
         tabIndex={0}
         className="overflow-x-auto rounded-box border border-base-300 bg-base-100"

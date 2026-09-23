@@ -3,6 +3,7 @@ import Link from "next/link";
 import { branding } from "@/lib/branding";
 import { getAdmin } from "@/lib/admin-auth";
 
+import { TourButton } from "./_help/tour";
 import { ADMIN_DRAWER_ID, AdminMenuButton, AdminNav } from "./admin-nav";
 
 /**
@@ -28,7 +29,7 @@ export default async function AdminLayout({
   const admin = await getAdmin();
 
   const title = (
-    <Link href="/admin" className="text-xl font-extrabold">
+    <Link href="/admin" className="min-w-0 truncate text-xl font-extrabold">
       {branding.cartName}
       <span className="ml-2 text-sm font-bold opacity-75">admin</span>
     </Link>
@@ -60,6 +61,9 @@ export default async function AdminLayout({
         <header className="navbar gap-2 border-b border-base-300 bg-base-100 px-4 md:px-6">
           <AdminMenuButton />
           {title}
+          <div className="ml-auto">
+            <TourButton />
+          </div>
         </header>
         {children}
       </div>

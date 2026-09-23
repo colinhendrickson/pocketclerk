@@ -190,3 +190,6 @@ Breakpoints (Tailwind defaults): `<md` phone portrait (≤ 767), `md–lg` iPad 
 | **TeacherCard** | `card card-border` + `avatar avatar-placeholder` | initials disc 52–60px, name 22–26px, room below | colours, radius |
 | **BadgeModal** | `modal modal-open` → `modal-box` | dashed `info` ring around `id-card`, Total, Back + "Type badge number instead" | colours, `--radius-box` |
 | **Admin shell** | `drawer` + `navbar` + `table` | denser type allowed (14px min) | all |
+| **HelpPanel** | native `details` in a `rounded-box border` | "About this page" under every admin page's heading (not Admin home, which lists every guide); open by default, closed state remembered per device; guides inside as nested `details` | `info` icon colour, `--radius-box` |
+| **TourButton** | `btn btn-ghost btn-sm` + native modal `dialog` | in the admin header; never opens by itself; dialog docked at the bottom with a transparent backdrop, target outlined in `primary` and scrolled to the top; steps in `src/lib/help/tours.ts` against `data-tour` attributes | `primary` outline, `--radius-box` |
+| **SetupChecklist** | `progress` + `ol` of step cards | Admin home only; state read from data, never stored; folds to one line when every required step is done | `success` / `info` |

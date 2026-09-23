@@ -100,7 +100,7 @@ export default async function AdminOrdersPage({
             }).format(day)}
           </p>
         </div>
-        <nav aria-label="Choose a day" className="flex items-center gap-2">
+        <nav aria-label="Choose a day" data-tour="day-nav" className="flex items-center gap-2">
           <Link
             href={`/admin/orders?date=${addDays(date, -1)}`}
             className="btn btn-sm btn-outline"
@@ -134,6 +134,7 @@ export default async function AdminOrdersPage({
 
       <div
         role="region"
+        data-tour="orders-table"
         aria-label="Orders"
         tabIndex={0}
         className="overflow-x-auto rounded-box border border-base-300 bg-base-100"

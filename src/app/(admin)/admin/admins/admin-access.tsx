@@ -30,7 +30,7 @@ export function AdminAccess({ admins, meId, signInUrl }: AdminAccessProps) {
     <>
       <GiveAccessForm signInUrl={signInUrl} />
 
-      <section aria-labelledby="admins-heading" className="flex flex-col gap-3">
+      <section data-tour="admin-list" aria-labelledby="admins-heading" className="flex flex-col gap-3">
         <h2 id="admins-heading" className="text-lg font-extrabold">
           Who has access
         </h2>
@@ -80,7 +80,7 @@ function GiveAccessForm({ signInUrl }: { signInUrl: string }) {
   }
 
   return (
-    <section className="card card-border bg-base-100 p-5" aria-labelledby="give-access-heading">
+    <section data-tour="give-access" className="card card-border bg-base-100 p-5" aria-labelledby="give-access-heading">
       <h2 id="give-access-heading" className="mb-3 text-lg font-extrabold">
         Give someone access
       </h2>

@@ -12,6 +12,7 @@ import {
   TOPICS,
   guideById,
 } from "@/lib/help";
+import { TOURS } from "@/lib/help/tours";
 
 /**
  * The help is checked against the app, not just against itself.
@@ -101,6 +102,38 @@ describe("guides", () => {
       // belongs to a page but was never listed on it.
       if (guide.page && guide.page !== "/admin") {
         expect(listed.has(guide.id), `${guide.id} is missing from ${guide.page}'s help`).toBe(true);
+      }
+    }
+  });
+});
+
+describe("tours", () => {
+  /** Every data-tour value written anywhere in the admin pages' source. */
+  function markersInSource(dir: string, found = new Set<string>()): Set<string> {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) markersInSource(path, found);
+      else if (entry.name.endsWith(".tsx")) {
+        const source = readFileSync(path, "utf8");
+        for (const match of source.matchAll(/data-tour=(?:"([a-z-]+)"|\{([^}]*)\})/g)) {
+          if (match[1]) found.add(match[1]);
+          // A computed value, e.g. {kind === "item" ? "menu-items" : "add-ons"}.
+          for (const literal of (match[2] ?? "").matchAll(/"([a-z-]+)"/g)) found.add(literal[1]);
+        }
+      }
+    }
+    return found;
+  }
+
+  it("gives every admin page a tour", () => {
+    for (const route of ADMIN_ROUTES) expect(TOURS[route].length, route).toBeGreaterThan(0);
+  });
+
+  it("points every step at a marker that exists in the admin pages", () => {
+    const markers = markersInSource(ADMIN_DIR);
+    for (const route of ADMIN_ROUTES) {
+      for (const step of TOURS[route]) {
+        expect(markers.has(step.target), `${route}: no data-tour="${step.target}"`).toBe(true);
       }
     }
   });

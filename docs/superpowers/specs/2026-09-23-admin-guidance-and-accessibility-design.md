@@ -1,6 +1,6 @@
 # Admin guidance and accessibility — design
 
-Date: 2026-09-23 · Status: approved, in build
+Date: 2026-09-23 · Status: built, all five stages shipped
 
 ## Why
 

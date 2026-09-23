@@ -42,7 +42,7 @@ export function AddTeacherForm() {
   }
 
   return (
-    <section className="card card-border bg-base-100 p-5" aria-labelledby="add-teacher-heading">
+    <section data-tour="add-teacher" className="card card-border bg-base-100 p-5" aria-labelledby="add-teacher-heading">
       <h2 id="add-teacher-heading" className="mb-3 text-lg font-extrabold">
         Add a teacher
       </h2>

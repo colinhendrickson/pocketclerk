@@ -14,6 +14,16 @@ import postgres from "postgres";
 
 test.use({ viewport: { width: 390, height: 844 } });
 
+/**
+ * Opens a page and waits for its scripts. A button pressed before the page's
+ * JavaScript has loaded has no handler yet; on a cold development server that
+ * window is seconds long, and a keypress in it proves nothing either way.
+ */
+async function open(page: import("@playwright/test").Page, path: string) {
+  await page.goto(path);
+  await page.waitForLoadState("networkidle");
+}
+
 test.beforeEach(async ({ page }) => {
   const url = process.env.DATABASE_URL;
   const secret = process.env.SESSION_SECRET;
@@ -32,7 +42,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("the first Tab offers a way past the navigation", async ({ page }) => {
-  await page.goto("/admin/menu");
+  await open(page, "/admin/menu");
   await page.keyboard.press("Tab");
   const skip = page.getByRole("link", { name: "Skip to content" });
   await expect(skip).toBeFocused();
@@ -45,7 +55,7 @@ test("the first Tab offers a way past the navigation", async ({ page }) => {
 test("the menu opens by keyboard, lands on its links, and Escape hands focus back", async ({
   page,
 }) => {
-  await page.goto("/admin");
+  await open(page, "/admin");
   const button = page.getByRole("button", { name: "Menu" });
   await expect(button).toHaveAttribute("aria-expanded", "false");
 
@@ -60,7 +70,7 @@ test("the menu opens by keyboard, lands on its links, and Escape hands focus bac
 });
 
 test("after following a link, focus is on the new page's heading", async ({ page }) => {
-  await page.goto("/admin");
+  await open(page, "/admin");
   await page.getByRole("button", { name: "Menu" }).click();
   await page.getByRole("link", { name: "Orders", exact: true }).focus();
   await page.keyboard.press("Enter");

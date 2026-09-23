@@ -65,7 +65,7 @@ export function MenuSection({
   const [editing, setEditing] = useState<string | null>(null);
 
   return (
-    <section className="flex flex-col gap-3">
+    <section data-tour={kind === "item" ? "menu-items" : "add-ons"} className="flex flex-col gap-3">
       <header>
         <h2 className="text-lg font-extrabold">{title}</h2>
         <p className="text-sm opacity-70">{description}</p>

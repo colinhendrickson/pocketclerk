@@ -63,6 +63,7 @@ export function AdminMenuButton() {
       onClick={openMenu}
       aria-expanded={open}
       aria-controls={NAV_ID}
+      data-tour="nav"
       className="btn btn-ghost btn-square xl:hidden"
     >
       <Menu size={24} aria-hidden="true" />
@@ -114,6 +115,7 @@ export function AdminNav() {
     <nav
       id={NAV_ID}
       aria-label="Admin"
+      data-tour="nav"
       className="flex min-h-full w-64 flex-col gap-4 border-r border-base-300 bg-base-100 p-4"
     >
       <ul className="menu w-full gap-1 p-0">

@@ -32,6 +32,7 @@ export function StudentTable({ rows, rewardName }: StudentTableProps) {
   return (
     <div
         role="region"
+        data-tour="student-table"
         aria-label="Students"
         tabIndex={0}
         className="overflow-x-auto rounded-box border border-base-300 bg-base-100"

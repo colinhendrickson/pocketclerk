@@ -78,7 +78,7 @@ export function SetupChecklist({ steps, pairingUrl, adminEmail }: SetupChecklist
 
   if (complete) {
     return (
-      <details className="rounded-box border border-base-300 bg-base-100">
+      <details data-tour="setup" className="rounded-box border border-base-300 bg-base-100">
         <summary className="flex min-h-11 cursor-pointer items-center gap-2 px-4 py-2 font-extrabold">
           <CheckCircle2 size={20} aria-hidden="true" className="text-success" />
           The cart is set up. Show the setup checklist
@@ -89,7 +89,7 @@ export function SetupChecklist({ steps, pairingUrl, adminEmail }: SetupChecklist
   }
 
   return (
-    <section aria-labelledby="setup-heading" className="flex flex-col gap-3">
+    <section data-tour="setup" aria-labelledby="setup-heading" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="setup-heading" className="text-xl font-extrabold">
           Get the cart ready

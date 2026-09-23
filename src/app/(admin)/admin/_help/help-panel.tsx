@@ -21,26 +21,28 @@ export function HelpPanel({ route }: HelpPanelProps) {
   const guides = help.tasks.map(guideById).filter((guide) => guide !== undefined);
 
   return (
-    <RememberedDetails
-      storageKey={`pocketclerk:help:${route}`}
-      className="rounded-box border border-base-300 bg-base-100"
-      summaryClassName="flex min-h-11 cursor-pointer items-center gap-2 px-4 py-2 font-extrabold"
-      summary={
-        <>
-          <CircleHelp size={20} aria-hidden="true" className="shrink-0 text-info" />
-          About this page
-        </>
-      }
-    >
-      <div className="flex flex-col gap-3 px-4 pb-4">
-        <p className="max-w-prose">{help.purpose}</p>
-        <h2 className="text-sm font-extrabold opacity-70">How do I…</h2>
-        <div className="flex flex-col gap-2">
-          {guides.map((guide) => (
-            <GuideView key={guide.id} guide={guide} currentRoute={route} />
-          ))}
+    <div data-tour="help">
+      <RememberedDetails
+        storageKey={`pocketclerk:help:${route}`}
+        className="rounded-box border border-base-300 bg-base-100"
+        summaryClassName="flex min-h-11 cursor-pointer items-center gap-2 px-4 py-2 font-extrabold"
+        summary={
+          <>
+            <CircleHelp size={20} aria-hidden="true" className="shrink-0 text-info" />
+            About this page
+          </>
+        }
+      >
+        <div className="flex flex-col gap-3 px-4 pb-4">
+          <p className="max-w-prose">{help.purpose}</p>
+          <h2 className="text-sm font-extrabold opacity-70">How do I…</h2>
+          <div className="flex flex-col gap-2">
+            {guides.map((guide) => (
+              <GuideView key={guide.id} guide={guide} currentRoute={route} />
+            ))}
+          </div>
         </div>
-      </div>
-    </RememberedDetails>
+      </RememberedDetails>
+    </div>
   );
 }

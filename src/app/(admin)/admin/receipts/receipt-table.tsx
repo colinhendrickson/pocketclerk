@@ -74,6 +74,7 @@ export function ReceiptTable({ rows, failedCount }: ReceiptTableProps) {
 
       <div
         role="region"
+        data-tour="receipts-table"
         aria-label="Receipts"
         tabIndex={0}
         className="overflow-x-auto rounded-box border border-base-300 bg-base-100"

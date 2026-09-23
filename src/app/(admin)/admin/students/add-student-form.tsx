@@ -52,7 +52,7 @@ export function AddStudentForm({ heading }: AddStudentFormProps) {
   }
 
   return (
-    <section className="card card-border bg-base-100 p-5">
+    <section data-tour="add-student" className="card card-border bg-base-100 p-5">
       <h2 className="mb-3 text-lg font-extrabold">{heading}</h2>
 
       <form
