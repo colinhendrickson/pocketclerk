@@ -69,6 +69,7 @@ export const GUIDES: Guide[] = [
       "Open that link on the iPad itself. The easiest way is to email it to yourself and tap it in the email on the iPad.",
       "The iPad shows the list of students. It is connected, and stays connected.",
       "The checklist step ticks off the first time a student clocks in on it.",
+      "To connect another device later, such as a computer to try the cart on, open “Connect another device” on that same step.",
     ],
     note: "Only a connected iPad can show the student list or take orders. Anyone opening the site on another device sees a “not set up” page instead, which keeps the students' names private.",
     page: "/admin",

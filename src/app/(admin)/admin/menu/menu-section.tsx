@@ -138,9 +138,8 @@ function AddEntryForm({ kind, label }: AddEntryFormProps) {
       const result = await createMenuEntry({
         kind,
         name,
-        // Sent as cents. The action's signature accepts nothing else, so the
-        // dollar string stops here.
-        price: priceCents,
+        // Sent as cents, named as cents. The dollar string stops here.
+        priceCents,
         isSpecial: kind === "item" ? isSpecial : false,
       });
       if (result.ok) {
@@ -246,7 +245,7 @@ function EntryRow({ kind, row, isEditing, onToggleEdit }: EntryRowProps) {
     setError(null);
     if (priceCents === null) return;
     startTransition(async () => {
-      const result = await updateMenuEntry({ kind, id: row.id, name, price: priceCents });
+      const result = await updateMenuEntry({ kind, id: row.id, name, priceCents });
       if (result.ok) {
         onToggleEdit();
         return;

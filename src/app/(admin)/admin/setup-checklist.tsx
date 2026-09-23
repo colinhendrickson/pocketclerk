@@ -48,10 +48,27 @@ export function SetupChecklist({ steps, pairingUrl, adminEmail }: SetupChecklist
               </p>
               <p className="text-sm font-bold opacity-75">{step.status}</p>
               {!step.done ? <p className="max-w-prose">{text.why}</p> : null}
-              {!step.done && step.id === "ipad" ? (
+              {step.id === "ipad" ? (
                 pairingUrl ? (
-                  <PairingLink url={pairingUrl} email={adminEmail} />
-                ) : (
+                  step.done ? (
+                    // Still needed after the first iPad: a replacement iPad, or
+                    // a computer to try the cart on.
+                    <details className="rounded-box bg-base-200 p-3">
+                      <summary className="cursor-pointer text-sm font-bold">
+                        Connect another device, such as a computer to try the cart on
+                      </summary>
+                      <div className="mt-2 flex flex-col gap-2">
+                        <p className="text-sm">
+                          Open this link on that device. Anything done there is real: practice
+                          sales appear in Orders and today&rsquo;s totals.
+                        </p>
+                        <PairingLink url={pairingUrl} email={adminEmail} />
+                      </div>
+                    </details>
+                  ) : (
+                    <PairingLink url={pairingUrl} email={adminEmail} />
+                  )
+                ) : step.done ? null : (
                   <p className="text-sm">
                     This site does not require connecting a device: any browser can open the cart.
                   </p>

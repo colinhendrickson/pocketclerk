@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   dollarsToCents,
   parseCompleteOrder,
+  parseMenuEdit,
   parseNewMenuEntry,
   parseNewTeacher,
 } from "@/lib/validate";
@@ -154,18 +155,28 @@ describe("dollarsToCents", () => {
   });
 });
 
+/**
+ * The menu page converts the typed dollars to cents in the browser and sends
+ * integer cents as `priceCents`. These payloads are exactly what it sends.
+ *
+ * It used to send cents as `price`, which the server read as dollars and
+ * multiplied by 100 again: a coffee typed as 1.00 was saved at $100.00, and
+ * editing it back to 1.00 saved $100.00 again. The parser tests passed dollar
+ * strings, which the page never sent, so none of them saw it.
+ */
 describe("parseNewMenuEntry", () => {
-  it("converts the typed price to cents", () => {
-    expect(parseNewMenuEntry({ kind: "item", name: "Cocoa", price: "1.25" })).toEqual({
+  it("keeps the price the page sends, in cents", () => {
+    expect(parseNewMenuEntry({ kind: "item", name: "Coffee", priceCents: 100 })).toEqual({
       kind: "item",
-      name: "Cocoa",
-      priceCents: 125,
+      name: "Coffee",
+      priceCents: 100,
       isSpecial: false,
     });
+    expect(parseNewMenuEntry({ kind: "item", name: "Cocoa", priceCents: 125 })?.priceCents).toBe(125);
   });
 
   it("allows a free add-on, which must not move a total", () => {
-    expect(parseNewMenuEntry({ kind: "addon", name: "Cream", price: "0" })).toEqual({
+    expect(parseNewMenuEntry({ kind: "addon", name: "Cream", priceCents: 0 })).toEqual({
       kind: "addon",
       name: "Cream",
       priceCents: 0,
@@ -173,9 +184,34 @@ describe("parseNewMenuEntry", () => {
     });
   });
 
-  it("rejects an unknown list, a short name and a bad price", () => {
-    expect(parseNewMenuEntry({ kind: "drink", name: "Cocoa", price: "1" })).toBeNull();
-    expect(parseNewMenuEntry({ kind: "item", name: " C ", price: "1" })).toBeNull();
-    expect(parseNewMenuEntry({ kind: "item", name: "Cocoa", price: "one" })).toBeNull();
+  it("rejects an unknown list, a short name and a price that is not whole cents", () => {
+    expect(parseNewMenuEntry({ kind: "drink", name: "Cocoa", priceCents: 100 })).toBeNull();
+    expect(parseNewMenuEntry({ kind: "item", name: " C ", priceCents: 100 })).toBeNull();
+    for (const bad of [1.5, -100, "100", "1.00", null, undefined, Number.NaN, 10_000_001]) {
+      expect(parseNewMenuEntry({ kind: "item", name: "Cocoa", priceCents: bad }), String(bad)).toBeNull();
+    }
+  });
+
+  it("refuses the old `price` field rather than guess whether it is dollars or cents", () => {
+    expect(parseNewMenuEntry({ kind: "item", name: "Coffee", price: 100 })).toBeNull();
+    expect(parseNewMenuEntry({ kind: "item", name: "Coffee", price: "1.00" })).toBeNull();
+  });
+});
+
+describe("parseMenuEdit", () => {
+  const id = "4f1c2b8e-6a5d-4c3b-9e2f-1a2b3c4d5e6f";
+
+  it("keeps the edited price the page sends, in cents", () => {
+    expect(parseMenuEdit({ kind: "item", id, name: "Coffee", priceCents: 100 })).toEqual({
+      kind: "item",
+      id,
+      name: "Coffee",
+      priceCents: 100,
+    });
+  });
+
+  it("rejects a price that is not whole cents, and the old field", () => {
+    expect(parseMenuEdit({ kind: "item", id, name: "Coffee", priceCents: 1.5 })).toBeNull();
+    expect(parseMenuEdit({ kind: "item", id, name: "Coffee", price: 100 })).toBeNull();
   });
 });

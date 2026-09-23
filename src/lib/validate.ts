@@ -327,6 +327,22 @@ export interface NewMenuEntryInput {
   isSpecial: boolean;
 }
 
+/** The most a menu price can be: what the price box accepts, $99,999.99. */
+const MAX_MENU_PRICE_CENTS = 9_999_999;
+
+/**
+ * A menu price as the page sends it: integer cents, already converted from
+ * the typed dollars by `dollarsToCents` in the browser.
+ *
+ * Named `priceCents`, and only that. The page once sent cents in a field
+ * called `price`, which this side read as dollars and multiplied by 100 a
+ * second time, so every price typed on the menu page was saved a hundred
+ * times over. A payload with the old name is refused rather than guessed at.
+ */
+function isMenuPrice(value: unknown): value is number {
+  return isCents(value) && value <= MAX_MENU_PRICE_CENTS;
+}
+
 /**
  * A new menu item or add-on.
  *
@@ -336,15 +352,14 @@ export interface NewMenuEntryInput {
  */
 export function parseNewMenuEntry(input: unknown): NewMenuEntryInput | null {
   if (typeof input !== "object" || input === null) return null;
-  const { kind, name, price, isSpecial } = input as Record<string, unknown>;
+  const { kind, name, priceCents, isSpecial } = input as Record<string, unknown>;
 
   if (!isMenuKind(kind)) return null;
 
   const trimmedName = parseName(name, 60);
   if (trimmedName === null) return null;
 
-  const priceCents = dollarsToCents(price);
-  if (priceCents === null || !isCents(priceCents)) return null;
+  if (!isMenuPrice(priceCents)) return null;
 
   const special = isSpecial === undefined ? false : isSpecial;
   if (!isBoolean(special)) return null;
@@ -361,7 +376,7 @@ export interface MenuEditInput {
 
 export function parseMenuEdit(input: unknown): MenuEditInput | null {
   if (typeof input !== "object" || input === null) return null;
-  const { kind, id, name, price } = input as Record<string, unknown>;
+  const { kind, id, name, priceCents } = input as Record<string, unknown>;
 
   if (!isMenuKind(kind)) return null;
   if (!isUuid(id)) return null;
@@ -369,8 +384,7 @@ export function parseMenuEdit(input: unknown): MenuEditInput | null {
   const trimmedName = parseName(name, 60);
   if (trimmedName === null) return null;
 
-  const priceCents = dollarsToCents(price);
-  if (priceCents === null || !isCents(priceCents)) return null;
+  if (!isMenuPrice(priceCents)) return null;
 
   return { kind, id, name: trimmedName, priceCents };
 }
