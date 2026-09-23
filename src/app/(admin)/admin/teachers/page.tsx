@@ -2,6 +2,7 @@ import { cartFormatter } from "@/lib/time";
 import { listTeachersWithTotals } from "@/lib/admin-queries";
 
 import { requireAdmin } from "../require-admin";
+import { AddTeacherForm } from "./add-teacher-form";
 import { TeacherTable, type TeacherView } from "./teacher-table";
 
 export const dynamic = "force-dynamic";
@@ -9,10 +10,11 @@ export const dynamic = "force-dynamic";
 /**
  * The teacher list: the cart's customers.
  *
- * There is no "add a teacher" form here on purpose. Teachers are added from the
- * cart, mid-order, by the student standing in the classroom — that is where the
- * name and room number are actually known. This page is for correcting what
- * they typed, keeping notes current, and seeing who buys what.
+ * Teachers come onto the list two ways: from the cart, mid-order, by the student
+ * standing in the classroom, and from here, which is how the list is filled in
+ * before the cart's first day. Both go through the same function and the same
+ * rules. This page is also for correcting what was typed, keeping notes
+ * current, and seeing who buys what.
  */
 export default async function AdminTeachersPage() {
   await requireAdmin();
@@ -56,6 +58,8 @@ export default async function AdminTeachersPage() {
           details, keep notes and see what they have bought.
         </p>
       </header>
+
+      <AddTeacherForm />
 
       <TeacherTable rows={views} />
     </main>

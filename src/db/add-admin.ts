@@ -1,10 +1,8 @@
 // Must come first: it populates process.env before ./index reads DATABASE_URL.
 import "./load-env";
 
-import { eq, sql } from "drizzle-orm";
-
-import { adminUsers, persons } from "./schema";
-import { db, getClient } from "./index";
+import { addAdmin } from "../lib/admins";
+import { getClient } from "./index";
 
 /**
  * Grants administrator access to an email address.
@@ -34,45 +32,27 @@ async function main() {
     return;
   }
 
-  const normalized = email.trim().toLowerCase();
+  // The same function as the Admins page, so both follow one set of rules:
+  // an existing person with that address (usually a teacher who buys from the
+  // cart) is reused, keeping their order history in one place.
+  const result = await addAdmin({ name, email }, null);
 
-  // The administrator is very often already a teacher, because she buys coffee
-  // from the cart she runs. Reusing that row is the point of modelling people
-  // separately from their roles: she keeps one order history either way.
-  const [existing] = await db
-    .select({ id: persons.id, name: persons.name })
-    .from(persons)
-    .where(sql`lower(${persons.email}) = ${normalized}`)
-    .limit(1);
-
-  let personId: string;
-
-  if (existing) {
-    personId = existing.id;
-    console.log(`Found existing person: ${existing.name} <${normalized}>`);
-  } else {
-    const [created] = await db
-      .insert(persons)
-      .values({ name: name.trim(), email: normalized })
-      .returning({ id: persons.id });
-    personId = created.id;
-    console.log(`Created person: ${name.trim()} <${normalized}>`);
-  }
-
-  const [already] = await db
-    .select({ personId: adminUsers.personId })
-    .from(adminUsers)
-    .where(eq(adminUsers.personId, personId))
-    .limit(1);
-
-  if (already) {
-    console.log("Already an administrator. Nothing to do.");
+  if (!result.ok) {
+    console.log(
+      result.error === "already"
+        ? "Already an administrator. Nothing to do."
+        : 'That does not look like a name and an email. Usage: pnpm admin:add "Full Name" someone@example.com',
+    );
+    if (result.error === "invalid") process.exitCode = 1;
     return;
   }
 
-  await db.insert(adminUsers).values({ personId });
-  console.log(`\n${normalized} can now sign in at /admin/sign-in.`);
-  console.log("There is no password; the address receives a single-use link.");
+  const normalized = email.trim().toLowerCase();
+  console.log(result.created ? `Created person: ${name.trim()} <${normalized}>` : `Found existing person <${normalized}>`);
+  console.log(`
+${normalized} can now sign in at /admin/sign-in.`);
+  console.log("There is no password; a sign-in code is emailed to that address.");
+  console.log("From now on, more admins can be added from the Admins page.");
 }
 
 main()

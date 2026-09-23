@@ -5,8 +5,10 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
 import { persons, teacherProfiles } from "@/db/schema";
+import { insertTeacher } from "@/lib/teachers";
 import {
   parseActiveToggle,
+  parseNewTeacher,
   parseTeacherEdit,
   parseTeacherNote,
   parseTeacherNoteRemoval,
@@ -26,6 +28,31 @@ import { requireAdmin } from "../require-admin";
  * flag. Anything that touches both writes them in one transaction, so a teacher
  * can never end up renamed on one row and not the other.
  */
+
+export type AddTeacherResult =
+  | { ok: true; name: string }
+  | { ok: false; error: "invalid" | "duplicate" };
+
+/**
+ * Adds a teacher from the admin side, with the same rules as the cart.
+ *
+ * Mostly for first-time setup: entering the teachers before the cart ever
+ * runs, so students tap a name instead of typing one, and so receipts go out
+ * from the first sale because the emails are already there.
+ */
+export async function addTeacher(input: unknown): Promise<AddTeacherResult> {
+  await requireAdmin();
+
+  const parsed = parseNewTeacher(input);
+  if (!parsed) return { ok: false, error: "invalid" };
+
+  const result = await insertTeacher(parsed);
+  if (!result.ok) return result;
+
+  revalidatePath("/admin/teachers");
+  revalidatePath("/admin");
+  return { ok: true, name: result.teacher.name };
+}
 
 export type UpdateTeacherResult =
   | { ok: true }

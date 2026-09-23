@@ -391,3 +391,32 @@ export function parseMenuFlag(input: unknown): MenuFlagInput | null {
 
   return { kind, id, value };
 }
+
+export interface NewAdminInput {
+  name: string;
+  email: string;
+}
+
+/**
+ * Validates someone being given admin access.
+ *
+ * Unlike a teacher's, the email is required: it is how they sign in, by a
+ * code sent to it. Stored lower-case, since the sign-in form lower-cases what
+ * is typed there. The check is as loose as the teacher one, for the same
+ * reason: a strict pattern rejects real addresses.
+ */
+export function parseNewAdmin(input: unknown): NewAdminInput | null {
+  if (typeof input !== "object" || input === null) return null;
+  const { name, email } = input as Record<string, unknown>;
+  if (typeof name !== "string" || typeof email !== "string") return null;
+
+  const trimmedName = name.trim();
+  if (trimmedName.length < 2 || trimmedName.length > 80) return null;
+
+  const candidate = email.trim().toLowerCase();
+  if (candidate.length > 120) return null;
+  const at = candidate.indexOf("@");
+  if (at <= 0 || at === candidate.length - 1 || candidate.includes(" ")) return null;
+
+  return { name: trimmedName, email: candidate };
+}

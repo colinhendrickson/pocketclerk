@@ -78,6 +78,7 @@ const LINKS = [
   { href: "/admin/menu", label: "Menu" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/receipts", label: "Receipts" },
+  { href: "/admin/admins", label: "Admins" },
 ] as const;
 
 /**

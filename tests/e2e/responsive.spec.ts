@@ -35,7 +35,7 @@ const SIZES = [
   { name: "desktop", width: 1440, height: 900 },
 ] as const;
 
-const ADMIN_PAGES = ["", "/students", "/teachers", "/menu", "/orders", "/receipts"];
+const ADMIN_PAGES = ["", "/students", "/teachers", "/menu", "/orders", "/receipts", "/admins"];
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
@@ -95,6 +95,15 @@ for (const size of SIZES) {
       if (size.width < 1280) {
         await page.getByRole("button", { name: "Menu" }).click();
         await expect(page.getByRole("navigation", { name: "Admin" })).toBeVisible();
+        // The drawer fades in. Measured mid-fade, its text is partly
+        // transparent and reads as a contrast failure that no one ever sees.
+        // Only the drawer's own: daisyUI runs a scroll-linked animation on
+        // the page that never finishes.
+        await page.waitForFunction(() =>
+          (document.querySelector(".drawer-side")?.getAnimations({ subtree: true }) ?? []).every(
+            (animation) => animation.playState !== "running",
+          ),
+        );
         await checkScreen(page, "admin menu open", problems);
       }
       await page.context().clearCookies();

@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 
@@ -10,11 +10,9 @@ import {
   orderItemAddons,
   orderItems,
   orders,
-  persons,
   receiptJobs,
   shifts,
   students,
-  teacherProfiles,
 } from "@/db/schema";
 import { isLockedOut, lockoutMinutesRemaining, verifyPin } from "@/lib/auth";
 import { changeCents, hoursHundredthsBetween, orderTotalCents, rewardTickets } from "@/lib/money";
@@ -23,6 +21,7 @@ import { acceptCorrectPin, recordFailedPin } from "@/lib/pin-lockout";
 import { getActiveShift } from "@/lib/queries";
 import { parseClockIn, parseCompleteOrder, parseNewTeacher } from "@/lib/validate";
 import { clearShiftSession, getShiftSession, setShiftSession } from "@/lib/session";
+import { insertTeacher } from "@/lib/teachers";
 
 /**
  * Server actions for the student flow.
@@ -349,44 +348,9 @@ export async function createTeacher(input: unknown): Promise<CreateTeacherResult
   const parsed = parseNewTeacher(input);
   if (!parsed) return { ok: false, error: "invalid" };
 
-  // Two teachers can legitimately share a surname, so the guard is on name and
-  // room together: that is what makes them different people on this cart.
-  const existing = await db
-    .select({ id: persons.id })
-    .from(persons)
-    .innerJoin(teacherProfiles, eq(teacherProfiles.personId, persons.id))
-    .where(
-      and(
-        sql`lower(${persons.name}) = lower(${parsed.name})`,
-        parsed.room
-          ? sql`lower(coalesce(${teacherProfiles.room}, '')) = lower(${parsed.room})`
-          : sql`coalesce(${teacherProfiles.room}, '') = ''`,
-      ),
-    )
-    .limit(1);
-
-  if (existing.length > 0) return { ok: false, error: "duplicate" };
-
-  const teacher = await db.transaction(async (tx) => {
-    const [person] = await tx
-      .insert(persons)
-      .values({ name: parsed.name, email: parsed.email })
-      .returning({ id: persons.id, name: persons.name, email: persons.email });
-
-    const [profile] = await tx
-      .insert(teacherProfiles)
-      .values({ personId: person.id, room: parsed.room })
-      .returning({ room: teacherProfiles.room, notes: teacherProfiles.notes });
-
-    return {
-      id: person.id,
-      name: person.name,
-      email: person.email,
-      room: profile.room,
-      notes: profile.notes,
-    };
-  });
+  const result = await insertTeacher(parsed);
+  if (!result.ok) return result;
 
   revalidatePath("/shift/order");
-  return { ok: true, teacher };
+  return { ok: true, teacher: result.teacher };
 }
