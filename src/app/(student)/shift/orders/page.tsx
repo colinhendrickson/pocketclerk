@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { cartFormatter } from "@/lib/time";
 import { StepHeader } from "@/components";
 import { formatUSD } from "@/lib/money";
 import { getActiveShift, getShiftTotals, listShiftOrders } from "@/lib/queries";
@@ -28,7 +29,7 @@ export default async function TodaysOrdersPage() {
     getShiftTotals(shift.id),
   ]);
 
-  const time = new Intl.DateTimeFormat("en-US", {
+  const time = cartFormatter({
     hour: "numeric",
     minute: "2-digit",
   });

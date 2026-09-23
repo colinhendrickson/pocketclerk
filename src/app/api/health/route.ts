@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { db } from "@/db";
 import { missingRequiredConfig } from "@/lib/config";
+import { TIME_ZONE } from "@/lib/time";
 import { sql } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +39,9 @@ export async function GET(): Promise<NextResponse> {
   }
 
   const optional = {
+    // Reported because a wrong zone is silent: every page still loads, and the
+    // only symptom is receipts printed hours off.
+    timeZone: TIME_ZONE,
     devicePairing: process.env.DEVICE_CODE
       ? "on, student screens require a paired device"
       : "OFF, student screens are open to anyone with the address",

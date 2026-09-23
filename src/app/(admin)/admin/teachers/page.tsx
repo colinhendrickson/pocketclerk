@@ -1,3 +1,4 @@
+import { cartFormatter } from "@/lib/time";
 import { listTeachersWithTotals } from "@/lib/admin-queries";
 
 import { requireAdmin } from "../require-admin";
@@ -22,11 +23,12 @@ export default async function AdminTeachersPage() {
    * Dates are formatted here rather than in the table.
    *
    * The table is a client component, so a `Date` rendered inside it would be
-   * formatted once on the server and again in the browser, in two different
-   * time zones, which React flags as a hydration mismatch. Doing it once on the
-   * server settles which clock the page speaks in.
+   * formatted once on the server and again in the browser, which React flags
+   * as a hydration mismatch if the two disagree. Formatting once here avoids
+   * the double render, and `cartFormatter` decides which clock: the cart's,
+   * not the server's UTC, which is what "once on the server" used to mean.
    */
-  const formatter = new Intl.DateTimeFormat("en-US", {
+  const formatter = cartFormatter({
     month: "short",
     day: "numeric",
     hour: "numeric",

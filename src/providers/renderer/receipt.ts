@@ -1,3 +1,4 @@
+import { cartFormatter } from "@/lib/time";
 import { formatUSD } from "@/lib/money";
 
 /**
@@ -59,12 +60,12 @@ function centre(text: string, width = RECEIPT_WIDTH): string {
  * what a developer sees is what a teacher gets.
  */
 export function renderReceiptText(receipt: Receipt): string {
-  const date = new Intl.DateTimeFormat("en-US", {
+  const date = cartFormatter({
     month: "numeric",
     day: "numeric",
     year: "numeric",
   }).format(receipt.placedAt);
-  const time = new Intl.DateTimeFormat("en-US", {
+  const time = cartFormatter({
     hour: "numeric",
     minute: "2-digit",
   }).format(receipt.placedAt);

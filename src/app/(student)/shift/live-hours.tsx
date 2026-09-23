@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { cartFormatter } from "@/lib/time";
 import { ShiftStats } from "@/components";
 import { branding } from "@/lib/branding";
 import { formatHours, rewardTickets } from "@/lib/money";
@@ -31,7 +32,7 @@ export function LiveHours({ clockInIso }: LiveHoursProps) {
     return () => clearInterval(id);
   }, [clockInIso]);
 
-  const clockInLabel = new Intl.DateTimeFormat("en-US", {
+  const clockInLabel = cartFormatter({
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(clockInIso));

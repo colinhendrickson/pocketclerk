@@ -1,6 +1,13 @@
 import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
 import Link from "next/link";
 
+import {
+  addDays,
+  cartFormatter,
+  parseLocalDate,
+  startOfLocalDay,
+  today,
+} from "@/lib/time";
 import { db } from "@/db";
 import {
   orderItemAddons,
@@ -36,8 +43,12 @@ export default async function AdminOrdersPage({
   await requireAdmin();
   const params = await searchParams;
 
-  const day = parseDay(params.date) ?? startOfToday();
-  const next = new Date(day.getTime() + 86_400_000);
+  // A day is a calendar date at the cart, bounded by its local midnights. Not
+  // UTC midnight, which is 8 PM at the cart, and not midnight plus 24 hours,
+  // which is wrong on the two days a year that are 23 and 25 hours long.
+  const date = parseLocalDate(params.date) ?? today();
+  const day = startOfLocalDay(date);
+  const next = startOfLocalDay(addDays(date, 1));
 
   const rows = await db
     .select({
@@ -69,11 +80,10 @@ export default async function AdminOrdersPage({
     .orderBy(desc(orders.createdAt));
 
   const totalCents = rows.reduce((sum, r) => sum + r.totalCents, 0);
-  const time = new Intl.DateTimeFormat("en-US", {
+  const time = cartFormatter({
     hour: "numeric",
     minute: "2-digit",
   });
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
 
   return (
     <main className="flex flex-1 flex-col gap-6 p-6">
@@ -81,7 +91,7 @@ export default async function AdminOrdersPage({
         <div>
           <h1 className="text-2xl font-extrabold">Orders</h1>
           <p className="opacity-70">
-            {new Intl.DateTimeFormat("en-US", {
+            {cartFormatter({
               weekday: "long",
               month: "long",
               day: "numeric",
@@ -91,7 +101,7 @@ export default async function AdminOrdersPage({
         </div>
         <nav className="flex items-center gap-2">
           <Link
-            href={`/admin/orders?date=${iso(new Date(day.getTime() - 86_400_000))}`}
+            href={`/admin/orders?date=${addDays(date, -1)}`}
             className="btn btn-sm btn-outline"
           >
             Previous day
@@ -100,7 +110,7 @@ export default async function AdminOrdersPage({
             Today
           </Link>
           <Link
-            href={`/admin/orders?date=${iso(next)}`}
+            href={`/admin/orders?date=${addDays(date, 1)}`}
             className="btn btn-sm btn-outline"
           >
             Next day
@@ -174,14 +184,3 @@ export default async function AdminOrdersPage({
   );
 }
 
-/** Accepts only YYYY-MM-DD; anything else falls back to today. */
-function parseDay(value: string | undefined): Date | null {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const parsed = new Date(`${value}T00:00:00`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function startOfToday(): Date {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-}

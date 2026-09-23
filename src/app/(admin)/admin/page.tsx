@@ -3,6 +3,7 @@ import Link from "next/link";
 import { db } from "@/db";
 import { branding } from "@/lib/branding";
 import { formatUSD } from "@/lib/money";
+import { startOfLocalDay, today } from "@/lib/time";
 import { sql } from "drizzle-orm";
 
 import { requireAdmin } from "./require-admin";
@@ -19,6 +20,10 @@ export const dynamic = "force-dynamic";
 export default async function AdminHomePage() {
   const admin = await requireAdmin();
 
+  // "Today" at the cart. The database's current_date is UTC, which rolls over
+  // at 8 PM there, so an evening look at the dashboard read zero sales.
+  const since = startOfLocalDay(today());
+
   const [stats] = await db.execute<{
     orders_today: number;
     sales_today: number;
@@ -26,8 +31,8 @@ export default async function AdminHomePage() {
     failed_receipts: number;
   }>(sql`
     SELECT
-      (SELECT count(*)::int FROM orders WHERE created_at >= current_date) AS orders_today,
-      (SELECT coalesce(sum(total_cents), 0)::int FROM orders WHERE created_at >= current_date) AS sales_today,
+      (SELECT count(*)::int FROM orders WHERE created_at >= ${since}) AS orders_today,
+      (SELECT coalesce(sum(total_cents), 0)::int FROM orders WHERE created_at >= ${since}) AS sales_today,
       (SELECT count(*)::int FROM shifts WHERE clock_out IS NULL) AS open_shifts,
       (SELECT count(*)::int FROM receipt_jobs WHERE status = 'failed') AS failed_receipts
   `);

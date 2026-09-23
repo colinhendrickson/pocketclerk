@@ -1,5 +1,6 @@
 import { desc, eq, sql } from "drizzle-orm";
 
+import { cartFormatter } from "@/lib/time";
 import { db } from "@/db";
 import {
   orders,
@@ -49,7 +50,7 @@ export default async function AdminReceiptsPage() {
     )
     .limit(200);
 
-  const when = new Intl.DateTimeFormat("en-US", {
+  const when = cartFormatter({
     month: "short",
     day: "numeric",
     hour: "numeric",

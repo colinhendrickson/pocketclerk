@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { cartFormatter } from "@/lib/time";
 import { branding } from "@/lib/branding";
 import { getActiveShift } from "@/lib/queries";
 import { getShiftSession } from "@/lib/session";
@@ -28,7 +29,7 @@ export default async function ShiftPage() {
   // sign-in rather than into a screen with nothing behind it.
   if (!shift) redirect("/");
 
-  const today = new Intl.DateTimeFormat("en-US", {
+  const today = cartFormatter({
     weekday: "long",
     month: "long",
     day: "numeric",
