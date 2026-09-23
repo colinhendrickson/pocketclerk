@@ -6,6 +6,7 @@ import {
   markFailed,
   markSent,
 } from "@/lib/receipt-jobs";
+import { assertPairedDevice } from "@/app/(student)/require-device";
 import { getActiveShift } from "@/lib/queries";
 import { getShiftSession } from "@/lib/session";
 import type { Receipt } from "@/providers/renderer/receipt";
@@ -35,6 +36,7 @@ export interface PendingPrint {
  * that is silently lost.
  */
 export async function claimPrintJobs(): Promise<PendingPrint[]> {
+  await assertPairedDevice();
   const shiftId = await getShiftSession();
   if (!shiftId) return [];
 
@@ -67,6 +69,7 @@ export async function reportPrintResult(
   ok: boolean,
   error?: string,
 ): Promise<void> {
+  await assertPairedDevice();
   const shiftId = await getShiftSession();
   if (!shiftId) return;
 

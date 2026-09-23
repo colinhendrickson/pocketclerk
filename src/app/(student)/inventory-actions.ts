@@ -10,6 +10,7 @@ import {
   type CountRow,
   listCount,
 } from "@/lib/inventory";
+import { assertPairedDevice } from "@/app/(student)/require-device";
 import { getActiveShift } from "@/lib/queries";
 import { getShiftSession } from "@/lib/session";
 
@@ -44,6 +45,7 @@ export async function countItem(
   itemId: string,
   remaining: number,
 ): Promise<CountResult> {
+  await assertPairedDevice();
   const shiftId = await currentShiftId();
   if (!shiftId) return { ok: false, error: "no_shift" };
   if (!Number.isSafeInteger(remaining) || remaining < 0) {
@@ -63,6 +65,7 @@ export async function markRestocked(
   itemId: string,
   restocked: boolean,
 ): Promise<CountResult> {
+  await assertPairedDevice();
   const shiftId = await currentShiftId();
   if (!shiftId) return { ok: false, error: "no_shift" };
 
@@ -79,6 +82,7 @@ export async function toggleChecklistItem(
   key: string,
   done: boolean,
 ): Promise<ChecklistResult> {
+  await assertPairedDevice();
   const shiftId = await currentShiftId();
   if (!shiftId) return { ok: false, error: "no_shift" };
   if (!isChecklistKey(key)) return { ok: false, error: "invalid" };

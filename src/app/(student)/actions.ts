@@ -4,6 +4,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 
+import { assertPairedDevice } from "@/app/(student)/require-device";
 import { db } from "@/db";
 import {
   orderItemAddons,
@@ -15,15 +16,10 @@ import {
   students,
   teacherProfiles,
 } from "@/db/schema";
-import {
-  MAX_FAILED_ATTEMPTS,
-  isLockedOut,
-  lockoutMinutesRemaining,
-  lockoutUntil,
-  verifyPin,
-} from "@/lib/auth";
+import { isLockedOut, lockoutMinutesRemaining, verifyPin } from "@/lib/auth";
 import { changeCents, hoursHundredthsBetween, orderTotalCents, rewardTickets } from "@/lib/money";
 import { deliverQueuedEmails } from "@/lib/deliver-receipts";
+import { acceptCorrectPin, recordFailedPin } from "@/lib/pin-lockout";
 import { getActiveShift } from "@/lib/queries";
 import { parseClockIn, parseCompleteOrder, parseNewTeacher } from "@/lib/validate";
 import { clearShiftSession, getShiftSession, setShiftSession } from "@/lib/session";
@@ -63,6 +59,7 @@ export type ClockInResult =
   | { ok: false; error: "invalid" };
 
 export async function clockIn(input: unknown): Promise<ClockInResult> {
+  await assertPairedDevice();
   const parsed = parseClockIn(input);
   if (!parsed) return { ok: false, error: "invalid" };
 
@@ -81,26 +78,32 @@ export async function clockIn(input: unknown): Promise<ClockInResult> {
   }
 
   if (!(await verifyPin(student.pinHash, parsed.pin))) {
-    const failed = student.failedAttempts + 1;
-    const reached = failed >= MAX_FAILED_ATTEMPTS;
-    await db
-      .update(students)
-      .set({
-        failedAttempts: reached ? 0 : failed,
-        lockedUntil: reached ? lockoutUntil(now) : student.lockedUntil,
-      })
-      .where(eq(students.id, student.id));
-
-    return reached
-      ? { ok: false, error: "locked_out", minutesRemaining: 15 }
-      : { ok: false, error: "wrong_pin", attemptsRemaining: MAX_FAILED_ATTEMPTS - failed };
+    // Counted in the database, in one statement. See src/lib/pin-lockout.ts
+    // for why reading the count here and writing it back let parallel guesses
+    // bypass the lockout entirely.
+    const failed = await recordFailedPin(student.id);
+    return failed.locked
+      ? {
+          ok: false,
+          error: "locked_out",
+          minutesRemaining: lockoutMinutesRemaining(failed.lockedUntil, new Date()),
+        }
+      : { ok: false, error: "wrong_pin", attemptsRemaining: failed.attemptsRemaining };
   }
 
-  if (student.failedAttempts !== 0 || student.lockedUntil !== null) {
-    await db
-      .update(students)
-      .set({ failedAttempts: 0, lockedUntil: null })
+  // The lock is checked again as the PIN is accepted, not only at the top: a
+  // correct guess can be in flight while a burst of wrong ones locks the
+  // student, and the lock has to win.
+  if (!(await acceptCorrectPin(student.id))) {
+    const [current] = await db
+      .select({ lockedUntil: students.lockedUntil })
+      .from(students)
       .where(eq(students.id, student.id));
+    return {
+      ok: false,
+      error: "locked_out",
+      minutesRemaining: lockoutMinutesRemaining(current?.lockedUntil ?? new Date(), new Date()),
+    };
   }
 
   try {
@@ -145,6 +148,7 @@ export type CompleteOrderResult =
  * decided.
  */
 export async function completeOrder(input: unknown): Promise<CompleteOrderResult> {
+  await assertPairedDevice();
   const shiftId = await getShiftSession();
   if (!shiftId) return { ok: false, error: "no_shift" };
 
@@ -281,6 +285,7 @@ export type ClockOutResult =
  * a device with a wrong date must not be able to award itself a longer shift.
  */
 export async function clockOut(): Promise<ClockOutResult> {
+  await assertPairedDevice();
   const shiftId = await getShiftSession();
   if (!shiftId) return { ok: false, error: "no_shift" };
 
@@ -305,6 +310,7 @@ export async function clockOut(): Promise<ClockOutResult> {
 
 /** Ends the session once the student has seen their shift summary. */
 export async function finishShift(): Promise<void> {
+  await assertPairedDevice();
   await clearShiftSession();
 }
 
@@ -329,6 +335,7 @@ export type CreateTeacherResult =
  * job that is guaranteed to fail.
  */
 export async function createTeacher(input: unknown): Promise<CreateTeacherResult> {
+  await assertPairedDevice();
   const shiftId = await getShiftSession();
   if (!shiftId) return { ok: false, error: "no_shift" };
   if (!(await getActiveShift(shiftId))) return { ok: false, error: "no_shift" };

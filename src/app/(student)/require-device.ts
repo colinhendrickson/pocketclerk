@@ -13,3 +13,21 @@ import { isPaired } from "@/lib/device";
 export async function requirePairedDevice(): Promise<void> {
   if (!(await isPaired())) redirect("/not-set-up");
 }
+
+/**
+ * The same guard for server actions.
+ *
+ * A page guard does not protect the actions that page calls. Each server
+ * action is its own POST endpoint, reachable with its id, which ships in the
+ * public JavaScript bundle, and it never passes through the page that rendered
+ * the button. So pairing only hid the screens: `clockIn` could still be called
+ * directly by anyone who had a student's id, and it is the endpoint that
+ * checks PINs.
+ *
+ * Throws rather than redirecting. A paired iPad never reaches this path, so
+ * the only caller who sees it is one who went around the screens, and that
+ * caller gets no help.
+ */
+export async function assertPairedDevice(): Promise<void> {
+  if (!(await isPaired())) throw new Error("This device is not set up for the cart.");
+}
