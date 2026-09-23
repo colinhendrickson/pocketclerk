@@ -38,7 +38,32 @@ const globalForDb = globalThis as unknown as {
  * rotated, instead of two variables quietly going stale.
  */
 export function runtimeConnectionString(): string | undefined {
-  return process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
+  const url = process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
+  return url ? sessionPoolerUrl(url) : undefined;
+}
+
+/**
+ * Supabase's transaction pooler URL, moved to the same pooler's session port.
+ *
+ * Every admin page hung for 300 seconds in production. The database showed
+ * why: the admin lookup sat "active", waiting on ClientRead, inside an open
+ * transaction, with the start of the query and never the rest. With prepared
+ * statements off, postgres.js runs any query with parameters in two round
+ * trips (describe it, then bind and execute), and the transaction pooler
+ * (port 6543) lost the second half. Queries without parameters never
+ * hung, which is why the health check kept answering throughout. PgBouncer
+ * does not do this, so no local test ever saw it.
+ *
+ * In session mode (port 5432, same host and credentials) a client keeps one
+ * database connection for as long as it is connected, so a query in two parts
+ * cannot be split across two. That costs connections, which does not matter
+ * here: an instance holds one and closes it after a few idle seconds.
+ *
+ * Done here, rather than by changing the deployment's variable, so that the
+ * URL Supabase and Vercel hand out keeps working as given.
+ */
+export function sessionPoolerUrl(url: string): string {
+  return url.replace(/(@[^/?#]*\.pooler\.supabase\.com):6543(?=[/?#]|$)/, "$1:5432");
 }
 
 /** Seconds a quiet connection is kept before the client closes it. */
