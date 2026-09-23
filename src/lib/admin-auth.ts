@@ -27,8 +27,12 @@ import { newSignInCode, normalizeSignInCode } from "@/lib/sign-in-code";
  */
 
 const COOKIE_NAME = "pocketclerk_admin";
-/** A school day, so a laptop left closed overnight signs out. */
-const SESSION_SECONDS = 60 * 60 * 10;
+/**
+ * Thirty days, so the administrator's own phone and laptop stay signed in.
+ * Signing out ends it at once, which is what a shared device like the cart's
+ * iPad calls for.
+ */
+const SESSION_SECONDS = 60 * 60 * 24 * 30;
 /**
  * Long enough to walk to a laptop, short enough that a forwarded mail is stale.
  * Exported so the email states the same number the database enforces.
