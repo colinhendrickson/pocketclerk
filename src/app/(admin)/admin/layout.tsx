@@ -1,10 +1,9 @@
-import { Menu } from "lucide-react";
 import Link from "next/link";
 
 import { branding } from "@/lib/branding";
 import { getAdmin } from "@/lib/admin-auth";
 
-import { ADMIN_DRAWER_ID, AdminNav } from "./admin-nav";
+import { ADMIN_DRAWER_ID, AdminMenuButton, AdminNav } from "./admin-nav";
 
 /**
  * Admin shell and auth guard.
@@ -31,7 +30,7 @@ export default async function AdminLayout({
   const title = (
     <Link href="/admin" className="text-xl font-extrabold">
       {branding.cartName}
-      <span className="ml-2 text-sm font-bold opacity-60">admin</span>
+      <span className="ml-2 text-sm font-bold opacity-75">admin</span>
     </Link>
   );
 
@@ -48,22 +47,26 @@ export default async function AdminLayout({
 
   return (
     <div className="drawer min-h-full flex-1 bg-base-200 text-base-content xl:drawer-open">
-      <input id={ADMIN_DRAWER_ID} type="checkbox" className="drawer-toggle" />
+      {/* The drawer's state. Hidden from assistive technology: the menu
+          button in the header is the control, and it reports this state. */}
+      <input
+        id={ADMIN_DRAWER_ID}
+        type="checkbox"
+        className="drawer-toggle"
+        tabIndex={-1}
+        aria-hidden="true"
+      />
       <div className="drawer-content flex min-w-0 flex-col">
         <header className="navbar gap-2 border-b border-base-300 bg-base-100 px-4 md:px-6">
-          <label
-            htmlFor={ADMIN_DRAWER_ID}
-            aria-label="Open the menu"
-            className="btn btn-ghost btn-square xl:hidden"
-          >
-            <Menu size={24} aria-hidden="true" />
-          </label>
+          <AdminMenuButton />
           {title}
         </header>
         {children}
       </div>
       <div className="drawer-side z-20">
-        <label htmlFor={ADMIN_DRAWER_ID} aria-label="Close the menu" className="drawer-overlay" />
+        {/* Tapping outside the menu closes it. Keyboard users close it with
+            Escape, so this is for pointers only. */}
+        <label htmlFor={ADMIN_DRAWER_ID} aria-hidden="true" className="drawer-overlay" />
         <AdminNav />
       </div>
     </div>

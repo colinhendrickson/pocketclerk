@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+import { RouteFocus, SkipLink } from "@/components";
+
 import "./globals.css";
 
 const manrope = Manrope({
@@ -24,6 +26,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${manrope.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-base-100 text-base-content">
+        <SkipLink />
+        <RouteFocus />
         {children}
       </body>
     </html>

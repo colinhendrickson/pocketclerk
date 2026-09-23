@@ -73,7 +73,12 @@ export function MenuSection({
 
       <AddEntryForm kind={kind} label={addLabel} />
 
-      <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+      <div
+        role="region"
+        aria-label={title}
+        tabIndex={0}
+        className="overflow-x-auto rounded-box border border-base-300 bg-base-100"
+      >
         <table className="table table-sm">
           <thead>
             <tr>
@@ -204,7 +209,11 @@ function AddEntryForm({ kind, label }: AddEntryFormProps) {
           Prices are dollars and cents, like 1.50. Two decimal places at most.
         </p>
       ) : null}
-      {error ? <p className="w-full text-sm font-bold text-error">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="w-full text-sm font-bold text-error">
+          {error}
+        </p>
+      ) : null}
     </form>
   );
 }
@@ -287,7 +296,13 @@ function EntryRow({ kind, row, isEditing, onToggleEdit }: EntryRowProps) {
           />
         </td>
         {kind === "item" ? <td /> : null}
-        <td>{error ? <span className="text-sm font-bold text-error">{error}</span> : null}</td>
+        <td>
+          {error ? (
+            <span role="alert" className="text-sm font-bold text-error">
+              {error}
+            </span>
+          ) : null}
+        </td>
         <td>
           <div className="flex justify-end gap-2">
             <button
@@ -308,7 +323,7 @@ function EntryRow({ kind, row, isEditing, onToggleEdit }: EntryRowProps) {
   }
 
   return (
-    <tr className={row.active ? undefined : "opacity-60"}>
+    <tr className={row.active ? undefined : "opacity-75"}>
       <td className="font-bold">{row.name}</td>
       <td className="text-right tabular">{formatUSD(row.priceCents)}</td>
       {kind === "item" ? (

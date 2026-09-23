@@ -99,3 +99,44 @@
 @utility tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/*
+ * Muted text never drops below 75% of the text colour. daisyUI draws stat
+ * titles and table headings at 60%, which measures 4.0:1 on this theme's
+ * cream, under WCAG AA's 4.5:1 for normal text; 75% measures 6.4:1 or better on
+ * both shipped themes, with room for a deployment skin.
+ */
+.stat-title,
+.stat-desc,
+.table :where(thead, tfoot) {
+  color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
+}
+
+/*
+ * A visible focus ring on everything a keyboard can reach, in the theme's own
+ * colour, including the controls daisyUI leaves to the browser default.
+ */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Motion is decoration here, so it goes entirely for anyone who asks. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * A heading focused after navigation is a reading position, not a control, so
+ * it gets no focus ring. See src/components/page-focus.tsx.
+ */
+[data-route-focus]:focus {
+  outline: none;
+}

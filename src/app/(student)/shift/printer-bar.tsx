@@ -97,7 +97,7 @@ export function PrinterBar() {
       {status === "connected" || status === "printing" ? (
         <PrinterCheck size={34} aria-hidden="true" className="text-success" />
       ) : (
-        <Printer size={34} aria-hidden="true" className="opacity-60" />
+        <Printer size={34} aria-hidden="true" className="opacity-75" />
       )}
 
       <span className="text-[20px] font-bold">

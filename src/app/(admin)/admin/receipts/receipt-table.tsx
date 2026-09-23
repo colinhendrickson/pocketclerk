@@ -72,7 +72,12 @@ export function ReceiptTable({ rows, failedCount }: ReceiptTableProps) {
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+      <div
+        role="region"
+        aria-label="Receipts"
+        tabIndex={0}
+        className="overflow-x-auto rounded-box border border-base-300 bg-base-100"
+      >
         <table className="table table-sm">
           <thead>
             <tr>
@@ -99,7 +104,7 @@ export function ReceiptTable({ rows, failedCount }: ReceiptTableProps) {
                 <td className="tabular whitespace-nowrap">{row.createdAt}</td>
                 <td>
                   {row.teacherName}
-                  <span className="opacity-60">
+                  <span className="opacity-75">
                     {" · "}
                     {formatUSD(row.orderTotalCents)}
                     {" · by "}

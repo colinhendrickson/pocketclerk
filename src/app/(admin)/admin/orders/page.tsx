@@ -129,7 +129,12 @@ export default async function AdminOrdersPage({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+      <div
+        role="region"
+        aria-label="Orders"
+        tabIndex={0}
+        className="overflow-x-auto rounded-box border border-base-300 bg-base-100"
+      >
         <table className="table table-sm">
           <thead>
             <tr>
@@ -158,14 +163,14 @@ export default async function AdminOrdersPage({
                 <td className="whitespace-nowrap">
                   {row.teacherName}
                   {row.room ? (
-                    <span className="opacity-60"> · Room {row.room}</span>
+                    <span className="opacity-75"> · Room {row.room}</span>
                   ) : null}
                 </td>
                 <td>{row.studentName}</td>
                 <td>
                   {row.items}
                   {row.extras ? (
-                    <span className="opacity-60"> ({row.extras})</span>
+                    <span className="opacity-75"> ({row.extras})</span>
                   ) : null}
                 </td>
                 <td className="text-right tabular">{formatUSD(row.totalCents)}</td>

@@ -36,7 +36,9 @@ export function ChangeCard({
   hint,
 }: ChangeCardProps) {
   return (
-    <div className="card bg-neutral text-neutral-content">
+    // A live region, so the answer is read aloud the moment it appears and
+    // again whenever the amount received changes.
+    <div role="status" aria-atomic="true" className="card bg-neutral text-neutral-content">
       {/* The size container for the change figure, which scales to its width. */}
       <div className="@container card-body w-full items-center gap-2 px-4 text-center md:px-8">
         <p className="text-[18px] font-bold opacity-80">{label}</p>

@@ -33,6 +33,7 @@
     "resend": "^6.26.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@faker-js/faker": "^10.6.0",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",

@@ -1,5 +1,6 @@
 import { createHmac } from "node:crypto";
 
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import postgres from "postgres";
 
@@ -18,6 +19,10 @@ import postgres from "postgres";
  * scroll at any width"), and the change amount fits inside its card. Admin
  * tables may scroll within their own card, which §3 allows; the page may not.
  *
+ * Every screen is also run through axe against WCAG 2.2 A and AA. Problems are
+ * collected across the whole walk and reported together at the end, so one
+ * failing run lists everything rather than the first thing.
+ *
  * It stops at the change screen rather than completing a sale, so it adds no
  * orders for the shift test to count.
  */
@@ -32,11 +37,19 @@ const SIZES = [
 
 const ADMIN_PAGES = ["", "/students", "/teachers", "/menu", "/orders", "/receipts"];
 
-async function expectNoSidewaysScroll(page: Page, screen: string) {
+const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+
+async function checkScreen(page: Page, screen: string, problems: string[]) {
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - window.innerWidth,
   );
   expect(overflow, `${screen} scrolls sideways by ${overflow}px`).toBeLessThanOrEqual(0);
+
+  const { violations } = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+  for (const v of violations) {
+    const where = v.nodes.map((n) => n.target.join(" ")).slice(0, 3).join(", ");
+    problems.push(`${screen}: [${v.impact}] ${v.id}: ${v.help} (${v.nodes.length}x: ${where})`);
+  }
 }
 
 /**
@@ -62,13 +75,27 @@ async function signInAsAdmin(page: Page) {
 for (const size of SIZES) {
   test(`every screen fits a ${size.name} (${size.width}px)`, async ({ page }) => {
     await page.setViewportSize({ width: size.width, height: size.height });
+    const problems: string[] = [];
+
+    await test.step("signed out", async () => {
+      await page.goto("/admin/sign-in");
+      await checkScreen(page, "admin sign-in", problems);
+      await page.goto("/not-set-up");
+      await checkScreen(page, "device not set up", problems);
+    });
 
     await test.step("admin", async () => {
       await signInAsAdmin(page);
       for (const path of ADMIN_PAGES) {
         await page.goto(`/admin${path}`);
         await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-        await expectNoSidewaysScroll(page, `/admin${path}`);
+        await checkScreen(page, `/admin${path}`, problems);
+      }
+      // Below xl the navigation is a drawer, which is a screen of its own.
+      if (size.width < 1280) {
+        await page.getByRole("button", { name: "Menu" }).click();
+        await expect(page.getByRole("navigation", { name: "Admin" })).toBeVisible();
+        await checkScreen(page, "admin menu open", problems);
       }
       await page.context().clearCookies();
     });
@@ -77,30 +104,30 @@ for (const size of SIZES) {
       const code = process.env.DEVICE_CODE;
       if (code) await page.goto(`/setup?code=${encodeURIComponent(code)}`);
       await page.goto("/");
-      await expectNoSidewaysScroll(page, "student list");
+      await checkScreen(page, "student list", problems);
 
       await page.locator('a[href^="/pin/"]').first().click();
       await expect(page).toHaveURL(/\/pin\//);
-      await expectNoSidewaysScroll(page, "PIN");
+      await checkScreen(page, "PIN", problems);
       for (const digit of ["1", "2", "3", "4"]) {
         await page.getByRole("button", { name: digit, exact: true }).click();
       }
       await expect(page).toHaveURL(/\/shift$/, { timeout: 20_000 });
-      await expectNoSidewaysScroll(page, "shift dashboard");
+      await checkScreen(page, "shift dashboard", problems);
     });
 
     await test.step("order, up to the change", async () => {
       await page.getByRole("button", { name: /Start classroom order/i }).click();
       await expect(page).toHaveURL(/\/shift\/order$/);
-      await expectNoSidewaysScroll(page, "teacher picker");
+      await checkScreen(page, "teacher picker", problems);
 
       await page.locator("button:has(.card-body)").first().click();
       await page.getByRole("button", { name: /Add one Coffee$/i }).first().click();
-      await expectNoSidewaysScroll(page, "order builder");
+      await checkScreen(page, "order builder", problems);
 
       await page.getByRole("button", { name: /Go to payment/i }).click();
       await page.getByRole("button", { name: /^\$20/ }).click();
-      await expectNoSidewaysScroll(page, "change");
+      await checkScreen(page, "change", problems);
 
       // The whole figure is inside the card: nothing of it is cut off.
       const card = page.locator(".card", { hasText: "Give back" });
@@ -114,8 +141,10 @@ for (const size of SIZES) {
     await test.step("other shift screens", async () => {
       for (const path of ["/shift/orders", "/shift/inventory", "/shift/clock-out"]) {
         await page.goto(path);
-        await expectNoSidewaysScroll(page, path);
+        await checkScreen(page, path, problems);
       }
     });
+
+    expect(problems, `Accessibility problems:\n${problems.join("\n")}`).toEqual([]);
   });
 }

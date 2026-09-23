@@ -323,7 +323,12 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
               })}
             </ul>
 
-            <div className="flex items-baseline justify-between gap-4 md:mt-auto md:block md:border-t md:border-base-300 md:pt-4">
+            {/* Read aloud each time an item or add-on changes the total. */}
+            <div
+              aria-live="polite"
+              aria-atomic="true"
+              className="flex items-baseline justify-between gap-4 md:mt-auto md:block md:border-t md:border-base-300 md:pt-4"
+            >
               <p className="text-[18px] font-bold opacity-70">Total</p>
               <MoneyDisplay cents={totalCents} size="running" />
             </div>

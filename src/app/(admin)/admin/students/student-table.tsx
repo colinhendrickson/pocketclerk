@@ -30,7 +30,12 @@ export function StudentTable({ rows, rewardName }: StudentTableProps) {
   const [resetting, setResetting] = useState<string | null>(null);
 
   return (
-    <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+    <div
+        role="region"
+        aria-label="Students"
+        tabIndex={0}
+        className="overflow-x-auto rounded-box border border-base-300 bg-base-100"
+      >
       <table className="table table-sm">
         <thead>
           <tr>
@@ -91,7 +96,7 @@ function StudentRows({ row, isResetting, onToggleReset }: StudentRowsProps) {
 
   return (
     <>
-      <tr className={row.active ? undefined : "opacity-60"}>
+      <tr className={row.active ? undefined : "opacity-75"}>
         <td className="font-bold">{row.displayName}</td>
         <td>
           <span className={`badge badge-sm whitespace-nowrap ${row.active ? "badge-success" : "badge-ghost"}`}>
@@ -125,7 +130,7 @@ function StudentRows({ row, isResetting, onToggleReset }: StudentRowsProps) {
 
       {error ? (
         <tr>
-          <td colSpan={6} className="text-sm font-bold text-error">
+          <td colSpan={6} role="alert" className="text-sm font-bold text-error">
             {error}
           </td>
         </tr>
@@ -206,7 +211,11 @@ function ResetPinForm({ studentId, studentName, onDone }: ResetPinFormProps) {
       <span className="text-sm opacity-70">
         Write it down before you save. It cannot be read back afterwards.
       </span>
-      {error ? <span className="text-sm font-bold text-error">{error}</span> : null}
+      {error ? (
+        <span role="alert" className="text-sm font-bold text-error">
+          {error}
+        </span>
+      ) : null}
     </form>
   );
 }

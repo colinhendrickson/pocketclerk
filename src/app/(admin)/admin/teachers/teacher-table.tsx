@@ -49,7 +49,12 @@ export function TeacherTable({ rows }: TeacherTableProps) {
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
-    <div className="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+    <div
+        role="region"
+        aria-label="Teachers"
+        tabIndex={0}
+        className="overflow-x-auto rounded-box border border-base-300 bg-base-100"
+      >
       <table className="table table-sm">
         <thead>
           <tr>
@@ -104,11 +109,11 @@ function TeacherRows({ row, isOpen, onToggle }: TeacherRowsProps) {
 
   return (
     <>
-      <tr className={row.active ? undefined : "opacity-60"}>
+      <tr className={row.active ? undefined : "opacity-75"}>
         <td className="font-bold">{row.name}</td>
         <td className="tabular">{row.room ?? "—"}</td>
         <td className="max-w-[18rem] truncate">
-          {row.email ?? <span className="opacity-60">no email</span>}
+          {row.email ?? <span className="opacity-75">no email</span>}
         </td>
         <td>
           <span className={`badge badge-sm whitespace-nowrap ${row.active ? "badge-success" : "badge-ghost"}`}>
@@ -209,7 +214,7 @@ function EditTeacherForm({ row }: EditTeacherFormProps) {
         submit();
       }}
     >
-      <h3 className="text-sm font-extrabold uppercase opacity-60">Details</h3>
+      <h3 className="text-sm font-extrabold uppercase opacity-75">Details</h3>
 
       <label className="flex flex-col gap-1">
         <span className="text-sm font-bold opacity-70">Name</span>
@@ -240,7 +245,7 @@ function EditTeacherForm({ row }: EditTeacherFormProps) {
           autoComplete="off"
           className="input input-bordered input-sm"
         />
-        <span className="text-xs opacity-60">
+        <span className="text-xs opacity-75">
           Empty means paper receipts only. Emailed receipts start again as soon
           as there is an address here.
         </span>
@@ -250,8 +255,16 @@ function EditTeacherForm({ row }: EditTeacherFormProps) {
         {pending ? "Saving…" : "Save details"}
       </button>
 
-      {error ? <p className="text-sm font-bold text-error">{error}</p> : null}
-      {saved ? <p className="text-sm font-bold text-success">Saved.</p> : null}
+      {error ? (
+        <p role="alert" className="text-sm font-bold text-error">
+          {error}
+        </p>
+      ) : null}
+      {saved ? (
+        <p role="status" className="text-sm font-bold text-success">
+          Saved.
+        </p>
+      ) : null}
     </form>
   );
 }
@@ -294,7 +307,7 @@ function NotesPanel({ row }: NotesPanelProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-sm font-extrabold uppercase opacity-60">
+      <h3 className="text-sm font-extrabold uppercase opacity-75">
         Notes shown to the student
       </h3>
 
@@ -344,7 +357,11 @@ function NotesPanel({ row }: NotesPanelProps) {
         </button>
       </form>
 
-      {error ? <p className="text-sm font-bold text-error">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-sm font-bold text-error">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -356,7 +373,7 @@ interface RecentOrdersProps {
 function RecentOrders({ orders }: RecentOrdersProps) {
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-sm font-extrabold uppercase opacity-60">Last 10 orders</h3>
+      <h3 className="text-sm font-extrabold uppercase opacity-75">Last 10 orders</h3>
       {orders.length === 0 ? (
         <p className="text-sm opacity-70">Nothing bought yet.</p>
       ) : (
