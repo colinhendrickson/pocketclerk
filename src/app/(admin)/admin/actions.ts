@@ -7,10 +7,11 @@ import {
   clearAdminSession,
   redeemSignInCode,
   requestSignInLink,
+  TOKEN_MINUTES,
 } from "@/lib/admin-auth";
 import { isConfigurationError } from "@/lib/config";
-import { formatSignInCode } from "@/lib/sign-in-code";
 import { getEmailSender } from "@/providers/email";
+import { renderSignInEmail } from "@/providers/renderer/sign-in";
 
 /**
  * Administrator sign-in actions.
@@ -43,36 +44,27 @@ export async function sendSignInLink(formData: FormData): Promise<void> {
     const link = `${base}/admin/verify?token=${result.token}`;
     const sender = getEmailSender();
 
-    // Reuses the receipt sender. Email is a provider, so a second kind of
-    // message costs one call rather than a second integration.
-    // Both ways in, in one mail. The link is for a laptop, where clicking is
-    // the fastest thing available. The code is for the cart's iPad, where the
-    // point is that a personal mailbox never gets opened on a shared device: the
-    // mail lands on a phone and only the six digits make the trip.
+    // Both ways in, in one mail. The code is for the cart's iPad, where the
+    // point is that a personal mailbox never gets opened on a shared device:
+    // the mail lands on a phone and only the six digits make the trip. The
+    // link is for a laptop where mail is already open.
+    const message = renderSignInEmail({
+      name: result.identity.name,
+      code: result.code,
+      link,
+      cartName: branding.cartName,
+      programName: branding.programName,
+      // A mail client has no page to resolve a relative path against, so a
+      // logo configured as "/logo.png" would arrive as a broken image.
+      logoUrl: branding.logoUrl ? new URL(branding.logoUrl, base).toString() : null,
+      expiresMinutes: TOKEN_MINUTES,
+    });
+
     const sent = await sender.sendText({
       to: result.identity.email,
-      // Code first, so a phone's lock screen shows it without the mail being
-      // opened at all. That is the whole point of it on a shared iPad.
-      subject: `${formatSignInCode(result.code)} is your ${branding.cartName} sign-in code`,
-      body: [
-        `Hello ${result.identity.name},`,
-        "",
-        `Sign-in code:  ${formatSignInCode(result.code)}`,
-        "",
-        "Type that on the sign-in screen. This is the one to use on the cart's",
-        "iPad, so you never have to sign into your email on it.",
-        "",
-        "Or, on a computer where you already have your email open, use this",
-        "link instead:",
-        "",
-        link,
-        "",
-        "Either one works once and expires in 15 minutes. Asking for a new code",
-        "replaces this one.",
-        "",
-        "If you did not ask for this, you can ignore it. Nobody can sign in",
-        "without the code or the link.",
-      ].join("\n"),
+      subject: message.subject,
+      body: message.text,
+      html: message.html,
     });
 
     // A rejected send used to vanish here. The provider returns a result rather

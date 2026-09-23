@@ -16,7 +16,10 @@ export interface SendResult {
 export interface TextMessage {
   to: string;
   subject: string;
+  /** Always sent. The fallback for clients that do not render HTML. */
   body: string;
+  /** Optional rich version. Providers that cannot send HTML ignore it. */
+  html?: string;
 }
 
 export interface EmailSender {

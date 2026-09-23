@@ -1,6 +1,9 @@
 import { Resend } from "resend";
 
+import { branding } from "@/lib/branding";
+
 import { renderReceiptText, type Receipt } from "../renderer/receipt";
+import { formatFrom } from "./from";
 import type { EmailSender, SendResult, TextMessage } from "./index";
 
 /**
@@ -24,15 +27,16 @@ export class ResendSender implements EmailSender {
   }
 
   async send(to: string, receipt: Receipt, jobId?: string): Promise<SendResult> {
-    const from = process.env.EMAIL_FROM;
-    if (!from) return { ok: false, error: "EMAIL_FROM is not configured." };
+    const address = process.env.EMAIL_FROM;
+    if (!address) return { ok: false, error: "EMAIL_FROM is not configured." };
+    const from = formatFrom(address, receipt.cartName);
 
     try {
       const { error } = await this.client.emails.send(
         {
           from,
           to,
-          replyTo: process.env.EMAIL_REPLY_TO ?? from,
+          replyTo: process.env.EMAIL_REPLY_TO ?? address,
           subject: `Your receipt from ${receipt.cartName}`,
           text: renderReceiptText(receipt),
         },
@@ -49,16 +53,18 @@ export class ResendSender implements EmailSender {
   }
 
   async sendText(message: TextMessage): Promise<SendResult> {
-    const from = process.env.EMAIL_FROM;
-    if (!from) return { ok: false, error: "EMAIL_FROM is not configured." };
+    const address = process.env.EMAIL_FROM;
+    if (!address) return { ok: false, error: "EMAIL_FROM is not configured." };
+    const from = formatFrom(address, branding.cartName);
 
     try {
       const { error } = await this.client.emails.send({
         from,
         to: message.to,
-        replyTo: process.env.EMAIL_REPLY_TO ?? from,
+        replyTo: process.env.EMAIL_REPLY_TO ?? address,
         subject: message.subject,
         text: message.body,
+        ...(message.html ? { html: message.html } : {}),
       });
       return error ? { ok: false, error: error.message } : { ok: true };
     } catch (error) {

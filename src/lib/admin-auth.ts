@@ -29,8 +29,11 @@ import { newSignInCode, normalizeSignInCode } from "@/lib/sign-in-code";
 const COOKIE_NAME = "pocketclerk_admin";
 /** A school day, so a laptop left closed overnight signs out. */
 const SESSION_SECONDS = 60 * 60 * 10;
-/** Long enough to walk to a laptop, short enough that a forwarded mail is stale. */
-const TOKEN_MINUTES = 15;
+/**
+ * Long enough to walk to a laptop, short enough that a forwarded mail is stale.
+ * Exported so the email states the same number the database enforces.
+ */
+export const TOKEN_MINUTES = 15;
 /** Sign-in links requestable per address per hour, to stop mailbox flooding. */
 const MAX_LINKS_PER_HOUR = 5;
 /**
