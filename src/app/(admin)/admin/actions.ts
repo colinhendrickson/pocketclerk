@@ -83,11 +83,27 @@ export async function sendSignInLink(formData: FormData): Promise<void> {
     // It stays a log line rather than a message on the page: the send is only
     // attempted for an address that IS an administrator, so "we could not send
     // that" on screen would answer the one question the form refuses to answer.
-    if (!sent.ok) {
+    if (sent.ok) {
+      console.info(`[sign-in] code sent via ${sender.name}`);
+    } else {
       console.error(
         `[email] sign-in send failed via ${sender.name}: ${sent.error ?? "no reason given"}`,
       );
     }
+  } else {
+    // The page is identical on these paths, deliberately, so the log is the
+    // only place the difference can show. Before this, a rate-limited request
+    // produced a friendly "code on its way", no mail, and a completely empty
+    // log: from the outside indistinguishable from a broken email provider,
+    // and it cost a real deployment an evening to tell the two apart.
+    //
+    // The address is left out. The log is private to whoever deployed this,
+    // but there is no reason to collect strangers' addresses in it either.
+    console.warn(
+      result.error === "rate_limited"
+        ? "[sign-in] no code sent: rate limited, 5 per address per hour"
+        : "[sign-in] no code sent: address is not on the administrator allowlist",
+    );
   }
 
   // The address comes back with the redirect so the code form knows whose code
