@@ -19,17 +19,19 @@ export function DashboardActions() {
   const router = useRouter();
 
   return (
-    <div className="flex flex-col gap-4">
+    // Below md all five stack full width and Clock out sits at the bottom of
+    // the screen, apart from the rest, per DESIGN.md §3.
+    <div className="flex flex-1 flex-col gap-4">
       <BigButton
         variant="primary"
         icon={Coffee}
         onClick={() => router.push("/shift/order")}
-        className="min-h-[160px] text-[34px]"
+        className="min-h-[88px] md:min-h-[160px]"
       >
         Start classroom order
       </BigButton>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="flex flex-1 flex-col gap-4 md:grid md:flex-none md:grid-cols-2">
         <BigButton
           layout="tile"
           icon={ClipboardList}
@@ -51,6 +53,7 @@ export function DashboardActions() {
           layout="tile"
           variant="clockOut"
           icon={LogOut}
+          className="mt-auto md:mt-0"
           onClick={() => router.push("/shift/clock-out")}
         >
           Clock out

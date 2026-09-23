@@ -94,7 +94,7 @@ function StudentRows({ row, isResetting, onToggleReset }: StudentRowsProps) {
       <tr className={row.active ? undefined : "opacity-60"}>
         <td className="font-bold">{row.displayName}</td>
         <td>
-          <span className={`badge badge-sm ${row.active ? "badge-success" : "badge-ghost"}`}>
+          <span className={`badge badge-sm whitespace-nowrap ${row.active ? "badge-success" : "badge-ghost"}`}>
             {row.active ? "Active" : "Inactive"}
           </span>
         </td>

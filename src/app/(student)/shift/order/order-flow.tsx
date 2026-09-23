@@ -193,8 +193,10 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
           onBack={() => setStage("teacher")}
         />
 
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 lg:grid lg:grid-cols-[1fr_400px] lg:items-start">
-          <div className="flex flex-col gap-4">
+        {/* Below md the order summary is a sheet fixed to the bottom of the
+            screen, so the bottom padding keeps the last menu row clear of it. */}
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-[260px] md:grid md:grid-cols-[1fr_340px] md:items-start md:p-6 lg:grid-cols-[1fr_400px]">
+          <div className="flex min-w-0 flex-col gap-4">
             {/* Notes sit above the menu, never below it and never collapsed.
                 Remembering the customer is the lesson; the layout enforces it. */}
             {teacher.notes.map((note) => (
@@ -203,7 +205,7 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
               </NoteBanner>
             ))}
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               {menu.map((item) => {
                 const qty = lines
                   .filter((l) => l.menuItemId === item.id)
@@ -211,9 +213,9 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
                 return (
                   <div
                     key={item.id}
-                    className="flex min-h-[110px] items-center gap-4 rounded-box border border-base-300 bg-base-100 p-4"
+                    className="flex min-h-[64px] items-center gap-4 rounded-box border border-base-300 bg-base-100 p-3 md:min-h-[110px] md:p-4"
                   >
-                    <div className="flex-1">
+                    <div className="min-w-0 flex-1">
                       <p className="text-[26px] font-extrabold">{item.name}</p>
                       {item.isSpecial ? (
                         <p className="text-[15px] font-bold text-accent">Special treat</p>
@@ -277,8 +279,17 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
             ) : null}
           </div>
 
-          <aside className="flex flex-col gap-4 rounded-box border border-base-300 bg-base-100 p-6 lg:sticky lg:top-6">
-            <ul className="flex flex-col gap-2">
+          <aside className="flex flex-col gap-3 border-base-300 bg-base-100 max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-10 max-md:border-t max-md:p-4 md:sticky md:top-6 md:gap-4 md:rounded-box md:border md:p-6">
+            {/* The sheet has room for one line, so it names what is in the
+                order; the full list with add-ons is shown from md up. */}
+            <p className="truncate text-[20px] font-bold md:hidden">
+              {lines.length === 0
+                ? "Nothing added yet"
+                : lines
+                    .map((line) => `${line.qty} × ${menuById.get(line.menuItemId)?.name ?? ""}`)
+                    .join(", ")}
+            </p>
+            <ul className="hidden flex-col gap-2 md:flex">
               {lines.map((line, i) => {
                 const item = menuById.get(line.menuItemId);
                 if (!item) return null;
@@ -312,7 +323,7 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
               })}
             </ul>
 
-            <div className="mt-auto border-t border-base-300 pt-4">
+            <div className="flex items-baseline justify-between gap-4 md:mt-auto md:block md:border-t md:border-base-300 md:pt-4">
               <p className="text-[18px] font-bold opacity-70">Total</p>
               <MoneyDisplay cents={totalCents} size="running" />
             </div>
@@ -321,6 +332,7 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
               variant="primary"
               disabled={lines.length === 0}
               onClick={() => setStage("pay")}
+              className="min-h-[72px]"
             >
               Go to payment
             </BigButton>
@@ -344,8 +356,11 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
           onBack={() => setStage("build")}
         />
 
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-6 lg:grid lg:grid-cols-[1fr_420px] lg:items-start">
-          <div className="flex flex-col gap-4">
+        {/* Below md one column, in the order DESIGN.md §3 gives: what is owed,
+            the change, the bills and keypad, then the button. From md up the
+            input sits in its own column and the button moves under the change. */}
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 md:grid md:grid-cols-[1fr_360px] md:grid-rows-[auto_1fr] md:items-start md:p-6 lg:grid-cols-[1fr_420px]">
+          <div className="flex min-w-0 flex-col gap-4 md:col-start-1 md:row-start-1">
             <table className="table rounded-box bg-base-100 text-[22px] font-extrabold">
               <tbody>
                 <tr>
@@ -368,13 +383,9 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
                 {error}
               </p>
             ) : null}
-
-            <BigButton variant="primary" disabled={!enough || pending} onClick={submit}>
-              {pending ? "Saving…" : "Change given, print receipt"}
-            </BigButton>
           </div>
 
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 md:col-start-2 md:row-span-2 md:row-start-1">
             <p className="text-[18px] font-bold opacity-70">Bills handed to you</p>
             <BillButtons
               selectedCents={selectedBill}
@@ -398,6 +409,15 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
               }}
             />
           </div>
+
+          <BigButton
+            variant="primary"
+            disabled={!enough || pending}
+            onClick={submit}
+            className="md:col-start-1 md:row-start-2"
+          >
+            {pending ? "Saving…" : "Change given, print receipt"}
+          </BigButton>
         </div>
       </div>
     );
@@ -408,7 +428,7 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
     return (
       <div className="flex flex-1 flex-col">
         <StepHeader step={4} totalSteps={4} title="Order done" steps={STEPS} />
-        <div className="flex flex-1 flex-col items-center justify-center gap-6 p-8 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-6 p-4 text-center md:p-8">
           <span className="grid size-[150px] place-items-center rounded-full bg-success text-success-content">
             <Check size={80} aria-hidden="true" />
           </span>

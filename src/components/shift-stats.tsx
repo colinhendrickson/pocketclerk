@@ -13,7 +13,8 @@
  * formatted through `src/lib/money.ts`. A stat is a display of a number the
  * database already computed; nothing in this file divides, sums, or rounds.
  *
- * Value type sizes track §2: 34px normally, 22px in the compact phone row.
+ * Value type sizes track §2: 34px from md up, 22px in the phone row below it,
+ * which is what keeps three stats on one row at phone width.
  */
 
 import { formatHours, formatUSD } from "@/lib/money";
@@ -27,7 +28,7 @@ export interface ShiftStatsProps {
   items: readonly ShiftStat[];
   /** Student screens are capped at three stats; admin screens are not. */
   audience?: "student" | "admin";
-  /** Drops values to the 22px step used in the phone-portrait row. */
+  /** Pins values to the 22px phone step at every width. */
   compact?: boolean;
   /** Layout-only extras. Never a colour. */
   className?: string;
@@ -53,16 +54,18 @@ export function ShiftStats({
 
   return (
     <div
-      className={`stats bg-base-100 border border-base-300 ${className ?? ""}`}
+      className={`stats w-full bg-base-100 border border-base-300 md:w-auto ${className ?? ""}`}
     >
       {shown.map((item) => {
         const { text, tabular } = renderValue(item);
         return (
-          <div key={item.title} className="stat">
-            <div className="stat-title text-[18px] font-bold">{item.title}</div>
+          <div key={item.title} className="stat px-3 py-3 md:px-6 md:py-4">
+            <div className="stat-title text-[15px] font-bold md:text-[18px]">
+              {item.title}
+            </div>
             <div
               className={`stat-value font-extrabold ${
-                compact ? "text-[22px]" : "text-[34px]"
+                compact ? "text-[22px]" : "text-[22px] md:text-[34px]"
               } ${tabular ? "tabular" : ""}`}
             >
               {text}

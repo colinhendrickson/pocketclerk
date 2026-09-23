@@ -37,7 +37,8 @@ export function ChangeCard({
 }: ChangeCardProps) {
   return (
     <div className="card bg-neutral text-neutral-content">
-      <div className="card-body items-center text-center gap-2">
+      {/* The size container for the change figure, which scales to its width. */}
+      <div className="@container card-body w-full items-center gap-2 px-4 text-center md:px-8">
         <p className="text-[18px] font-bold opacity-80">{label}</p>
         <MoneyDisplay cents={changeCents} size="change" />
         <p className="text-[22px] font-extrabold">

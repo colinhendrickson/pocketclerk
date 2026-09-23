@@ -112,7 +112,7 @@ export function PrinterBar() {
         <button
           type="button"
           onClick={connect}
-          className="btn btn-outline btn-secondary ml-auto min-h-[60px] text-[20px] font-extrabold"
+          className="btn btn-outline btn-secondary min-h-[60px] w-full text-[20px] font-extrabold sm:ml-auto sm:w-auto"
         >
           Connect printer
         </button>

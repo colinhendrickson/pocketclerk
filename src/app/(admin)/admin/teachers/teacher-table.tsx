@@ -111,7 +111,7 @@ function TeacherRows({ row, isOpen, onToggle }: TeacherRowsProps) {
           {row.email ?? <span className="opacity-60">no email</span>}
         </td>
         <td>
-          <span className={`badge badge-sm ${row.active ? "badge-success" : "badge-ghost"}`}>
+          <span className={`badge badge-sm whitespace-nowrap ${row.active ? "badge-success" : "badge-ghost"}`}>
             {row.active ? "Active" : "Inactive"}
           </span>
         </td>

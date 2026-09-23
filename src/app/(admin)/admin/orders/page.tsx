@@ -86,7 +86,7 @@ export default async function AdminOrdersPage({
   });
 
   return (
-    <main className="flex flex-1 flex-col gap-6 p-6">
+    <main className="flex min-w-0 flex-1 flex-col gap-6 p-4 md:p-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold">Orders</h1>

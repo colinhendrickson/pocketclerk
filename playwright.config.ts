@@ -9,14 +9,15 @@ loadEnv({ path: [".env.local", ".env"] });
 /**
  * End-to-end configuration.
  *
- * There is exactly one spec, and that is deliberate. End-to-end tests are slow
- * and the flakiest thing in any suite; correctness is carried by the unit tests
- * and by the database constraints. This spec exists to prove the seams connect:
- * that a real browser can drive a real server against a real Postgres from
- * sign-in to clock-out.
+ * There are two specs, and that is deliberate. End-to-end tests are slow and
+ * the flakiest thing in any suite; correctness is carried by the unit tests and
+ * by the database constraints. The shift spec proves the seams connect: that a
+ * real browser can drive a real server against a real Postgres from sign-in to
+ * clock-out. The responsive spec proves every screen fits every screen size,
+ * which no other test can see.
  *
- * The viewport is an iPad in landscape, because that is the only device this
- * will ever run on.
+ * The default viewport is an iPad in landscape, the cart's own device. The
+ * responsive spec sets its own sizes.
  */
 export default defineConfig({
   testDir: "./tests/e2e",

@@ -325,7 +325,7 @@ function EntryRow({ kind, row, isEditing, onToggleEdit }: EntryRowProps) {
         </td>
       ) : null}
       <td>
-        <span className={`badge badge-sm ${row.active ? "badge-success" : "badge-ghost"}`}>
+        <span className={`badge badge-sm whitespace-nowrap ${row.active ? "badge-success" : "badge-ghost"}`}>
           {row.active ? "On the menu" : "Off the menu"}
         </span>
       </td>

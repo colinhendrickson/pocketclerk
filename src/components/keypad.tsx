@@ -30,8 +30,10 @@ const DIGIT_ROWS: readonly (readonly string[])[] = [
   ["7", "8", "9"],
 ];
 
-const KEY_CLASS =
-  "btn bg-base-100 border-base-300 min-h-[60px] h-[72px] text-[34px] font-extrabold tabular";
+// No type size here: two size classes on one element leave the winner to
+// stylesheet order, which is how "Clear" came out at 34px instead of 22px.
+const KEY_BASE = "btn bg-base-100 border-base-300 min-h-[60px] h-[72px] font-extrabold tabular";
+const KEY_CLASS = `${KEY_BASE} text-[34px]`;
 
 export interface KeypadProps {
   /** Called with a single character, "0"–"9". The screen appends it. */
@@ -73,7 +75,7 @@ export function Keypad({
         aria-label="Clear the amount"
         onClick={onClear}
         disabled={disabled || !onClear}
-        className={`${KEY_CLASS} text-[22px]`}
+        className={`${KEY_BASE} text-[22px]`}
       >
         Clear
       </button>
@@ -121,29 +123,30 @@ export function BillButtons({
   disabled,
 }: BillButtonsProps) {
   return (
-    <div
-      role="group"
-      aria-label="Bill amounts"
-      className="grid grid-cols-4 gap-3"
-    >
-      {bills.map((cents) => {
-        const selected = cents === selectedCents;
-        return (
-          <button
-            key={cents}
-            type="button"
-            aria-pressed={selected}
-            aria-label={`${formatUSD(cents)} bill`}
-            onClick={() => onSelect(cents)}
-            disabled={disabled}
-            className={`btn ${
-              selected ? "btn-secondary" : "btn-outline btn-secondary"
-            } min-h-[60px] h-[72px] text-[22px] font-extrabold tabular`}
-          >
-            {formatUSD(cents)}
-          </button>
-        );
-      })}
+    <div role="group" aria-label="Bill amounts" className="@container">
+      {/* Four across only where each bill is wide enough for "$20.00" at
+          22px; two by two otherwise. Measured on the space this group gets,
+          not the screen, because on a tablet it sits in a narrow column. */}
+      <div className="grid grid-cols-2 gap-3 @min-[26rem]:grid-cols-4">
+        {bills.map((cents) => {
+          const selected = cents === selectedCents;
+          return (
+            <button
+              key={cents}
+              type="button"
+              aria-pressed={selected}
+              aria-label={`${formatUSD(cents)} bill`}
+              onClick={() => onSelect(cents)}
+              disabled={disabled}
+              className={`btn ${
+                selected ? "btn-secondary" : "btn-outline btn-secondary"
+              } min-h-[60px] h-[72px] px-1 text-[22px] font-extrabold tabular`}
+            >
+              {formatUSD(cents)}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

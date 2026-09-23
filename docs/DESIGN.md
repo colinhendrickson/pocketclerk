@@ -128,11 +128,11 @@ All ≥ 4.5:1. Any deployment skin must clear the same bar: 4.5:1 for every pair
 | (comparison) | Nunito 700/800/900 | Rounder, friendlier; reads slightly younger. Shown in 2d for a decision, not mixed in. |
 
 Type scale (px / weight / use) — one scale, all themes:
-- 184–200 / 800 — **Change amount** (only place this size exists)
-- 104 / 800 — Total on the payment screen
-- 64–72 / 800 — Running total (order builder), "Paid by card"
+- 184–200 / 800 — **Change amount** (only place this size exists). 192px wherever it fits; narrower cards shrink it to exactly their width (container units, sized by the figure's own length), so it is never cut off and stays the largest text on screen
+- 104 / 800 — Total on the payment screen (64 below md)
+- 64–72 / 800 — Running total (order builder), "Paid by card" (52 in the phone bottom sheet)
 - 44–48 / 800 — Screen question / welcome headline
-- 34 / 800 — Primary BigButton label
+- 34 / 800 — Primary BigButton label (26 below lg, where it sits in phone widths and 340–360px tablet columns)
 - 26 / 800 — Screen title in StepHeader, menu item names
 - 22–24 / 800 — Secondary BigButton labels, NoteBanner text, list rows
 - 18–20 / 700 — Body, stat titles, helper lines
@@ -162,14 +162,16 @@ Breakpoints (Tailwind defaults): `<md` phone portrait (≤ 767), `md–lg` iPad 
 **Cash change**
 - lg+: `grid-cols-[1fr_420px]`; left = owed/received `table`, change card, primary; right = bill quick-buttons row + 3×4 keypad.
 - md: keypad column narrows to 360px; change type drops to 150px.
-- <md: single column in this order — owed/received table → **change card** (still the largest text on screen, 120px) → denomination hint → bill quick-buttons → keypad (3 cols, 64px keys) → primary button. The change card is above the keypad so the answer is visible while the student is still tapping.
+- <md: single column in this order — owed/received table → **change card** (still the largest text on screen; sized to the card, about 105px on a 390px phone) → denomination hint → bill quick-buttons (2×2 wherever a row of four would not fit "$20.00") → keypad (3 cols) → primary button. The change card is above the keypad so the answer is visible while the student is still tapping.
 
 **Card confirmation (modal)**
 - lg+: `modal-box` 760px; <md: `modal-bottom` full-width sheet; both keep the "Type badge number instead" fallback as a full-width secondary button.
 
 **Admin area** (denser, secondary audience)
 - xl+: persistent `drawer drawer-open` sidebar + `table` views.
-- <xl: `drawer` closed by default with a hamburger in the `navbar`; tables switch to `table-xs` with horizontal scroll allowed (admin only).
+- <xl: `drawer` closed by default with a hamburger in the `navbar`; the drawer closes itself after a link is tapped; tables scroll horizontally inside their card (admin only). The page itself never scrolls sideways.
+
+`tests/e2e/responsive.spec.ts` checks every screen at 320, 390, 768, 1180 and 1440px for sideways scroll and for a change amount that fits its card.
 
 ---
 
