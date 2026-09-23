@@ -63,6 +63,50 @@ export async function listStudentsWithTotals(): Promise<StudentRow[]> {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Dashboard                                                                  */
+/* -------------------------------------------------------------------------- */
+
+export interface DashboardStats {
+  ordersToday: number;
+  salesTodayCents: number;
+  openShifts: number;
+  failedReceipts: number;
+}
+
+/**
+ * The four numbers on the admin landing page.
+ *
+ * `since` is sent as an ISO string with an explicit cast, never as a `Date`.
+ * Drizzle's postgres.js adapter swaps the driver's timestamp serializer for a
+ * pass-through, trusting its column mappers to have turned every Date into a
+ * string first. A raw `sql` template has no column mapper, so a bare Date went
+ * straight to a serializer that only accepts strings, and the dashboard threw
+ * for every administrator on every visit. It was never caught because nothing
+ * tested this query; tests/admin-queries.test.ts does now.
+ */
+export async function getDashboardStats(since: Date): Promise<DashboardStats> {
+  const from = since.toISOString();
+  const [row] = await db.execute<{
+    orders_today: number;
+    sales_today: number;
+    open_shifts: number;
+    failed_receipts: number;
+  }>(sql`
+    SELECT
+      (SELECT count(*)::int FROM orders WHERE created_at >= ${from}::timestamptz) AS orders_today,
+      (SELECT coalesce(sum(total_cents), 0)::int FROM orders WHERE created_at >= ${from}::timestamptz) AS sales_today,
+      (SELECT count(*)::int FROM shifts WHERE clock_out IS NULL) AS open_shifts,
+      (SELECT count(*)::int FROM receipt_jobs WHERE status = 'failed') AS failed_receipts
+  `);
+  return {
+    ordersToday: row?.orders_today ?? 0,
+    salesTodayCents: row?.sales_today ?? 0,
+    openShifts: row?.open_shifts ?? 0,
+    failedReceipts: row?.failed_receipts ?? 0,
+  };
+}
+
+/* -------------------------------------------------------------------------- */
 /* Teachers                                                                   */
 /* -------------------------------------------------------------------------- */
 

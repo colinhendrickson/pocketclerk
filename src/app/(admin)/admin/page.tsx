@@ -1,10 +1,9 @@
 import Link from "next/link";
 
-import { db } from "@/db";
+import { getDashboardStats } from "@/lib/admin-queries";
 import { branding } from "@/lib/branding";
 import { formatUSD } from "@/lib/money";
 import { startOfLocalDay, today } from "@/lib/time";
-import { sql } from "drizzle-orm";
 
 import { requireAdmin } from "./require-admin";
 
@@ -24,18 +23,7 @@ export default async function AdminHomePage() {
   // at 8 PM there, so an evening look at the dashboard read zero sales.
   const since = startOfLocalDay(today());
 
-  const [stats] = await db.execute<{
-    orders_today: number;
-    sales_today: number;
-    open_shifts: number;
-    failed_receipts: number;
-  }>(sql`
-    SELECT
-      (SELECT count(*)::int FROM orders WHERE created_at >= ${since}) AS orders_today,
-      (SELECT coalesce(sum(total_cents), 0)::int FROM orders WHERE created_at >= ${since}) AS sales_today,
-      (SELECT count(*)::int FROM shifts WHERE clock_out IS NULL) AS open_shifts,
-      (SELECT count(*)::int FROM receipt_jobs WHERE status = 'failed') AS failed_receipts
-  `);
+  const stats = await getDashboardStats(since);
 
   return (
     <main className="flex flex-1 flex-col gap-6 p-6">
@@ -44,27 +32,27 @@ export default async function AdminHomePage() {
       <div className="stats stats-vertical border border-base-300 bg-base-100 lg:stats-horizontal">
         <div className="stat">
           <span className="stat-title">Orders today</span>
-          <span className="stat-value tabular">{stats?.orders_today ?? 0}</span>
+          <span className="stat-value tabular">{stats.ordersToday}</span>
         </div>
         <div className="stat">
           <span className="stat-title">Sales today</span>
           <span className="stat-value tabular">
-            {formatUSD(stats?.sales_today ?? 0)}
+            {formatUSD(stats.salesTodayCents)}
           </span>
         </div>
         <div className="stat">
           <span className="stat-title">Shifts open now</span>
-          <span className="stat-value tabular">{stats?.open_shifts ?? 0}</span>
+          <span className="stat-value tabular">{stats.openShifts}</span>
         </div>
         <div className="stat">
           <span className="stat-title">Receipts failed</span>
           <span className="stat-value tabular">
-            {stats?.failed_receipts ?? 0}
+            {stats.failedReceipts}
           </span>
         </div>
       </div>
 
-      {(stats?.failed_receipts ?? 0) > 0 ? (
+      {stats.failedReceipts > 0 ? (
         <Link href="/admin/receipts" className="alert alert-warning rounded-box">
           Some receipts could not be delivered. Open the receipts page to see why
           and try again.
