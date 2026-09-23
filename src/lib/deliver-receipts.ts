@@ -5,7 +5,7 @@ import {
   markSent,
   receiptEmailFor,
 } from "@/lib/receipt-jobs";
-import { getEmailSender } from "@/providers/email";
+import { getEmailSender, type EmailSender } from "@/providers/email";
 
 /**
  * Drains queued email receipts.
@@ -25,9 +25,11 @@ export interface DeliveryOutcome {
   failed: number;
 }
 
-export async function deliverQueuedEmails(limit = 10): Promise<DeliveryOutcome> {
+export async function deliverQueuedEmails(
+  limit = 10,
+  sender: EmailSender = getEmailSender(),
+): Promise<DeliveryOutcome> {
   const jobs = await claimJobs("email", limit);
-  const sender = getEmailSender();
   let sent = 0;
   let failed = 0;
 
@@ -51,7 +53,9 @@ export async function deliverQueuedEmails(limit = 10): Promise<DeliveryOutcome> 
         continue;
       }
 
-      const result = await sender.send(to, receipt);
+      // The job id makes a retry of an already-delivered receipt a no-op at
+      // the provider, instead of a second email to the teacher.
+      const result = await sender.send(to, receipt, job.id);
       if (result.ok) {
         await markSent(job.id);
         sent += 1;
@@ -60,11 +64,21 @@ export async function deliverQueuedEmails(limit = 10): Promise<DeliveryOutcome> 
         failed += 1;
       }
     } catch (error) {
-      await markFailed(
-        job.id,
-        error instanceof Error ? error.message : "Unexpected error.",
-      );
       failed += 1;
+      const reason = error instanceof Error ? error.message : "Unexpected error.";
+      // Recording the failure can itself fail, on the same dead connection or
+      // bug that caused it. That must not escape the loop: it would abandon
+      // every remaining job in the batch mid-flight. The job is reclaimed once
+      // it has sat in processing long enough, so logging is enough here.
+      try {
+        await markFailed(job.id, reason);
+      } catch (recordError) {
+        console.error(
+          `[receipts] job ${job.id} failed (${reason}) and recording that also failed: ${
+            recordError instanceof Error ? recordError.message : String(recordError)
+          }`,
+        );
+      }
     }
   }
 

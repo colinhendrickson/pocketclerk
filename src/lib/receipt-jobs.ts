@@ -35,9 +35,23 @@ export interface ClaimedJob extends Record<string, unknown> {
 }
 
 /**
- * Atomically moves up to `limit` queued jobs on this channel to `processing`
- * and returns them. A job already being processed by another consumer is not
- * returned, because the `status = 'queued'` predicate no longer matches it.
+ * How long a job may sit in `processing` before it is presumed abandoned.
+ *
+ * A consumer can die holding a job: a serverless function hits its time limit,
+ * the instance is recycled, or, as happened here, an error escapes the loop.
+ * Before this, a job left in `processing` was never claimed again, never sent
+ * and never marked failed, so it appeared nowhere, not even on the admin
+ * receipts page. Ten minutes is far longer than any real delivery takes, so a
+ * live consumer is never robbed of a job it is still working on. Re-sending is
+ * safe because the job id is the provider's idempotency key.
+ */
+const STALE_PROCESSING = sql`interval '10 minutes'`;
+
+/**
+ * Atomically moves up to `limit` claimable jobs on this channel to
+ * `processing` and returns them. Claimable means queued, or stuck in
+ * processing long enough that its consumer is gone. A job another live
+ * consumer holds is not returned, because neither predicate matches it.
  */
 export async function claimJobs(
   channel: "print" | "email",
@@ -49,7 +63,8 @@ export async function claimJobs(
     WHERE id IN (
       SELECT id FROM receipt_jobs
       WHERE channel = ${channel}
-        AND status = 'queued'
+        AND (status = 'queued'
+             OR (status = 'processing' AND updated_at < now() - ${STALE_PROCESSING}))
         AND attempts < ${MAX_ATTEMPTS}
       ORDER BY created_at
       LIMIT ${limit}
@@ -72,7 +87,8 @@ export async function claimJobsForShift(
       SELECT j.id FROM receipt_jobs j
       JOIN orders o ON o.id = j.order_id
       WHERE j.channel = ${channel}
-        AND j.status = 'queued'
+        AND (j.status = 'queued'
+             OR (j.status = 'processing' AND j.updated_at < now() - ${STALE_PROCESSING}))
         AND j.attempts < ${MAX_ATTEMPTS}
         AND o.shift_id = ${shiftId}
       ORDER BY j.created_at
@@ -98,9 +114,17 @@ export async function markSent(jobId: string): Promise<void> {
  * this design refuses.
  */
 export async function markFailed(jobId: string, error: string): Promise<void> {
+  // The casts are required. A CASE of string literals is typed text, and
+  // Postgres will not assign text to an enum column, so without them this
+  // statement failed every single time it ran. Every undeliverable receipt then
+  // crashed the code meant to record it, which abandoned the rest of its batch
+  // in `processing`, where nothing reclaimed it. See STALE_PROCESSING above.
   await db.execute(sql`
     UPDATE receipt_jobs
-    SET status = CASE WHEN attempts >= ${MAX_ATTEMPTS} THEN 'failed' ELSE 'queued' END,
+    SET status = CASE
+          WHEN attempts >= ${MAX_ATTEMPTS} THEN 'failed'::receipt_status
+          ELSE 'queued'::receipt_status
+        END,
         last_error = ${error.slice(0, 500)},
         updated_at = now()
     WHERE id = ${jobId}

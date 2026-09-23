@@ -259,8 +259,14 @@ export async function completeOrder(input: unknown): Promise<CompleteOrderResult
   after(async () => {
     try {
       await deliverQueuedEmails();
-    } catch {
-      // Already recorded against the job row; nothing useful to do here.
+    } catch (error) {
+      // A failure on one job is recorded against that job's row. A failure
+      // before any job is touched, such as claiming the batch on a dead
+      // connection, has no row to land on, so without this it left no trace
+      // anywhere. The receipt still waits in the queue for the nightly sweep.
+      console.error(
+        `[receipts] post-order delivery failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   });
 

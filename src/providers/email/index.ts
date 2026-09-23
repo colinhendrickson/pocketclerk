@@ -24,8 +24,16 @@ export interface TextMessage {
 
 export interface EmailSender {
   readonly name: string;
-  /** A rendered receipt, the common case. */
-  send(to: string, receipt: Receipt): Promise<SendResult>;
+  /**
+   * A rendered receipt, the common case.
+   *
+   * `idempotencyKey` is the receipt job's id. Delivery is at-least-once: if the
+   * mail goes out and marking the job sent then fails, the job is retried, and
+   * a provider that honours the key sends nothing the second time. It was
+   * documented on the Resend sender from the start and never passed by the
+   * caller, because this signature had no room for it.
+   */
+  send(to: string, receipt: Receipt, idempotencyKey?: string): Promise<SendResult>;
   /**
    * Any other message, such as an administrator sign-in link. Kept on the same
    * interface so a deployment configures one email provider, not two.
