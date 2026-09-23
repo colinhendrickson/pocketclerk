@@ -61,9 +61,28 @@ function connect() {
   const client =
     globalForDb.pocketclerkSql ??
     postgres(connectionString, {
-      // One connection per serverless invocation; the pooler handles concurrency.
+      // One connection per function instance; the pooler handles concurrency.
       max: process.env.NODE_ENV === "production" ? 1 : 5,
       prepare: !pooled,
+      // A warm instance is reused across requests, so this connection outlives
+      // the request that opened it and sits idle between them. The pooler, and
+      // any NAT on the way to it, drops quiet connections without telling
+      // either end. postgres.js keeps idle connections forever by default, so
+      // the next query was written to a dead socket and waited for a reply that
+      // never came: the first real deployment answered every page after a few
+      // minutes' pause with a 100-second hang and a Cloudflare 524.
+      //
+      // Closing idle connections ourselves, well inside any plausible drop
+      // window, means a paused session reconnects instead of hanging. The cost
+      // is one fresh connection after 20 quiet seconds, which the pooler exists
+      // to make cheap.
+      idle_timeout: 20,
+      // Recycle even a busy connection, so nothing lives long enough to meet a
+      // drop window we did not anticipate.
+      max_lifetime: 60 * 5,
+      // Fail in ten seconds with an error that names the problem, instead of
+      // thirty seconds of nothing behind a proxy that gives up first.
+      connect_timeout: 10,
     });
 
   if (process.env.NODE_ENV !== "production") {
