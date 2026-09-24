@@ -43,7 +43,7 @@ export function InventorySheet({ initialRows }: InventorySheetProps) {
     startTransition(async () => {
       const result = await countItem(row.itemId, clamped);
       if (result.ok) setRows(result.rows);
-      else if (result.error === "no_shift") router.replace("/");
+      else if (result.error === "no_shift") router.replace("/cart");
     });
   }
 

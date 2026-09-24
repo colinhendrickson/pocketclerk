@@ -55,7 +55,7 @@ export function ClockOutForm({
     startTransition(async () => {
       const result = await toggleChecklistItem(key, next);
       if (result.ok) setDone(result.done);
-      else if (result.error === "no_shift") router.replace("/");
+      else if (result.error === "no_shift") router.replace("/cart");
     });
   }
 
@@ -86,7 +86,7 @@ export function ClockOutForm({
           onClick={() =>
             startTransition(async () => {
               await finishShift();
-              router.replace("/");
+              router.replace("/cart");
             })
           }
         >
@@ -145,7 +145,7 @@ export function ClockOutForm({
                   tickets: result.tickets,
                 });
               } else {
-                router.replace("/");
+                router.replace("/cart");
               }
             })
           }

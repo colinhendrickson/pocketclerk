@@ -19,13 +19,13 @@ export async function GET(request: Request): Promise<NextResponse> {
   const url = new URL(request.url);
 
   if (!pairingRequired()) {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/cart", request.url));
   }
 
   const code = url.searchParams.get("code") ?? "";
   if (code && codeMatches(code)) {
     await pairDevice();
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/cart", request.url));
   }
 
   return NextResponse.redirect(new URL("/not-set-up", request.url));

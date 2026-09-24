@@ -20,10 +20,10 @@ export const dynamic = "force-dynamic";
 export default async function InventoryPage() {
   await requirePairedDevice();
   const shiftId = await getShiftSession();
-  if (!shiftId) redirect("/");
+  if (!shiftId) redirect("/cart");
 
   const shift = await getActiveShift(shiftId);
-  if (!shift) redirect("/");
+  if (!shift) redirect("/cart");
 
   const rows = await openCount(shift.id);
 

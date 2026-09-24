@@ -43,6 +43,9 @@ for (const size of [
 
     for (const route of ADMIN_ROUTES) {
       await page.goto(route);
+      // The button does nothing until the page hydrates; a click before that
+      // is lost, so wait for the page to settle first.
+      await page.waitForLoadState("networkidle");
       const start = page.getByRole("button", { name: /^(Show me around|Tour)$/ });
       await start.click();
 
@@ -70,6 +73,7 @@ test("Escape ends the tour, and the open tour passes axe", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await signIn(page);
   await page.goto("/admin/students");
+  await page.waitForLoadState("networkidle");
 
   const start = page.getByRole("button", { name: /^(Show me around|Tour)$/ });
   await start.click();

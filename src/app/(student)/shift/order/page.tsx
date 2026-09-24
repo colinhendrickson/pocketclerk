@@ -16,8 +16,8 @@ export const dynamic = "force-dynamic";
 export default async function OrderPage() {
   await requirePairedDevice();
   const shiftId = await getShiftSession();
-  if (!shiftId) redirect("/");
-  if (!(await getActiveShift(shiftId))) redirect("/");
+  if (!shiftId) redirect("/cart");
+  if (!(await getActiveShift(shiftId))) redirect("/cart");
 
   const [teachers, menu, extras] = await Promise.all([
     listTeachers(),

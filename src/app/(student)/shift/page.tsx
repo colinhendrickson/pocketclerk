@@ -26,12 +26,12 @@ const CURRENT_STEP = 2;
 export default async function ShiftPage() {
   await requirePairedDevice();
   const shiftId = await getShiftSession();
-  if (!shiftId) redirect("/");
+  if (!shiftId) redirect("/cart");
 
   const shift = await getActiveShift(shiftId);
   // A cookie pointing at a closed or deleted shift sends the student back to
   // sign-in rather than into a screen with nothing behind it.
-  if (!shift) redirect("/");
+  if (!shift) redirect("/cart");
 
   const today = cartFormatter({
     weekday: "long",

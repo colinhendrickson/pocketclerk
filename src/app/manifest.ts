@@ -16,7 +16,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: PRODUCT_NAME,
     short_name: PRODUCT_NAME,
     description: "Point of sale and work training for student-run carts",
-    start_url: "/",
+    start_url: "/cart",
     display: "standalone",
     background_color: LOGO_COLORS.paper,
     theme_color: LOGO_COLORS.tile,

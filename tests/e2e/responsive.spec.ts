@@ -112,7 +112,7 @@ for (const size of SIZES) {
     await test.step("student sign-in", async () => {
       const code = process.env.DEVICE_CODE;
       if (code) await page.goto(`/setup?code=${encodeURIComponent(code)}`);
-      await page.goto("/");
+      await page.goto("/cart");
       await checkScreen(page, "student list", problems);
 
       await page.locator('a[href^="/pin/"]').first().click();

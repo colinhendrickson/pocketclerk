@@ -27,13 +27,13 @@ async function pairDevice(page: import("@playwright/test").Page) {
   const code = process.env.DEVICE_CODE;
   if (!code) return;
   await page.goto(`/setup?code=${encodeURIComponent(code)}`);
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/cart$/);
 }
 
 test("a student works a whole shift", async ({ page }) => {
   await test.step("sign in and clock in", async () => {
     await pairDevice(page);
-    await page.goto("/");
+    await page.goto("/cart");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
     // Names are links, not a dropdown: there is no typing on this screen.
@@ -134,7 +134,7 @@ test("a wrong PIN is refused, with a message a student can act on", async ({
   page,
 }) => {
   await pairDevice(page);
-  await page.goto("/");
+  await page.goto("/cart");
   await page.locator('a[href^="/pin/"]').first().click();
 
   for (const digit of ["9", "9", "9", "9"]) {
@@ -164,7 +164,7 @@ test("an unpaired device is shown nothing about the students", async ({ page }) 
   test.skip(!process.env.DEVICE_CODE, "pairing is not enabled on this deployment");
 
   await page.context().clearCookies();
-  await page.goto("/");
+  await page.goto("/cart");
 
   // The roster is the part that matters. A stranger who finds the address must
   // not learn the first names of the children who work the cart.
@@ -180,6 +180,14 @@ test("a wrong setup code does not pair the device", async ({ page }) => {
   await page.goto("/setup?code=definitely-not-the-code");
   await expect(page).toHaveURL(/not-set-up/);
 
-  await page.goto("/");
+  await page.goto("/cart");
   await expect(page).toHaveURL(/not-set-up/);
+});
+
+test("opening / on a school's copy lands on the cart", async ({ page }) => {
+  // Old bookmarks, and the iPad's home-screen icon, still open the bare address.
+  await pairDevice(page);
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/cart$/);
+  await expect(page.locator('a[href^="/pin/"]').first()).toBeVisible();
 });

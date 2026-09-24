@@ -136,7 +136,7 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
         setCompleted({ totalCents: result.totalCents, changeCents: result.changeCents });
         setStage("done");
       } else if (result.error === "no_shift") {
-        router.replace("/");
+        router.replace("/cart");
       } else if (result.error === "insufficient") {
         setError("That is not enough money for this order. Count it again.");
       } else {

@@ -21,7 +21,7 @@ export default async function PinPage({
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
       <PinForm studentId={student.id} studentName={student.displayName} />
-      <Link href="/" className="btn btn-ghost min-h-[60px] text-[20px] font-bold">
+      <Link href="/cart" className="btn btn-ghost min-h-[60px] text-[20px] font-bold">
         Not you? Go back
       </Link>
     </main>

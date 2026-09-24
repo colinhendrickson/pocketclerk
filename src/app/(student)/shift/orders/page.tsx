@@ -19,10 +19,10 @@ export const dynamic = "force-dynamic";
 export default async function TodaysOrdersPage() {
   await requirePairedDevice();
   const shiftId = await getShiftSession();
-  if (!shiftId) redirect("/");
+  if (!shiftId) redirect("/cart");
 
   const shift = await getActiveShift(shiftId);
-  if (!shift) redirect("/");
+  if (!shift) redirect("/cart");
 
   const [rows, totals] = await Promise.all([
     listShiftOrders(shift.id),

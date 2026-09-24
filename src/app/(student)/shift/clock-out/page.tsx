@@ -19,13 +19,13 @@ export const dynamic = "force-dynamic";
 export default async function ClockOutPage() {
   await requirePairedDevice();
   const shiftId = await getShiftSession();
-  if (!shiftId) redirect("/");
+  if (!shiftId) redirect("/cart");
 
   const shift = await getActiveShift(shiftId);
 
   if (!shift) {
     const finished = await getFinishedShift(shiftId);
-    if (!finished) redirect("/");
+    if (!finished) redirect("/cart");
     return (
       <main className="flex flex-1 items-center justify-center p-8">
         <ClockOutForm
