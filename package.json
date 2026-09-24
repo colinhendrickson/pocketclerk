@@ -31,7 +31,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "seed": "tsx src/db/seed.ts",
-    "test:e2e": "playwright test",
+    "test:e2e": "tsx scripts/demo-db.ts && playwright test",
     "admin:add": "tsx src/db/add-admin.ts",
     "icons": "tsx scripts/render-icons.ts"
   },

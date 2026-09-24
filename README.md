@@ -195,7 +195,7 @@ sign-in code appears in the dev server's output.
 |---|---|
 | `pnpm dev` | Development server |
 | `pnpm check` | Typecheck, lint, and the unit and database tests |
-| `pnpm test:e2e` | Playwright: a whole shift, every screen at five sizes with axe, keyboard, tour, colours, prices, admin access |
+| `pnpm test:e2e` | Playwright: a whole shift, every screen at five sizes with axe, keyboard, tour, colours, prices, admin access, and the demo on its own database |
 | `pnpm build` | Production build |
 | `pnpm db:up` / `db:down` | Local Postgres in Docker |
 | `pnpm db:migrate` | Apply migrations |

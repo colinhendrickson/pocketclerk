@@ -11,6 +11,8 @@ import { DEMO_DATABASE, demoDatabaseUrl } from "../tests/e2e/demo-database";
  * Prepares the database the demo spec runs against: creates it beside the main
  * one if missing, applies the migrations, and seeds it as the demo's.
  *
+ * `pnpm test:e2e` runs it first. On its own:
+ *
  *   pnpm tsx scripts/demo-db.ts
  */
 async function main() {

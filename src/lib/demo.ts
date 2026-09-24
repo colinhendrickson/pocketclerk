@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
-import { after } from "next/server";
+import { after, connection } from "next/server";
 
 import { db } from "@/db";
 import { siteSettings } from "@/db/schema";
 import { seedDatabase } from "@/db/seed-data";
-import { siteMode } from "@/lib/site-mode";
+import { siteMode, type SiteMode } from "@/lib/site-mode";
 
 /**
  * The public demo at pocket-clerk.com: shared by every visitor, put back to the
@@ -48,6 +48,28 @@ export async function isDemo(): Promise<boolean> {
   return (await demoRow())?.isDemo === true;
 }
 
+/**
+ * What is wrong when the deployment's mode and its database disagree, for
+ * /api/health, or null when they agree. Either way round is a setup mistake:
+ * demo mode on a school's database replaces the cart with the landing page and
+ * only logs email; a school's copy on the demo's database shows made-up data.
+ */
+export function siteModeProblem(mode: SiteMode, databaseIsDemo: boolean): string | null {
+  if (mode === "demo" && !databaseIsDemo) {
+    return "NEXT_PUBLIC_SITE_MODE=demo on a database not seeded as the demo's. On a school's copy, remove it and redeploy; for the demo, run `pnpm seed --demo`.";
+  }
+  if (mode === "instance" && databaseIsDemo) {
+    return "This copy is connected to the demo's database. Point DATABASE_URL at the school's own database.";
+  }
+  return null;
+}
+
+/** The database's own demo flag, or null if it cannot be read. */
+export async function databaseIsDemo(): Promise<boolean | null> {
+  const row = await demoRow();
+  return row ? row.isDemo : null;
+}
+
 /** When the demo was last put back, or null if it never was or this is not it. */
 export async function lastDemoReset(): Promise<Date | null> {
   if (siteMode() !== "demo") return null;
@@ -62,6 +84,9 @@ export async function lastDemoReset(): Promise<Date | null> {
  */
 export async function maybeResetDemo(): Promise<void> {
   if (siteMode() !== "demo") return;
+  // Render at request time. Without this the landing page is prerendered, so
+  // this check would run once, during the build, and never for a visitor.
+  await connection();
   const row = await demoRow();
   if (!row?.isDemo || !resetDue(row.demoResetAt, new Date())) return;
   after(async () => {

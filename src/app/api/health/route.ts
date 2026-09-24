@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 
 import { db } from "@/db";
 import { missingRequiredConfig } from "@/lib/config";
+import { databaseIsDemo, siteModeProblem } from "@/lib/demo";
 import { migrationStatus, type MigrationStatus } from "@/lib/migration-status";
+import { siteMode } from "@/lib/site-mode";
 import { TIME_ZONE } from "@/lib/time";
 import { sql } from "drizzle-orm";
 
@@ -74,7 +76,11 @@ export async function GET(): Promise<NextResponse> {
         : "set but empty, or not set at all. Sign-in links will be wrong",
   };
 
-  const ready = missing.length === 0 && database === "ok";
+  const mode = siteMode();
+  const isDemoDatabase = database === "ok" ? await databaseIsDemo() : null;
+  const modeProblem = isDemoDatabase === null ? null : siteModeProblem(mode, isDemoDatabase);
+
+  const ready = missing.length === 0 && database === "ok" && modeProblem === null;
 
   return NextResponse.json(
     {
@@ -90,6 +96,7 @@ export async function GET(): Promise<NextResponse> {
           : {}),
       },
       tables,
+      siteMode: modeProblem ?? mode,
       optional,
     },
     { status: ready ? 200 : 503 },

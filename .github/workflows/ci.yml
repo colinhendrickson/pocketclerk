@@ -105,10 +105,6 @@ jobs:
       - name: Apply migrations and seed
         run: pnpm db:migrate && pnpm seed
 
-      # The demo's own database, for tests/e2e/demo.spec.ts.
-      - name: Prepare the demo database
-        run: pnpm tsx scripts/demo-db.ts
-
       - run: pnpm test:e2e
 
       - uses: actions/upload-artifact@v4

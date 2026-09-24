@@ -3,7 +3,7 @@ import { afterAll, afterEach, describe, expect, it } from "vitest";
 
 import { db, getClient } from "@/db";
 import { seedDatabase } from "@/db/seed-data";
-import { canStartOver, isDemo, resetDue } from "@/lib/demo";
+import { canStartOver, isDemo, resetDue, siteModeProblem } from "@/lib/demo";
 
 /**
  * The demo's data: a reset that runs in one transaction, at most one at a time,
@@ -105,5 +105,21 @@ describe("isDemo", () => {
     await seedDatabase({ demo: true });
     delete process.env.NEXT_PUBLIC_SITE_MODE;
     expect(await isDemo()).toBe(false);
+  });
+});
+
+describe("siteModeProblem", () => {
+  it("is fine when the mode and the database agree", () => {
+    expect(siteModeProblem("instance", false)).toBeNull();
+    expect(siteModeProblem("demo", true)).toBeNull();
+  });
+
+  it("flags demo mode on a school's database", () => {
+    // The landing page would replace the cart, and email would only be logged.
+    expect(siteModeProblem("demo", false)).toMatch(/NEXT_PUBLIC_SITE_MODE=demo/);
+  });
+
+  it("flags a school's copy pointed at the demo's database", () => {
+    expect(siteModeProblem("instance", true)).toMatch(/demo's database/);
   });
 });
