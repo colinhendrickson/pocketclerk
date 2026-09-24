@@ -12,19 +12,21 @@ Do these in order. Each step depends on the one before it.
 1. Create a project at [supabase.com](https://supabase.com). Choose a region
    near the school; every query pays that round trip.
 2. Save the database password it shows you. It is displayed once.
-3. Go to **Project Settings → Database → Connection string** and copy both:
-   - **Transaction pooler**, port **6543**. This is `DATABASE_URL`.
-   - **Direct connection**, port **5432**. This is `DIRECT_URL`.
+3. Press **Connect** at the top of the project and copy both:
+   - **Session pooler** (port **5432**, host `…pooler.supabase.com`). This is
+     `DATABASE_URL`. The **Transaction pooler** string (port 6543) works too:
+     the app moves it to the session port itself.
+   - **Session pooler** again, or the **Direct connection** if your network has
+     IPv6. This is `DIRECT_URL`, for migrations.
 
-Two URLs on purpose. Serverless functions open many short-lived connections and
-the pooler absorbs them, but the pooler strips session features that migrations
-need. Getting them the wrong way round produces either exhausted connections
-under load or migrations that fail with no obvious cause.
+The app runs on the session pooler, not the transaction pooler, because the
+transaction pooler split its parameterised queries and left pages hanging for
+five minutes ([ADR 8](adr/0008-session-pooler-and-idle-connections.md)). Each app
+instance holds one connection and closes it after a few idle seconds, so session
+mode's cost in connections does not matter at this scale.
 
-The app disables prepared statements automatically when it detects a pooled
-connection string. Supabase's pooler hands a different backend connection to
-each statement, so a prepared statement made on one is not there for the next.
-Without that, the app fails in production in ways it never fails locally.
+The app also disables prepared statements automatically on any Supabase pooler
+string, which is safe in both pooler modes.
 
 ## 2. Apply the schema
 
@@ -57,8 +59,8 @@ Supabase client library.
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | Supabase pooler string, port 6543. Skip if using the integration |
-| `DIRECT_URL` | Supabase direct string, port 5432. Skip if using the integration |
+| `DATABASE_URL` | Supabase pooler string (session, 5432; a 6543 string is moved to 5432). Skip if using the integration |
+| `DIRECT_URL` | Supabase session pooler or direct string, for migrations. Skip if using the integration |
 | `SESSION_SECRET` | 32+ random bytes, see below |
 | `NEXT_PUBLIC_APP_URL` | The deployment's own address |
 | `CRON_SECRET` | Another random string |
@@ -67,7 +69,10 @@ Supabase client library.
 | `EMAIL_REPLY_TO` | The program administrator's school address |
 | `NEXT_PUBLIC_PROGRAM_NAME` | The real program name |
 | `NEXT_PUBLIC_CART_NAME` | The real cart name |
-| `NEXT_PUBLIC_REWARD_NAME` | e.g. `Blue Tickets` |
+| `NEXT_PUBLIC_REWARD_NAME` | The program's name for the reward, e.g. `Stars` |
+| `NEXT_PUBLIC_LOGO_URL` | Optional: a logo for the sign-in email |
+| `NEXT_PUBLIC_TIME_ZONE` | The cart's time zone, see step 6 |
+| `DEVICE_CODE` | A long random value, see step 7 |
 
 Generate the secrets:
 
@@ -75,8 +80,11 @@ Generate the secrets:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Mark `DATABASE_URL`, `DIRECT_URL`, `SESSION_SECRET`, `CRON_SECRET` and
-`RESEND_API_KEY` as **Sensitive**.
+Mark `DATABASE_URL`, `DIRECT_URL`, `SESSION_SECRET`, `CRON_SECRET`,
+`RESEND_API_KEY` and `DEVICE_CODE` as **Sensitive**.
+
+The site's main color is not an environment variable. After deploying, staff set
+it on the admin **Colors** page ([ADR 11](adr/0011-staff-chosen-main-color.md)).
 
 `NEXT_PUBLIC_APP_URL` must match how the app is actually reached. Sign-in links
 are built from it, so a wrong value sends the administrator somewhere that does
@@ -113,21 +121,24 @@ without this step nobody can get in.
 From your machine, pointed at production:
 
 ```bash
-DATABASE_URL="<direct connection string>" pnpm admin:add "Mrs. Example" admin@school.example
+DATABASE_URL="<session pooler or direct string>" pnpm admin:add "Mrs. Example" admin@school.example
 ```
 
-Use the **direct** connection for this, not the pooler.
+After that, administrators add each other on the admin **Admins** page; nobody
+needs the script again.
 
 If that address already belongs to a teacher, the script reuses their record
 rather than creating a second one. The administrator is usually also a customer,
-and she should keep one order history either way.
+and should keep one order history either way.
 
 Re-running it is a no-op, so it is safe to use as a check.
 
 ## 6. Real data
 
-Sign in at `/admin/sign-in` and add students, teachers and the menu through the
-interface. Never through the seed.
+Sign in at `/admin/sign-in`. Admin home has a setup checklist that walks through
+the rest: students, teachers with their emails, the menu, connecting the cart's
+iPad, and a first sale. Every admin page has step-by-step help and a "Show me
+around" tour. Real data enters only through the interface, never the seed.
 
 Each student needs a four-digit PIN. Pick something they can remember; it is not
 protecting anything valuable, and being locked out mid-shift is the real cost.
@@ -160,11 +171,15 @@ DEVICE_CODE = <a long random value>
 ```
 
 Generate one with the same command as the other secrets. Then, once on each iPad
-that should run the cart, open:
+that should run the cart, open the connection link. Administrators find it on
+Admin home, in the setup checklist, with a button to email it to themselves:
 
 ```
 https://your-domain/setup?code=<that value>
 ```
+
+On an iPad with a receipt printer, open it in **Bluefy**, not Safari: each browser
+keeps its own connection, and only Bluefy can reach the printer (step 8).
 
 That stores a signed cookie on the device and lasts a school year. Every student
 screen requires it. A visitor without it sees only "this device is not set up",
@@ -179,8 +194,14 @@ any laptop.
 
 ## 8. The iPad
 
-Follow [`IPAD_SETUP.md`](IPAD_SETUP.md): add to the home screen, turn on Guided
-Access, set auto-lock to never.
+Follow [`IPAD_SETUP.md`](IPAD_SETUP.md): install the Bluefy browser, connect the
+iPad in it, turn on Guided Access, set auto-lock to never.
+
+Receipts print on a small 58mm Bluetooth Low Energy thermal printer (the first
+deployment uses a PT-210) over Web Bluetooth. Safari has no Web Bluetooth, and
+neither does a web app on the home screen, so the cart runs in
+[Bluefy](https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055), a
+free browser that does ([ADR 9](adr/0009-receipts-over-web-bluetooth.md)).
 
 ---
 
@@ -197,8 +218,10 @@ Vercel's Hobby plan rejects any cron expression more frequent than daily, and a
 deployment that tries fails to build. On a paid plan, change the schedule in
 `vercel.json` to `*/5 * * * *` and receipts retry every five minutes instead.
 
-Print jobs are not delivered by the server at all. The printer is paired to the
-iPad over Bluetooth, so the tablet claims its own print jobs; see the README.
+Print jobs are not delivered by the server at all. The printer is reached from
+the iPad over Bluetooth, so the tablet claims its own print jobs and prints them
+once a student presses **Connect printer**. The admin guide "Setting up the
+receipt printer" has the steps.
 
 ## Checking it worked
 
@@ -216,11 +239,17 @@ is broken" into a specific missing variable.
 3. `/admin/receipts` shows the receipt as `sent`, or shows why it is not.
 4. `/admin/orders` shows the order.
 
-## Two things that will go wrong
+## Things that can go wrong
 
 **"DATABASE_URL is not set"** on Vercel means the variable was added to only one
 environment. Check that Production is ticked, and redeploy: environment changes
 do not apply to an existing deployment.
 
-**Migrations hang or fail.** You are pointed at the pooler. Migrations need
-`DIRECT_URL`, port 5432.
+**Migrations hang or fail.** You are pointed at the transaction pooler (6543).
+Migrations need a session: `DIRECT_URL` on the session pooler or the direct
+connection, port 5432.
+
+**A page hangs for minutes, then fails.** Look at the database while it hangs
+(`select state, wait_event, query from pg_stat_activity`). A query "active" and
+waiting on `ClientRead` is the transaction-pooler problem in ADR 8; check that the
+app is on the session pooler.

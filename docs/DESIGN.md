@@ -104,7 +104,7 @@ Rules that hold in every theme
 .btn { text-transform: none; letter-spacing: 0; } /* sentence case everywhere, no brand override */
 ```
 
-**Deployment skins are not committed.** A real deployment sets `THEME=school` and supplies its own values for the same custom properties above (colours, radii, font) at runtime from private environment config. daisyUI 5 themes are plain CSS custom properties, so an override skin needs no code and no CSS in this repo. A skin may also swap the font family; if it uses a wider face, expect stat and menu labels to wrap one breakpoint earlier.
+**Deployment skins are not committed.** A deployment's main colour is chosen by staff on the admin Colors page and stored in its own database (see "Staff-chosen main color" below and ADR 11), so no school's palette enters git or even the deployment's configuration. The pocketclerk theme's other values (backgrounds, text, radii, font) are the same for every deployment.
 
 ### Staff-chosen main color
 
@@ -134,7 +134,7 @@ All ≥ 4.5:1. Any deployment skin must clear the same bar: 4.5:1 for every pair
 Type scale (px / weight / use) — one scale, all themes:
 - 184–200 / 800 — **Change amount** (only place this size exists). 192px wherever it fits; narrower cards shrink it to exactly their width (container units, sized by the figure's own length), so it is never cut off and stays the largest text on screen
 - 104 / 800 — Total on the payment screen (64 below md)
-- 64–72 / 800 — Running total (order builder), "Paid by card" (52 in the phone bottom sheet)
+- 64–72 / 800 — Running total (order builder) (52 in the phone bottom sheet); "Paid by card" with 3.7
 - 44–48 / 800 — Screen question / welcome headline
 - 34 / 800 — Primary BigButton label (26 below lg, where it sits in phone widths and 340–360px tablet columns)
 - 26 / 800 — Screen title in StepHeader, menu item names
@@ -160,7 +160,7 @@ Breakpoints (Tailwind defaults): `<md` phone portrait (≤ 767), `md–lg` iPad 
 - md: same two columns with the aside at 340px; menu tiles become horizontal rows (icon · name · price · qty badge).
 - <md: single column. StepHeader compresses to back button + "Step 2 of 4 / Mrs. Smith · Rm 114"; NoteBanner stays directly under it (never hidden, never collapsed); menu = full-width 64px rows; add-ons wrap (`flex-wrap`, 60px pills); order summary becomes a fixed bottom sheet (`bg-base-100`, top border) showing the item line, total at 52px and the 72px primary button. No horizontal scroll at any width.
 
-**Payment method**
+**Payment method** *(deferred to ticket 3.7: V1 is cash only, ADR 5; kept as the design for when the client asks)*
 - All widths: centred stack — question, Total, two `PaymentChoice` buttons. lg+: two columns 250px tall; <md: stack vertically, each 160px tall, full width. Nothing else is ever added to this screen.
 
 **Cash change**
@@ -168,7 +168,7 @@ Breakpoints (Tailwind defaults): `<md` phone portrait (≤ 767), `md–lg` iPad 
 - md: keypad column narrows to 360px; change type drops to 150px.
 - <md: single column in this order — owed/received table → **change card** (still the largest text on screen; sized to the card, about 105px on a 390px phone) → denomination hint → bill quick-buttons (2×2 wherever a row of four would not fit "$20.00") → keypad (3 cols) → primary button. The change card is above the keypad so the answer is visible while the student is still tapping.
 
-**Card confirmation (modal)**
+**Card confirmation (modal)** *(deferred to ticket 3.7)*
 - lg+: `modal-box` 760px; <md: `modal-bottom` full-width sheet; both keep the "Type badge number instead" fallback as a full-width secondary button.
 
 **Admin area** (denser, secondary audience)
@@ -187,12 +187,12 @@ Breakpoints (Tailwind defaults): `<md` phone portrait (≤ 767), `md–lg` iPad 
 | **MoneyDisplay** | plain text inside `stat-value` / `card` / `table td` | `tabular-nums`, weight 800, sizes from the scale; `size="change"` is only allowed once in the app | colour via `base-content` or `neutral-content` |
 | **NoteBanner** | `alert alert-warning` with `role="alert"` | Lucide `triangle-alert` 32px, 22px/800 text, always directly under the StepHeader, never collapsible | warning colour, `--radius-box` |
 | **StepHeader** | `navbar`-style bar on `bg-base-100 border-b border-base-300` + `steps` (`steps-vertical` in the rail on lg+) | back `btn btn-ghost` 60×60, "Step n of 4" (15px) over the title (26px); `steps` collapse to that text line <md | `step-primary` colour, font |
-| **PaymentChoice** | `btn` tile, `bg-base-100 border-2 border-base-300` | exactly two, equal width, 250px tall (160px <md), Lucide `banknote` (success) / `id-card` (info) 80px, 40px/800 label | colours, `--radius-box` |
+| **PaymentChoice** *(3.7, not built)* | `btn` tile, `bg-base-100 border-2 border-base-300` | exactly two, equal width, 250px tall (160px <md), Lucide `banknote` (success) / `id-card` (info) 80px, 40px/800 label | colours, `--radius-box` |
 | **ChangeCard** | `card bg-neutral text-neutral-content` | MoneyDisplay size="change", denomination hint line beneath ("3 one-dollar bills") | neutral colours, `--radius-box` |
 | **Keypad / BillButtons** | `btn` grid (`grid-cols-3` / `grid-cols-4`) | 60px minimum keys, 34px numerals; bill buttons `btn-outline btn-secondary`, selected → `btn-secondary` | colours, `--radius-field` |
 | **ShiftStats** | `stats` → `stat` / `stat-title` / `stat-value` | `tabular-nums`; 3 stats max on student screens | `bg-base-100 border-base-300` |
 | **TeacherCard** | `card card-border` + `avatar avatar-placeholder` | initials disc 52–60px, name 22–26px, room below | colours, radius |
-| **BadgeModal** | `modal modal-open` → `modal-box` | dashed `info` ring around `id-card`, Total, Back + "Type badge number instead" | colours, `--radius-box` |
+| **BadgeModal** *(3.7, not built)* | `modal modal-open` → `modal-box` | dashed `info` ring around `id-card`, Total, Back + "Type badge number instead" | colours, `--radius-box` |
 | **Admin shell** | `drawer` + `navbar` + `table` | denser type allowed (14px min) | all |
 | **HelpPanel** | native `details` in a `rounded-box border` | "About this page" under every admin page's heading (not Admin home, which lists every guide); open by default, closed state remembered per device; guides inside as nested `details` | `info` icon colour, `--radius-box` |
 | **TourButton** | `btn btn-ghost btn-sm` + native modal `dialog` | in the admin header, labelled "Show me around" ("Tour" below sm, so the cart name keeps its room); never opens by itself; dialog docked at the bottom with a transparent backdrop, target outlined in `primary` and scrolled to the top; steps in `src/lib/help/tours.ts` against `data-tour` attributes | `primary` outline, `--radius-box` |

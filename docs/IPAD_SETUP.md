@@ -6,20 +6,24 @@ This takes about ten minutes, once. After that the iPad is ready every morning.
 
 ---
 
-## 1. Put the app on the home screen
+## 1. Install Bluefy and connect the iPad
 
-1. Open **Safari** and go to the address you were given.
-2. Tap the **Share** button, the square with an arrow pointing up.
-3. Scroll down and tap **Add to Home Screen**.
-4. Tap **Add**.
+The cart's receipt printer connects over Bluetooth, and Apple does not let Safari
+talk to it. **Bluefy** is a free browser that can, so the cart runs in Bluefy.
 
-The app now has its own icon and opens full-screen, with no address bar for a
-student to tap by accident.
+1. On the iPad, open the **App Store**, search for **Bluefy – Web BLE Browser**,
+   and install it. It is free and has no ads.
+2. On the admin side (on any device), open **Admin home**. In the setup
+   checklist, find **Connect the cart's iPad** and press **Email it to me**.
+3. On the iPad, open that email. **Press and hold** the link, choose **Copy**,
+   then open **Bluefy** and paste it into the address bar. Do not just tap the
+   link: that opens Safari, and the iPad would be connected in Safari instead.
+4. The iPad shows the list of students. It is connected, and stays connected in
+   Bluefy.
 
-> **If the cart has a Bluetooth receipt printer**, open the app in the browser
-> you were told to use for printing instead of Safari, and add *that* to the
-> home screen. Apple does not let Safari talk to this kind of printer. Everything
-> else on this page is the same.
+> **No printer?** Then Safari works too: open the connection link in Safari, tap
+> **Share → Add to Home Screen**, and use that icon. Everything else on this page
+> is the same.
 
 ## 2. Lock the iPad to the app
 
@@ -35,7 +39,7 @@ settings, or getting into anything else on the device.
 
 To lock the iPad each morning:
 
-1. Open the app from the home screen.
+1. Open **Bluefy** (or the cart's home-screen icon, on a cart with no printer).
 2. **Triple-click the side button.**
 3. Tap **Start**.
 
@@ -43,7 +47,7 @@ To unlock it at the end of the day, triple-click the side button again and enter
 your passcode.
 
 While Guided Access is on, the home button and app switcher do nothing. The
-student can only use the cart app.
+student can only use the cart.
 
 ## 3. Stop the screen turning off mid-shift
 
@@ -56,10 +60,12 @@ Keep the iPad on a charger between shifts, since this uses more battery.
 
 ## Every morning
 
-1. Wake the iPad and open the app.
+1. Wake the iPad and open Bluefy.
 2. Triple-click the side button, tap **Start**.
-3. If there is a printer, turn it on and tap **Connect printer** on the student's
-   home screen once. It stays connected for the rest of the shift.
+3. Turn the printer on (hold its power button until the light comes on). Once a
+   student has signed in, tap **Connect printer** on their shift screen and
+   choose the printer, usually named after its model, such as PT-210. It stays
+   connected for the rest of the shift.
 4. Hand it to the student.
 
 ## Every evening
@@ -75,11 +81,17 @@ Keep the iPad on a charger between shifts, since this uses more battery.
 screen except the sign-in screen has one.
 
 **A student forgot their PIN.** After five wrong tries the app locks that
-student out for fifteen minutes. You can change their PIN from the admin page.
+student out for fifteen minutes. Set a new PIN on the admin **Students** page
+(**Reset PIN**), which also ends the lockout.
 
-**The printer will not connect.** Check that it is switched on and has paper,
-then tap **Connect printer** again. Receipts are never lost while the printer is
-off: they queue up and print once it is working.
+**The printer will not connect.** Check that the cart is open in Bluefy, not
+Safari, and that the printer is switched on, charged and has paper, then tap
+**Connect printer** again. You do not need to pair it in the iPad's Bluetooth
+settings. Receipts are never lost while the printer is off: they queue up and
+print once it is working.
+
+**The cart shows "This device is not set up".** It is open in a browser that has
+not been connected, usually Safari instead of Bluefy. Repeat step 1.
 
 **"No AirPrint printers found" or similar.** That message is not about this app.
 The cart's printer connects over Bluetooth, not the school network.
