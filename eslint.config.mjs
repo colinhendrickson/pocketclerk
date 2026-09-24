@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The demo e2e server's build folder (playwright.config.ts).
+    ".next-demo/**",
   ]),
 ]);
 
