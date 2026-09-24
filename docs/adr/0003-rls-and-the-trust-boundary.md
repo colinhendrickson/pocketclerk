@@ -8,9 +8,11 @@ This application holds children's names, their working hours, and staff email
 addresses. It is deployed by a program with no IT staff, on a device that sits
 unattended on a cart in a school corridor.
 
-Supabase's anonymous key is shipped to the browser by design. That is only safe
-if the database itself refuses unauthorized reads, rather than relying on the
-key being secret.
+Supabase publishes an anonymous key and a Data API for every project, and a
+typical Supabase app ships that key to the browser. That is only safe if the
+database itself refuses unauthorized reads, rather than relying on the key being
+secret. PocketClerk ships no key at all and reaches Postgres only from the
+server, but the Data API still exists, so the database has to hold regardless.
 
 The complication is that students have no database identity. They sign in by
 tapping a name and entering a four-digit PIN. There is no Supabase auth user
@@ -23,7 +25,7 @@ perspective there is no authenticated principal at all.
 
 Two layers, with the boundary drawn explicitly.
 
-Row Level Security is enabled on all eleven tables. The only permissive policies
+Row Level Security is enabled on every table, fifteen at the time of writing. The only permissive policies
 are admin policies, keyed on an allowlist lookup through a `SECURITY DEFINER`
 function with a pinned `search_path`, plus a public read of active menu items
 and add-ons, which contain nothing but the names and prices of coffee.
@@ -53,3 +55,23 @@ rather than a wrapper someone might forget to apply.
 Adding real student identities later would let RLS express student scope
 directly. That is the natural upgrade if this ever runs at more than one site,
 alongside an `org_id` on every policy for multi-tenancy.
+
+## Amendments
+
+**Admins are not a database role (migration 0010).** The admin policies call
+`is_admin()`, which matched a Supabase Auth identity. When sign-in moved
+in-process ([ADR 7](0007-self-hosted-sign-in-links.md)) that column was dropped,
+and the function began to throw rather than return false. Access was still
+denied, but by error. It now returns `false` explicitly: the server reaches the
+database as the table owner, which RLS does not apply to, so no database role
+is ever an administrator, and the admin policies are a floor that denies by
+rule.
+
+**Student actions also require a paired device.** Resolving the shift cookie
+scopes what a student can do; [ADR 10](0010-device-pairing.md) adds that the
+request must come from a paired device at all, checked in every student server
+action, not only on the pages.
+
+**One more public read.** `site_settings` holds the main colour chosen on the
+admin Colors page and nothing else; it has a public read policy beside the menu's
+([ADR 11](0011-staff-chosen-main-color.md)).

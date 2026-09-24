@@ -16,11 +16,11 @@ not recognise it as theirs.
 ## Decision
 
 Branding is configuration with fictional defaults. `src/lib/branding.ts` reads
-the program name, cart name, reward currency, logo URL and theme from the
+the program name, cart name, reward currency and logo URL from the
 environment, falling back to invented values that ship in the repository. The
-reward currency is a particularly clear case: the first deployment calls them
-"Blue Tickets", so the database column is named `reward_tickets` and the label
-is config.
+reward currency is a particularly clear case: every program has its own name for
+the reward, so the database column is named `reward_tickets` and the label is
+config.
 
 Themes are daisyUI themes, which under daisyUI 5 are nothing but CSS custom
 properties. Two are committed: `pocketclerk`, the default, and `sample`, which
@@ -36,8 +36,8 @@ through the admin interface on a private deployment.
 ## Consequences
 
 The same build serves the public demo and the real deployment, which is the
-white-label claim demonstrated rather than asserted. The home page renders both
-committed themes side by side as proof.
+white-label claim demonstrated rather than asserted. The `/themes` page renders
+both committed themes side by side as proof.
 
 A design document that arrived with the real school's palette in it had that
 section removed before it was committed, and the contrast table lost its column.
@@ -50,3 +50,15 @@ in one screenshot, and `CLAUDE.md` states the rule for every future session.
 
 Verification before pushing is a grep for the school and cart names across the
 repository and its history.
+
+## Amendment: the main colour is set by staff
+
+A deployment's colours were first meant to arrive as runtime CSS variables from
+the host's environment, chosen by a `NEXT_PUBLIC_THEME` variable. That variable
+was read and never applied, and it would have meant a developer for every change
+of colour. It has been removed.
+
+Instead, staff choose the main colour on the admin Colors page, and it is stored
+in the database ([ADR 11](0011-staff-chosen-main-color.md)). The property this
+ADR protects is unchanged, and stronger: the school's colour is in its own
+database, not in git and not even in the deployment's configuration.

@@ -116,3 +116,24 @@ The `is_admin()` function used by the RLS policies read a JWT claim that nothing
 now sets, so those policies evaluate false. That is deliberate and leaves the
 floor exactly where ADR 3 put it: the anonymous surface reaches nothing, and the
 server remains the enforcement point for both students and administrators.
+
+## Amendments
+
+**A code as well as a link.** The email carries a six-digit code alongside the
+link, and the code is the primary path: signing in on the cart's iPad should not
+mean opening a personal mailbox on a shared device. Five wrong codes spend the
+token. The link lands on a page with a button, because school mail scanners open
+links to inspect them, and a link redeemed on a plain GET was spent by the
+scanner before the person clicked.
+
+**Thirty-day sessions.** Staff check the cart from their own phones, and signing
+in every day was the friction. Sessions last thirty days; Sign out ends one at
+once, which is what a shared device calls for. Removing someone from the
+allowlist still takes effect on their next request, since the allowlist is read
+on every one.
+
+**Staff manage the allowlist.** The Admins page adds and removes administrators,
+so a new member of staff is not a request to the developer. Nobody can remove
+themselves, and the last administrator can never be removed; the count and the
+delete run under a lock on every admin row, so two administrators removing each
+other at once cannot leave none. `pnpm admin:add` remains for the very first.
