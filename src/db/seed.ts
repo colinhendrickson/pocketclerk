@@ -1,162 +1,34 @@
 // Must come first: it populates process.env before ./index reads DATABASE_URL.
 import "./load-env";
 
-import { faker } from "@faker-js/faker";
-
-import { hashPin } from "../lib/auth";
-import { sql } from "drizzle-orm";
-
-import { db, getClient } from "./index";
-import {
-  addons,
-  adminUsers,
-  inventoryItems,
-  menuItems,
-  persons,
-  students,
-  teacherProfiles,
-} from "./schema";
+import { getClient } from "./index";
+import { DEMO_PIN, seedDatabase } from "./seed-data";
 
 /**
- * Development and demo seed.
- *
- * This script is the privacy boundary. Every name, room and email below is
- * generated, and real people only ever enter the system through the admin UI on
- * a private deployment. Nothing in this repository should ever be replaced with
- * real school data, and `pnpm seed` is safe to run against a demo database on
- * purpose.
- *
- * The faker seed is fixed so screenshots and tests are reproducible.
+ * `pnpm seed` wipes the database and fills it with a made-up cart.
+ * `pnpm seed --demo` does the same and marks it as the public demo's database.
+ * The data itself lives in ./seed-data.ts, which the demo's reset also uses.
  */
 
-faker.seed(20260903);
-
-/** Shared demo PIN. Printed at the end so you can actually sign in. */
-const DEMO_PIN = "1234";
-
 async function main() {
-  console.log("Seeding. This wipes the current database contents.\n");
+  const demo = process.argv.includes("--demo");
+  console.log(`Seeding${demo ? " the demo" : ""}. This wipes the current database contents.\n`);
 
-  // Order matters: children before parents.
-  await db.execute(
-    sql`TRUNCATE order_item_addons, order_items, receipt_jobs, orders,
-        inventory_counts, inventory_items, shifts, students, teacher_profiles,
-        admin_users, persons, menu_items, addons
-        RESTART IDENTITY CASCADE`,
-  );
-
-  // --- Menu ---------------------------------------------------------------
-  // Everything is a dollar. That is the program's actual pricing, and it is
-  // deliberate: a single price keeps the mental arithmetic on making change
-  // rather than on adding up varied prices.
-  const menu = await db
-    .insert(menuItems)
-    .values([
-      { name: "Coffee", priceCents: 100, category: "drink", sortOrder: 1 },
-      { name: "Hot chocolate", priceCents: 100, category: "drink", sortOrder: 2 },
-      { name: "Tea", priceCents: 100, category: "drink", sortOrder: 3 },
-      { name: "Decaf coffee", priceCents: 100, category: "drink", sortOrder: 4 },
-      {
-        name: "Cookie",
-        priceCents: 100,
-        category: "treat",
-        isSpecial: true,
-        sortOrder: 5,
-      },
-    ])
-    .returning();
-
-  // Free add-ons must not move the total; that rule is enforced by the money
-  // module and exercised by the seed having several of them.
-  const extras = await db
-    .insert(addons)
-    .values([
-      { name: "Cream", priceCents: 0, sortOrder: 1 },
-      { name: "Non-dairy creamer", priceCents: 0, sortOrder: 2 },
-      { name: "Sugar", priceCents: 0, sortOrder: 3 },
-      { name: "Sweetener", priceCents: 0, sortOrder: 4 },
-      { name: "Vanilla syrup", priceCents: 25, sortOrder: 5 },
-    ])
-    .returning();
-
-  // --- Inventory ----------------------------------------------------------
-  // Supplies, not menu items: what the cart consumes rather than what it sells.
-  // Par levels are the quantity a full cart carries.
-  const supplies = await db
-    .insert(inventoryItems)
-    .values([
-      { name: "Coffee cups", unit: "cups", parLevel: 50, sortOrder: 1 },
-      { name: "Lids", unit: "lids", parLevel: 50, sortOrder: 2 },
-      { name: "Napkins", unit: "napkins", parLevel: 100, sortOrder: 3 },
-      { name: "Stirrers", unit: "stirrers", parLevel: 100, sortOrder: 4 },
-      { name: "Creamers", unit: "cups", parLevel: 40, sortOrder: 5 },
-      { name: "Sugar packets", unit: "packets", parLevel: 60, sortOrder: 6 },
-      { name: "Treats", unit: "treats", parLevel: 20, sortOrder: 7 },
-    ])
-    .returning();
-
-  // --- Students -----------------------------------------------------------
-  const pinHash = await hashPin(DEMO_PIN);
-  const studentNames = ["Maya", "Jordan", "Priya", "Eli", "Sam", "Nora"];
-  const seededStudents = await db
-    .insert(students)
-    .values(studentNames.map((displayName) => ({ displayName, pinHash })))
-    .returning();
-
-  // --- Teachers -----------------------------------------------------------
-  // Notes are the "customer memory" teaching goal: the student sees these above
-  // the menu before every order, so the interface enforces the lesson.
-  const noteBank = [
-    "Dairy issue, use non-dairy creamer",
-    "No sugar",
-    "Extra sugar",
-    "Usually orders the special treat",
-    "Likes the mug filled only three quarters",
-    "Allergic to nuts, check the treat",
-  ];
-
-  const teacherRows = Array.from({ length: 12 }, (_, i) => {
-    const first = faker.person.firstName();
-    const last = faker.person.lastName();
-    return {
-      name: `${faker.helpers.arrayElement(["Mr.", "Mrs.", "Ms."])} ${last}`,
-      email: faker.internet
-        .email({ firstName: first, lastName: last, provider: "example.edu" })
-        .toLowerCase(),
-      room: `${100 + i}`,
-      notes: faker.helpers.arrayElements(noteBank, faker.number.int({ min: 0, max: 2 })),
-    };
+  const result = await seedDatabase({ demo }, (s) => {
+    console.log(`  ${s.menu} menu items`);
+    console.log(`  ${s.addons} add-ons`);
+    console.log(`  ${s.students} students`);
+    console.log(`  ${s.teachers} teachers`);
+    console.log(`  ${s.supplies} inventory items`);
+    // Without an email key the sign-in code is printed by the dev server, so
+    // this address is all a new contributor needs to reach the admin side.
+    console.log(`\nAdministrator: sign in at /admin/sign-in as ${s.adminEmail}.`);
+    console.log("With no RESEND_API_KEY, the code appears in the dev server's output.");
   });
 
-  const seededPersons = await db
-    .insert(persons)
-    .values(teacherRows.map((t) => ({ name: t.name, email: t.email })))
-    .returning();
-
-  await db.insert(teacherProfiles).values(
-    seededPersons.map((p, i) => ({
-      personId: p.id,
-      room: teacherRows[i].room,
-      notes: teacherRows[i].notes,
-    })),
-  );
-
-  // --- Administrator -------------------------------------------------------
-  // The first teacher is also the administrator, which exercises the "one
-  // person, two roles" shape the schema was built around: she buys coffee and
-  // she manages the cart, and revoking one does not touch the other.
-  const [adminPerson] = seededPersons;
-  await db.insert(adminUsers).values({ personId: adminPerson.id });
-
-  console.log(`  ${menu.length} menu items`);
-  console.log(`  ${extras.length} add-ons`);
-  console.log(`  ${seededStudents.length} students`);
-  console.log(`  ${seededPersons.length} teachers`);
-  console.log(`  ${supplies.length} inventory items`);
-  // Without an email key the sign-in code is printed by the dev server, so this
-  // address is all a new contributor needs to reach the admin side.
-  console.log(`\nAdministrator: sign in at /admin/sign-in as ${adminPerson.email}.`);
-  console.log("With no RESEND_API_KEY, the code appears in the dev server's output.");
+  if (result === "busy") {
+    throw new Error("Another seed is running against this database. Try again in a moment.");
+  }
   console.log(`\nDone. Every student's PIN is ${DEMO_PIN}.`);
 }
 

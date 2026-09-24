@@ -372,6 +372,12 @@ export const siteSettings = pgTable("site_settings", {
   primaryColor: text("primary_color"),
   updatedBy: uuid("updated_by").references(() => persons.id, { onDelete: "set null" }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  // The demo's own database says so. The demo's powers need this and the
+  // deployment's mode together (src/lib/demo.ts), so neither alone can turn a
+  // school's copy into the demo.
+  isDemo: boolean("is_demo").notNull().default(false),
+  // When the demo's data was last put back. Drives the hourly reset.
+  demoResetAt: timestamp("demo_reset_at", { withTimezone: true }),
 });
 
 /* -------------------------------------------------------------------------- */
