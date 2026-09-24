@@ -84,9 +84,12 @@ export function PrinterBar() {
     return (
       <div className="alert rounded-box border-base-300 bg-base-100 text-[18px] font-bold">
         <TriangleAlert size={28} aria-hidden="true" />
+        {/* Read by a student, so it names the fix and who does it, with no
+            link that would take them out of the cart. The steps are in the
+            admin guide "Setting up the receipt printer". */}
         <span>
-          Receipts are saved and will print once this device is opened in a
-          browser that can reach the printer.
+          Receipts are saved. To print them, a teacher opens the cart in the
+          Bluefy app on this iPad.
         </span>
       </div>
     );

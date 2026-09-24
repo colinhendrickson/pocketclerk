@@ -4,6 +4,7 @@ import Link from "next/link";
 import { SETUP_STEP_TEXT } from "@/lib/help";
 import { setupComplete, type SetupStep } from "@/lib/setup";
 
+import { OutsideLink } from "./_help/guide-view";
 import { PairingLink } from "./pairing-link";
 
 export interface SetupChecklistProps {
@@ -48,6 +49,7 @@ export function SetupChecklist({ steps, pairingUrl, adminEmail }: SetupChecklist
               </p>
               <p className="text-sm font-bold opacity-75">{step.status}</p>
               {!step.done ? <p className="max-w-prose">{text.why}</p> : null}
+              {!step.done && text.link ? <OutsideLink {...text.link} /> : null}
               {step.id === "ipad" ? (
                 pairingUrl ? (
                   step.done ? (
@@ -59,10 +61,12 @@ export function SetupChecklist({ steps, pairingUrl, adminEmail }: SetupChecklist
                       </summary>
                       <div className="mt-2 flex flex-col gap-2">
                         <p className="text-sm">
-                          Open this link on that device. Anything done there is real: practice
-                          sales appear in Orders and today&rsquo;s totals.
+                          Open this link on that device; on an iPad, open it in Bluefy so the
+                          printer works. Anything done there is real: practice sales appear in
+                          Orders and today&rsquo;s totals.
                         </p>
                         <PairingLink url={pairingUrl} email={adminEmail} />
+                        {text.link ? <OutsideLink {...text.link} /> : null}
                       </div>
                     </details>
                   ) : (

@@ -55,6 +55,14 @@ export interface Guide {
   note?: string;
   /** The page where the steps happen, offered as a button. */
   page?: AdminRoute;
+  /** Somewhere outside the app the steps need, such as an App Store page. */
+  link?: ExternalLink;
+}
+
+export interface ExternalLink {
+  label: string;
+  /** Always https. */
+  href: string;
 }
 
 export interface PageHelp {

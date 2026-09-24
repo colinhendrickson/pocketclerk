@@ -21,13 +21,24 @@ import type { PrintResult, ReceiptPrinter } from "./index";
  * known candidates and uses the first writable characteristic it finds.
  */
 
-/** GATT services seen on commodity ESC/POS printers, most common first. */
+/**
+ * GATT services seen on commodity ESC/POS printers, most common first.
+ *
+ * The last two are for dual-mode (classic and low-energy) boards like the
+ * PT-210 the first deployment uses: the service many cheap Chinese printer
+ * boards expose over BLE, and the Microchip/ISSC "transparent UART" used by
+ * dual-mode Bluetooth modules. Added from their published UUIDs, not yet
+ * confirmed against a PT-210 in hand; the probe tries every candidate, so an
+ * extra one costs nothing.
+ */
 const CANDIDATE_SERVICES: BluetoothServiceUUID[] = [
   0xff00,
   0xffe0,
   "000018f0-0000-1000-8000-00805f9b34fb",
   "6e400001-b5a3-f393-e0a9-e50e24dcca9e",
   0xffe5,
+  "e7810a71-73ae-499d-8c15-faa9aef0c3f2",
+  "49535343-fe7d-4ae5-8fa9-9fafd205e455",
 ];
 
 /** BLE writes are capped by the negotiated MTU; 180 is safe across firmwares. */
@@ -61,7 +72,7 @@ export class WebBluetoothPrinter implements ReceiptPrinter {
   async connect(): Promise<void> {
     if (!WebBluetoothPrinter.isSupported()) {
       throw new Error(
-        "This browser cannot reach Bluetooth printers. On iPad, open the app in a browser that supports Web Bluetooth.",
+        "This browser cannot reach Bluetooth printers. On an iPad, open the cart in the Bluefy browser instead of Safari.",
       );
     }
 

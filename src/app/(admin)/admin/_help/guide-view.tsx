@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 // From types directly: the help index also loads server-only rules, and this
@@ -49,7 +49,24 @@ export function GuideView({ guide, currentRoute }: GuideViewProps) {
             Go to {PAGE_NAMES[guide.page]}
           </Link>
         ) : null}
+        {guide.link ? <OutsideLink {...guide.link} /> : null}
       </div>
     </details>
+  );
+}
+
+/** A link out of the app, such as to the App Store, opening in a new tab. */
+export function OutsideLink({ label, href }: { label: string; href: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="btn btn-outline btn-sm self-start"
+    >
+      {label}
+      <ExternalLink size={16} aria-hidden="true" />
+      <span className="sr-only"> (opens in a new tab)</span>
+    </a>
   );
 }

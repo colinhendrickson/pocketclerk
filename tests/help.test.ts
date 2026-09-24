@@ -95,6 +95,15 @@ describe("guides", () => {
     }
   });
 
+  it("link outside the app only over https", () => {
+    const links = [
+      ...GUIDES.flatMap((guide) => (guide.link ? [guide.link] : [])),
+      ...Object.values(SETUP_STEP_TEXT).flatMap((text) => (text.link ? [text.link] : [])),
+    ];
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) expect(new URL(link.href).protocol, link.href).toBe("https:");
+  });
+
   it("are all reachable from some page's help, or from the topic list", () => {
     const listed = new Set(Object.values(PAGE_HELP).flatMap((help) => help.tasks));
     for (const guide of GUIDES) {

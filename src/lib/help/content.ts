@@ -3,7 +3,7 @@ import { TOKEN_MINUTES } from "@/lib/admin-auth";
 import { branding } from "@/lib/branding";
 import { MAX_ATTEMPTS } from "@/lib/receipt-jobs";
 
-import type { AdminRoute, GlossaryEntry, Guide, GuideTopic, PageHelp } from "./types";
+import type { AdminRoute, ExternalLink, GlossaryEntry, Guide, GuideTopic, PageHelp } from "./types";
 
 /**
  * Everything the admin side says to explain itself.
@@ -14,6 +14,17 @@ import type { AdminRoute, GlossaryEntry, Guide, GuideTopic, PageHelp } from "./t
  * lockout, how long a sign-in code lasts) are imported, not retyped, so the
  * help cannot drift from what the app does.
  */
+
+/**
+ * Safari on iPad cannot reach Bluetooth devices, and neither can a home-screen
+ * web app, which runs on Safari. Bluefy is a free iPad browser that can, so it
+ * is how the cart reaches its receipt printer. See the Web Bluetooth printer
+ * in src/providers/printer/web-bluetooth.ts.
+ */
+export const BLUEFY: ExternalLink = {
+  label: "Get Bluefy on the App Store",
+  href: "https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055",
+};
 
 const reward = branding.rewardName;
 const rewardLower = reward.toLowerCase();
@@ -55,7 +66,8 @@ export const GUIDES: Guide[] = [
       "Add your students, each with a four-digit PIN they will remember.",
       "Add your teachers, with their school emails so they get receipts.",
       "Set up the menu: each item and its price, and any add-ons such as milk or syrup.",
-      "Connect the cart's iPad using the link in the checklist.",
+      "Connect the cart's iPad using the link in the checklist, opened in the free Bluefy browser.",
+      "Set up the receipt printer: turn it on and press Connect printer on a student's shift screen.",
       "Have a student clock in and sell one item to check everything works.",
     ],
     note: "Each checklist step ticks itself off when it is done. You do not need to do them in one sitting.",
@@ -66,14 +78,31 @@ export const GUIDES: Guide[] = [
     topic: "Getting started",
     title: "Connecting the cart's iPad",
     steps: [
-      "On Admin home, find “Connect the cart's iPad” in the setup checklist.",
-      "Open that link on the iPad itself. The easiest way is to email it to yourself and tap it in the email on the iPad.",
-      "The iPad shows the list of students. It is connected, and stays connected.",
+      "On the iPad, install Bluefy, a free browser, from the App Store. Safari cannot reach the receipt printer; Bluefy can.",
+      "On Admin home, find “Connect the cart's iPad” in the setup checklist, and press Email it to me.",
+      "On the iPad, open that email. Press and hold the link, choose Copy, then open Bluefy and paste it into the address bar. (Tapping the link would open Safari instead.)",
+      "The iPad shows the list of students. It is connected, and stays connected in Bluefy.",
       "The checklist step ticks off the first time a student clocks in on it.",
       "To connect another device later, such as a computer to try the cart on, open “Connect another device” on that same step.",
     ],
-    note: "Only a connected iPad can show the student list or take orders. Anyone opening the site on another device sees a “not set up” page instead, which keeps the students' names private.",
+    note: "Each browser keeps its own connection: an iPad connected in Safari is not connected in Bluefy. Only a connected device can show the student list or take orders; anywhere else shows a “not set up” page, which keeps the students' names private. To keep students in the cart, lock the iPad to Bluefy with Guided Access (the one-page iPad handout shows how).",
     page: "/admin",
+    link: BLUEFY,
+  },
+  {
+    id: "set-up-printer",
+    topic: "Getting started",
+    title: "Setting up the receipt printer",
+    steps: [
+      "Charge the printer, load a 58mm thermal paper roll (the printer's manual shows which way round), and close the lid.",
+      "Turn it on: hold the power button until its light comes on.",
+      "Make sure the cart is open in Bluefy on the iPad, not Safari. See “Connecting the cart's iPad”.",
+      "You do not need to pair the printer in the iPad's Bluetooth settings. The cart connects to it itself.",
+      "Have a student sign in. On their shift screen, press Connect printer, then choose the printer from the list. It is usually named after its model, such as PT-210.",
+      "Receipts now print by themselves after each sale. If the printer is switched off or goes to sleep, press Connect printer again.",
+    ],
+    note: "A sale never waits for the printer. Receipts are saved with the order and print once the printer is connected, so none are lost while it is off. Only printers that use Bluetooth Low Energy work from an iPad; small 58mm thermal printers such as the PT-210 do.",
+    link: BLUEFY,
   },
 
   /* Students ------------------------------------------------------------- */
@@ -366,7 +395,7 @@ export const PAGE_HELP: Record<AdminRoute, PageHelp> = {
   "/admin": {
     purpose:
       "The starting point. It shows what the cart still needs, anything that needs your attention, today's sales, and every guide.",
-    tasks: ["first-setup", "what-is-this", "pair-ipad"],
+    tasks: ["first-setup", "what-is-this", "pair-ipad", "set-up-printer"],
   },
   "/admin/students": {
     purpose:
@@ -448,7 +477,13 @@ export function guideById(id: string): Guide | undefined {
  */
 export const SETUP_STEP_TEXT: Record<
   "students" | "teachers" | "menu" | "ipad" | "first-sale" | "admins",
-  { title: string; why: string; action?: { label: string; href: AdminRoute }; guide: string }
+  {
+    title: string;
+    why: string;
+    action?: { label: string; href: AdminRoute };
+    link?: ExternalLink;
+    guide: string;
+  }
 > = {
   students: {
     title: "Add your students",
@@ -470,8 +505,9 @@ export const SETUP_STEP_TEXT: Record<
   },
   ipad: {
     title: "Connect the cart's iPad",
-    why: "Only a connected device can show the students and take orders. Open the link below on the iPad itself; it only needs doing once.",
+    why: "Only a connected device can show the students and take orders. Open the link below on the iPad itself, in the free Bluefy browser rather than Safari, so the cart can also reach the receipt printer. It only needs doing once.",
     guide: "pair-ipad",
+    link: BLUEFY,
   },
   "first-sale": {
     title: "Try a first sale",
