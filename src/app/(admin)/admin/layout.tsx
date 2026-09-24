@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { ThemeColor } from "@/app/theme-color";
 import { Logo } from "@/components";
 import { branding } from "@/lib/branding";
 import { getAdmin } from "@/lib/admin-auth";
@@ -42,6 +43,7 @@ export default async function AdminLayout({
   if (!admin) {
     return (
       <div className="flex min-h-full flex-1 flex-col bg-base-200 text-base-content">
+        <ThemeColor />
         <header className="navbar border-b border-base-300 bg-base-100 px-4 md:px-6">
           {title}
         </header>
@@ -52,6 +54,7 @@ export default async function AdminLayout({
 
   return (
     <div className="drawer min-h-full flex-1 bg-base-200 text-base-content xl:drawer-open">
+      <ThemeColor />
       {/* The drawer's state. Hidden from assistive technology: the menu
           button in the header is the control, and it reports this state. */}
       <input

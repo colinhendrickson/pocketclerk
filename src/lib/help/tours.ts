@@ -128,4 +128,28 @@ export const TOURS: Record<AdminRoute, TourStep[]> = {
     },
     MENU_STEP,
   ],
+  "/admin/colors": [
+    HELP_STEP,
+    {
+      target: "color-presets",
+      title: "Ready-made colors",
+      body: "Blues chosen to be easy to read. Tap one to see it in the preview.",
+    },
+    {
+      target: "color-exact",
+      title: "The school's exact color",
+      body: "Choose it with the color picker, or type its code, which starts with #.",
+    },
+    {
+      target: "color-preview",
+      title: "Preview",
+      body: "How buttons and highlights will look. The line underneath says whether text stays easy to read, and offers a darker shade if not.",
+    },
+    {
+      target: "color-save",
+      title: "Saving",
+      body: "Nothing changes until you press Save color. Then every page does, including the cart. You can always go back to the original teal.",
+    },
+    MENU_STEP,
+  ],
 };

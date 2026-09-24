@@ -1,3 +1,4 @@
+import { ThemeColor } from "@/app/theme-color";
 import { branding } from "@/lib/branding";
 
 /**
@@ -14,6 +15,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
       className="flex min-h-full flex-1 flex-col bg-base-200 text-base-content [touch-action:manipulation]"
       data-cart={branding.cartName}
     >
+      <ThemeColor />
       {children}
     </div>
   );

@@ -106,6 +106,10 @@ Rules that hold in every theme
 
 **Deployment skins are not committed.** A real deployment sets `THEME=school` and supplies its own values for the same custom properties above (colours, radii, font) at runtime from private environment config. daisyUI 5 themes are plain CSS custom properties, so an override skin needs no code and no CSS in this repo. A skin may also swap the font family; if it uses a wider face, expect stat and menu labels to wrap one breakpoint earlier.
 
+### Staff-chosen main color
+
+Staff can replace the theme's `--color-primary` from the admin Colors page (`site_settings.primary_color`, applied by `src/app/theme-color.tsx` in the admin and student layouts). Only the main color and the text on it change; `--color-primary-content` is chosen as white or near-black, whichever reads better. A color is refused unless it reaches 4.5:1 against both `base-100` and `base-200` and its button text reaches 4.5:1 on it (`src/lib/colors.ts`), so no choice can break the checks below. The icon files keep the pocketclerk teal.
+
 ### Contrast (WCAG AA, checked)
 | Pair | pocketclerk | sample |
 |---|---|---|

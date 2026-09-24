@@ -17,6 +17,7 @@ export const ADMIN_ROUTES = [
   "/admin/orders",
   "/admin/receipts",
   "/admin/admins",
+  "/admin/colors",
 ] as const;
 
 export type AdminRoute = (typeof ADMIN_ROUTES)[number];
@@ -30,6 +31,7 @@ export const PAGE_NAMES: Record<AdminRoute, string> = {
   "/admin/orders": "Orders",
   "/admin/receipts": "Receipts",
   "/admin/admins": "Admins",
+  "/admin/colors": "Colors",
 };
 
 export type GuideTopic =
@@ -38,7 +40,8 @@ export type GuideTopic =
   | "Teachers"
   | "Menu"
   | "Orders and receipts"
-  | "Access and signing in";
+  | "Access and signing in"
+  | "Colors";
 
 export interface Guide {
   /** Stable, used as the anchor id. Lower-case with dashes. */

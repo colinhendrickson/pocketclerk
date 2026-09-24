@@ -26,6 +26,7 @@ export const TOPICS: GuideTopic[] = [
   "Menu",
   "Orders and receipts",
   "Access and signing in",
+  "Colors",
 ];
 
 export const GUIDES: Guide[] = [
@@ -336,7 +337,30 @@ export const GUIDES: Guide[] = [
     note: "It takes effect on their next click. You cannot remove your own access, and the last admin cannot be removed, so the school can never be locked out.",
     page: "/admin/admins",
   },
+
+  /* Colors --------------------------------------------------------------- */
+  {
+    id: "change-colors",
+    topic: "Colors",
+    title: "Changing the color to the school's",
+    steps: [
+      "Open Colors.",
+      "Pick one of the ready-made blues, or match the school's color exactly with the color picker or its code, such as #1d4ed8.",
+      "Check the preview and the line under it. If it says the color is too light, press the button to use a darker shade that reads well.",
+      "Press Save color. Every page, including the cart, changes straight away.",
+    ],
+    note: "Only buttons and highlights change; the background stays cream. Colors too light to read are refused, because the students need to read every button. The small icon in the browser tab stays teal.",
+    page: "/admin/colors",
+  },
+  {
+    id: "reset-colors",
+    topic: "Colors",
+    title: "Going back to the original color",
+    steps: ["Open Colors.", "Press Back to the original teal."],
+    page: "/admin/colors",
+  },
 ];
+
 
 export const PAGE_HELP: Record<AdminRoute, PageHelp> = {
   "/admin": {
@@ -371,6 +395,11 @@ export const PAGE_HELP: Record<AdminRoute, PageHelp> = {
   "/admin/admins": {
     purpose: "Which staff can use this admin side. Give access to a colleague, or remove it.",
     tasks: ["give-access", "remove-access", "sign-in", "shared-device"],
+  },
+  "/admin/colors": {
+    purpose:
+      "The main color of buttons and highlights on every page, including the cart. Set it to the school's.",
+    tasks: ["change-colors", "reset-colors"],
   },
 };
 

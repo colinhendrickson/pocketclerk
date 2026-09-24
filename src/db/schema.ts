@@ -358,6 +358,22 @@ export const receiptJobs = pgTable(
   ],
 );
 
+/**
+ * Settings an administrator changes from the admin side. One row, ever.
+ *
+ * `primary_color` is the deployment's main colour as `#rrggbb`, or null for
+ * the committed theme's own. It lives here rather than in code or config so
+ * that a school's colours never enter git (see CLAUDE.md, privacy) and staff
+ * can change them without a developer. The single-row rule and the colour's
+ * format are CHECK constraints in the migration, not only TypeScript.
+ */
+export const siteSettings = pgTable("site_settings", {
+  id: integer("id").primaryKey().default(1),
+  primaryColor: text("primary_color"),
+  updatedBy: uuid("updated_by").references(() => persons.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 /* -------------------------------------------------------------------------- */
 /* Inferred types                                                             */
 /* -------------------------------------------------------------------------- */
@@ -374,3 +390,4 @@ export type ReceiptJob = typeof receiptJobs.$inferSelect;
 export type InventoryItem = typeof inventoryItems.$inferSelect;
 export type InventoryCount = typeof inventoryCounts.$inferSelect;
 export type AdminUser = typeof adminUsers.$inferSelect;
+export type SiteSettings = typeof siteSettings.$inferSelect;

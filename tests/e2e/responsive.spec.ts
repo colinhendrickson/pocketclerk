@@ -35,7 +35,7 @@ const SIZES = [
   { name: "desktop", width: 1440, height: 900 },
 ] as const;
 
-const ADMIN_PAGES = ["", "/students", "/teachers", "/menu", "/orders", "/receipts", "/admins"];
+const ADMIN_PAGES = ["", "/students", "/teachers", "/menu", "/orders", "/receipts", "/admins", "/colors"];
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
