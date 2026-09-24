@@ -31,13 +31,6 @@ export async function getStudent(studentId: string) {
   return db.query.students.findFirst({ where: eq(students.id, studentId) });
 }
 
-/** The student's currently open shift, if any. `clock_out IS NULL` is the flag. */
-export async function getOpenShift(studentId: string) {
-  return db.query.shifts.findFirst({
-    where: and(eq(shifts.studentId, studentId), isNull(shifts.clockOut)),
-  });
-}
-
 export interface ActiveShift {
   id: string;
   clockIn: Date;
@@ -116,23 +109,6 @@ export async function listTeachers(): Promise<TeacherSummary[]> {
     .innerJoin(persons, eq(persons.id, teacherProfiles.personId))
     .where(eq(teacherProfiles.active, true))
     .orderBy(asc(persons.name));
-}
-
-export async function getTeacher(teacherId: string): Promise<TeacherSummary | null> {
-  const rows = await db
-    .select({
-      id: teacherProfiles.personId,
-      name: persons.name,
-      room: teacherProfiles.room,
-      email: persons.email,
-      notes: teacherProfiles.notes,
-    })
-    .from(teacherProfiles)
-    .innerJoin(persons, eq(persons.id, teacherProfiles.personId))
-    .where(eq(teacherProfiles.personId, teacherId))
-    .limit(1);
-
-  return rows[0] ?? null;
 }
 
 /** Orders completed during this shift, newest first, for the "today" screen. */

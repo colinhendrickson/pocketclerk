@@ -85,11 +85,6 @@ export async function pairDevice(): Promise<void> {
   });
 }
 
-export async function unpairDevice(): Promise<void> {
-  const store = await cookies();
-  store.delete(COOKIE_NAME);
-}
-
 /**
  * May this device use the cart?
  *

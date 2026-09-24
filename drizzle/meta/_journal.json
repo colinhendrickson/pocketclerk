@@ -71,6 +71,13 @@
       "when": 1790208633536,
       "tag": "0009_nice_famine",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790217878683,
+      "tag": "0010_is_admin_denies",
+      "breakpoints": true
     }
   ]
 }

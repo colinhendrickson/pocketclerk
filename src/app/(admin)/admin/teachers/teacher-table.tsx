@@ -83,7 +83,7 @@ export function TeacherTable({ rows }: TeacherTableProps) {
           {rows.length === 0 ? (
             <tr>
               <td colSpan={8} className="py-6 text-center opacity-70">
-                No teachers yet. Students add them from the cart as they go.
+                No teachers yet. Add one above, or students add them at the cart.
               </td>
             </tr>
           ) : null}

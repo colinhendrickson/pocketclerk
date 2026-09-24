@@ -17,7 +17,6 @@ export const UNIQUE_VIOLATION = "23505";
 /** check_violation */
 export const CHECK_VIOLATION = "23514";
 /** foreign_key_violation */
-export const FOREIGN_KEY_VIOLATION = "23503";
 
 interface PgErrorDetail {
   code?: string;

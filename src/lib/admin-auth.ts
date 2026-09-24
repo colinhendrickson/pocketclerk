@@ -1,6 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
-import { and, eq, gt, isNull, lt, sql } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 
 import { db } from "@/db";
@@ -11,15 +11,15 @@ import { newSignInCode, normalizeSignInCode } from "@/lib/sign-in-code";
 /**
  * Administrator sign-in, by emailed single-use link.
  *
- * There is no password. The administrator is one person who signs in from a
- * school laptop a few times a term, and a password she would have to remember
- * or reset is worse security and worse ergonomics than a link sent to the
- * address that already identifies her.
+ * There is no password. Administrators are a few members of staff who sign in
+ * a few times a term, and a password they would have to remember or reset is
+ * worse security and worse ergonomics than a code sent to the address that
+ * already identifies them.
  *
  * Sign-in is handled here rather than delegated to a hosted auth provider for
  * two reasons: the email provider interface already exists, so a link costs one
  * function call; and it keeps the promise that the project runs end to end with
- * no cloud account. See docs/adr/0007-self-hosted-magic-links.md.
+ * no cloud account. See docs/adr/0007-self-hosted-sign-in-links.md.
  *
  * The allowlist is the authorization model. Being able to receive mail at an
  * address proves who you are; having a row in `admin_users` is what makes you
@@ -325,16 +325,4 @@ export async function getAdmin(): Promise<AdminIdentity | null> {
   return person?.email
     ? { personId: person.id, name: person.name, email: person.email }
     : null;
-}
-
-/** Housekeeping: expired and spent tokens are not worth keeping. */
-export async function purgeStaleTokens(): Promise<void> {
-  await db
-    .delete(adminLoginTokens)
-    .where(
-      and(
-        lt(adminLoginTokens.expiresAt, new Date()),
-        isNull(adminLoginTokens.usedAt),
-      ),
-    );
 }

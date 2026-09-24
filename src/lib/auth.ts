@@ -87,11 +87,6 @@ export function isLockedOut(lockedUntil: Date | null, now: Date = new Date()): b
   return lockedUntil !== null && lockedUntil.getTime() > now.getTime();
 }
 
-/** How long a lockout should last once the attempt limit is reached. */
-export function lockoutUntil(now: Date = new Date()): Date {
-  return new Date(now.getTime() + LOCKOUT_MINUTES * 60_000);
-}
-
 /** Whole minutes remaining on a lockout, for the message shown to the student. */
 export function lockoutMinutesRemaining(
   lockedUntil: Date,
