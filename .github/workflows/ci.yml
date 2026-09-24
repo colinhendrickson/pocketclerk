@@ -62,9 +62,9 @@ jobs:
       - run: pnpm build
 
   # A separate job so a flaky browser cannot turn the fast checks red, and so
-  # the two run concurrently. There is exactly one end-to-end spec on purpose:
-  # correctness is carried by the unit tests and the database constraints, and
-  # this proves the seams connect.
+  # the two run concurrently. The end-to-end specs are few on purpose:
+  # correctness is carried by the unit tests and the database constraints; they
+  # prove the seams connect, and run axe on every screen at five sizes.
   e2e:
     runs-on: ubuntu-latest
 

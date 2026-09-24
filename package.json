@@ -2,8 +2,19 @@
   "name": "pocketclerk",
   "version": "0.1.0",
   "private": true,
+  "description": "White-label point of sale and work-training app for student-run school carts, built for a special-education program.",
+  "license": "MIT",
+  "author": "Colin Hendrickson",
+  "homepage": "https://github.com/colinhendrickson/pocketclerk#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/colinhendrickson/pocketclerk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/colinhendrickson/pocketclerk/issues"
+  },
   "engines": {
-    "node": ">=20.12.0"
+    "node": ">=22.12.0"
   },
   "scripts": {
     "dev": "next dev",
@@ -13,6 +24,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "check": "pnpm typecheck && pnpm lint && pnpm test",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:generate": "drizzle-kit generate",
@@ -20,7 +32,8 @@
     "db:studio": "drizzle-kit studio",
     "seed": "tsx src/db/seed.ts",
     "test:e2e": "playwright test",
-    "admin:add": "tsx src/db/add-admin.ts"
+    "admin:add": "tsx src/db/add-admin.ts",
+    "icons": "tsx scripts/render-icons.ts"
   },
   "dependencies": {
     "@vercel/functions": "^3.9.9",
