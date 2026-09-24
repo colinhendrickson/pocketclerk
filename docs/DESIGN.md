@@ -1,6 +1,6 @@
 # PocketClerk — Design System (white-label)
 
-Layouts are theme-agnostic. Every screen uses daisyUI semantic tokens only (`primary`, `base-*`, `neutral`, `success`, …) and theme-owned radii (`--radius-field`, `--radius-box`). Swapping `data-theme` is the entire re-skin. Branding strings come from config: `{PROGRAM_NAME}`, `{CART_NAME}`, `{REWARD_NAME}` (e.g. "Blue tickets").
+Layouts are theme-agnostic. Every screen uses daisyUI semantic tokens only (`primary`, `base-*`, `neutral`, `success`, …) and theme-owned radii (`--radius-field`, `--radius-box`). Swapping `data-theme` is the entire re-skin. Branding strings come from config: `{PROGRAM_NAME}`, `{CART_NAME}`, `{REWARD_NAME}` (e.g. "Tickets").
 
 Rules that hold in every theme
 - Student-facing labels are sentence case, even if the brand style uses caps.

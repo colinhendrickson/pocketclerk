@@ -1,14 +1,17 @@
 # PocketClerk
 
 [![CI](https://github.com/colinhendrickson/pocketclerk/actions/workflows/ci.yml/badge.svg)](https://github.com/colinhendrickson/pocketclerk/actions/workflows/ci.yml)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
 
 A white-label point-of-sale and workforce-training app for student-run carts.
 Students clock in, take orders from customers they learn to remember, count
 change, print receipts, and clock out to earn simulated wages.
 
-The first deployment is a special-education work program at a K-8 school. The
-app ships brand-neutral: names, colours, logo and reward currency are deployment
-config, so another program can run it without touching code.
+The first deployment is a special-education work program at a K-8 school, where
+it runs on the cart's iPad with a $30 Bluetooth receipt printer. The app ships
+brand-neutral: names, logo and reward currency are deployment config, and staff
+set the school's colour themselves, so another program can run it without
+touching code.
 
 ![Making change](docs/screenshots/make-change.png)
 
@@ -25,8 +28,12 @@ information architecture:
 - Sentence case on student screens, even where the deployment's brand style uses
   capitals, because capitals measurably slow emerging readers.
 - The change amount is the largest text in the app and appears at that size
-  nowhere else.
+  nowhere else. On a narrow screen it shrinks to fit its card rather than be cut
+  off.
 - No free-text entry anywhere in the student flow except teacher notes.
+
+The whole app, student and staff sides, meets WCAG 2.2 AA, and that is tested
+rather than reviewed: see [Testing](#testing).
 
 | | |
 |---|---|
@@ -39,10 +46,24 @@ Saved notes about a customer render above the menu and cannot be collapsed.
 Remembering the customer is one of the program's stated goals, so the layout
 enforces it rather than trusting the student to look.
 
+## For the staff who run it
+
+Several staff share the admin side, and some open it a few times a term, so it
+explains itself. Admin home has a setup checklist that ticks itself off from the
+real data, and every guide, searchable. Every page opens with "About this page"
+and the tasks people come to it for, and a "Show me around" tour walks through
+it. Staff add each other on the Admins page and set the school's colour on the
+Colors page; neither needs a developer.
+
+| | |
+|---|---|
+| ![Admin home](docs/screenshots/admin-home.png) | ![The tour on a phone](docs/screenshots/admin-tour-phone.png) |
+| The setup checklist, from students to a first sale. | "Show me around", on a phone. |
+
 ## Architecture
 
-Seven decisions carry the design. Each has a record in [`docs/adr/`](docs/adr)
-covering the constraint that forced it and what it costs.
+Every architectural decision has a record in [`docs/adr/`](docs/adr) covering the
+constraint that forced it and what it costs. The ones that carry the design:
 
 **Money is integer cents, everywhere.** No `numeric` column, no float, no
 exceptions. Hours are integer hundredths. Formatting happens in exactly one
@@ -57,9 +78,10 @@ dead printer or dropped WiFi delays a receipt and never costs a sale.
 
 **Row Level Security is the floor, not the student authorization layer.**
 Students have no database identity by design, so RLS closes the public surface
-to admin-or-nothing while the server enforces student scope against a signed
-session cookie. The boundary is drawn deliberately and written down.
-→ [ADR 3](docs/adr/0003-rls-and-the-trust-boundary.md)
+while the server enforces student scope against a signed session cookie, on a
+device that has been paired to the cart.
+→ [ADR 3](docs/adr/0003-rls-and-the-trust-boundary.md),
+[ADR 10](docs/adr/0010-device-pairing.md)
 
 **Invariants live in the database.** One open shift per student is a partial
 unique index, because two concurrent requests can both pass an `if` but cannot
@@ -68,63 +90,85 @@ unrepresentable, not merely rejected. Both are asserted by tests that name the
 constraint that fires.
 → [ADR 4](docs/adr/0004-invariants-in-the-database.md)
 
-**Effects sit behind interfaces.** Printing, email and document rendering are
-provider interfaces in `src/providers/`. Each has a console implementation that
-is the default when no key and no hardware are present, so a fresh clone can
-complete an order and see the receipt it would have produced.
-→ [`src/providers`](src/providers)
+**Effects sit behind interfaces.** Printing, email and rendering are provider
+interfaces in `src/providers/`. Each has a console implementation that is the
+default when no key and no hardware are present, so a fresh clone can complete
+an order and see the receipt it would have produced.
+→ [ADR 13](docs/adr/0013-providers-for-every-effect.md)
 
-**Themes are data.** Two themes ship in the repo and no component names a
-colour, so switching `data-theme` is the entire re-skin. A deployment's palette
-never enters git.
-→ [ADR 6](docs/adr/0006-themes-as-data.md)
+**Themes are data, and the school's colour is the school's.** No component names
+a colour. Staff choose the main colour on the Colors page; it is stored in the
+deployment's own database, and a colour that would make text hard to read is
+refused with a darker one offered.
+→ [ADR 6](docs/adr/0006-themes-as-data.md),
+[ADR 11](docs/adr/0011-staff-chosen-main-color.md)
 
-**Sign-in is an emailed single-use link, issued in-process.** No password for an
-administrator who signs in four times a year, and no hosted auth dependency, so
-the project still runs with no cloud account. Only hashes are stored, the token
-is redeemed in a single guarded statement, and the form gives the same answer
-whether or not an address is an administrator.
+**Sign-in is an emailed single-use code, issued in-process.** No password for
+staff who sign in a few times a term, and no hosted auth dependency. Only hashes
+are stored, a code is redeemed in a single guarded statement, and the form gives
+the same answer whether or not an address is an administrator.
 → [ADR 7](docs/adr/0007-self-hosted-sign-in-links.md)
+
+**The admin side's help is code, tested against the app.** Guides, page help,
+the checklist and the tour read one typed module, and tests fail if a guide
+points at a page or a button that no longer exists.
+→ [ADR 12](docs/adr/0012-help-in-code-and-tested-accessibility.md)
 
 ### The printer is attached to the tablet, not the network
 
 Worth calling out because it shaped the queue. iPadOS refuses classic Bluetooth
 to anything without MFi certification, and MFi printers start around $250, so the
 only affordable printer a web page can reach is a Bluetooth Low Energy one,
-driven from the browser. That means print jobs are claimed by the tablet and
-email jobs by the server, which is why `ReceiptPrinter` carries a `runsOn` field.
+driven from the browser. Print jobs are therefore claimed by the tablet and email
+jobs by the server, which is why `ReceiptPrinter` carries a `runsOn` field.
 
-Cheap ESC/POS boards are sold under many names and disagree about which GATT
-service carries the writable characteristic, so the driver probes a list of known
-candidates rather than hard-coding one vendor.
+Safari has no Web Bluetooth, so on the iPad the cart runs in
+[Bluefy](https://apps.apple.com/us/app/bluefy-web-ble-browser/id1492822055), a
+free browser that does. Cheap ESC/POS boards are sold under many names and
+disagree about which GATT service carries the writable characteristic, so the
+driver probes a list of known candidates rather than hard-coding one vendor.
+→ [ADR 9](docs/adr/0009-receipts-over-web-bluetooth.md)
+
+### A production bug worth reading
+
+The first deployment's admin pages hung for five minutes each. The cause was
+Supabase's transaction pooler splitting postgres.js's two-step parameterised
+queries, found by reading `pg_stat_activity` while a page was stuck, after two
+fixes built on reasoning alone had missed.
+→ [ADR 8](docs/adr/0008-session-pooler-and-idle-connections.md)
 
 ## Testing
 
-74 unit tests, a database constraint suite, and one end-to-end flow.
+218 Vitest cases across 25 files, and 20 Playwright tests across 7 specs.
 
-The coverage is deliberately uneven. `src/lib/money.ts` has 32 tests because a
-bug there teaches a student the wrong answer in front of a customer; thinner
-modules rely on the flow test instead.
+The coverage is deliberately uneven. `src/lib/money.ts` has the most tests
+because a bug there teaches a student the wrong answer in front of a customer.
 
-The constraint suite asserts that Postgres itself refuses a second open shift,
-an order whose change does not equal received minus total, a payment that does
-not cover the total, and a half-closed shift. Each assertion names the SQLSTATE
-code and the constraint that fired, so a test proves a specific rule rather than
-that something somewhere failed.
+**The database suite** runs against a real Postgres and asserts that Postgres
+itself refuses a second open shift, an order whose change does not equal received
+minus total, a payment that does not cover the total, and a half-closed shift.
+Each assertion names the SQLSTATE code and the constraint that fired. Races are
+tested as races: twenty parallel wrong PINs lock the student after exactly five,
+and two administrators removing each other at once never leave none.
 
-The end-to-end spec drives a real browser through a whole shift and reloads the
-page after clock-out, so the summary has to have come from the database rather
-than from component state. There is exactly one, because end-to-end tests are
-the flakiest thing in any suite and correctness is carried elsewhere.
+**The browser suite** drives a real browser through a whole shift, reloading after
+clock-out so the summary has to come from the database. It walks every screen at
+five sizes, from a 320px phone to a desktop, failing on sideways scroll or a
+change amount cut off, and runs axe against WCAG 2.2 A and AA on each. What axe
+cannot judge is tested by keyboard: the skip link, focus after navigation, the
+menu drawer, the tour.
+
+A test written for a bug is run against the old code first, to show it fails.
 
 ## Stack
 
-Next.js 16 (App Router) · TypeScript · Tailwind 4 + daisyUI 5 · Postgres via
-Drizzle · Resend · Vercel
+Next.js 16 (App Router) · TypeScript · Tailwind 4 + daisyUI 5 · Postgres
+(Supabase, through its session pooler) via Drizzle and postgres.js · Resend ·
+Web Bluetooth · Vitest · Playwright with axe-core · Vercel
 
-## Run it
+## Run it locally
 
-Requires Node 20.12+, pnpm and Docker. No cloud account, no API keys.
+Requires Node 22.12+, pnpm and Docker. No cloud account, no API keys.
 
 ```bash
 pnpm install
@@ -133,24 +177,44 @@ pnpm db:up && pnpm db:migrate && pnpm seed
 pnpm dev
 ```
 
-Open http://localhost:3000 and sign in as any student. Every seeded PIN is
-`1234`. Completed orders print to the console, because no printer is attached.
+Open http://localhost:3000 and sign in as any student; every seeded PIN is
+`1234`. Receipts print to the console, because no printer is attached.
+
+For the admin side, go to http://localhost:3000/admin/sign-in and use the
+administrator's email that `pnpm seed` prints. With no email key set, the
+sign-in code appears in the dev server's output.
 
 | Command | Does |
 |---|---|
 | `pnpm dev` | Development server |
-| `pnpm typecheck` | TypeScript, no emit |
-| `pnpm lint` | ESLint |
-| `pnpm test` | Vitest, including the database constraint suite |
-| `pnpm test:e2e` | Playwright, one full shift in a real browser |
+| `pnpm check` | Typecheck, lint, and the unit and database tests |
+| `pnpm test:e2e` | Playwright: a whole shift, every screen at five sizes with axe, keyboard, tour, colours, prices, admin access |
 | `pnpm build` | Production build |
 | `pnpm db:up` / `db:down` | Local Postgres in Docker |
+| `pnpm db:migrate` | Apply migrations |
 | `pnpm seed` | Fake data, fixed seed, reproducible. Never in production |
-| `pnpm admin:add "Name" email` | Grant admin access. Safe against production |
+| `pnpm admin:add "Name" email` | The first administrator on a new deployment |
+| `pnpm icons` | Re-render the favicon and app icons from `src/lib/logo.ts` |
 
-CI runs typecheck, lint, migrations, seed, unit tests and build against a real
-Postgres on every push, with the browser flow as a second job so a flaky
-browser cannot turn the fast checks red.
+CI runs typecheck, lint, migrations, seed, the unit and database tests, and the
+build against a real Postgres on every push, with the browser suite as a second
+job. If `pnpm test:e2e` shows Next.js 404 pages for routes that exist, a
+production build has left files in `.next`; delete it and run again.
+
+## Project layout
+
+```
+src/app/          routes and server actions only
+  (student)/      the cart: sign-in, shift, order, change, inventory, clock-out
+  (admin)/admin/  the staff side, and _help/ (guides, page help, tour)
+src/lib/          business logic, importable without Next.js (money, colours,
+                  help content, setup checklist, sign-in, settings)
+src/providers/    printer, email and renderers behind interfaces
+src/db/           schema, client, seed
+drizzle/          migrations, each with its RLS and constraints
+tests/            Vitest (unit and database) and tests/e2e (Playwright)
+docs/             game plan, design system, ADRs, deployment and iPad guides
+```
 
 ## Deploying
 
@@ -168,7 +232,9 @@ values through the environment; nothing school-specific is committed.
 | `NEXT_PUBLIC_PROGRAM_NAME` | Maple Grove Learning Program |
 | `NEXT_PUBLIC_CART_NAME` | Sunrise Snack Cart |
 | `NEXT_PUBLIC_REWARD_NAME` | Tickets |
-| `NEXT_PUBLIC_THEME` | `pocketclerk` |
+| `NEXT_PUBLIC_LOGO_URL` | The PocketClerk mark, in the sign-in email |
+| `NEXT_PUBLIC_TIME_ZONE` | America/New_York |
+| Main colour | The pocketclerk theme's teal; staff change it on the admin Colors page |
 
 Visit `/themes` to see the same components under both committed themes.
 
@@ -176,27 +242,28 @@ Visit `/themes` to see the same components under both committed themes.
 
 | Document | Contents |
 |---|---|
-| [`docs/GAME_PLAN.md`](docs/GAME_PLAN.md) | Goals, data model, tickets, acceptance criteria |
+| [`docs/GAME_PLAN.md`](docs/GAME_PLAN.md) | Goals, data model, every ticket and its status |
 | [`docs/DESIGN.md`](docs/DESIGN.md) | Design system: themes, type scale, breakpoints, primitives |
 | [`docs/adr/`](docs/adr) | Architecture decision records |
-| [`docs/IPAD_SETUP.md`](docs/IPAD_SETUP.md) | One-page iPad guide for whoever runs the cart |
+| [`docs/specs/`](docs/specs) | Design specs for larger pieces of work |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Deploying to Vercel and Supabase, free tier |
+| [`docs/IPAD_SETUP.md`](docs/IPAD_SETUP.md) | One-page iPad guide for whoever runs the cart |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to run, check and contribute |
+| [`SECURITY.md`](SECURITY.md) | Reporting a vulnerability privately |
 
 ## Status
 
 The student side is complete: sign in, clock in, take classroom orders, count
-change, view today's orders, count the inventory, restock, work the closing
-checklist, clock out.
+change, print or email the receipt, view today's orders, count the inventory,
+restock, work the closing checklist, clock out.
 
-The administrator side has sign-in, an overview, an orders browser and a receipt
-delivery monitor with retry, plus management of students, teachers and the menu.
+The staff side has sign-in, a dashboard with the setup checklist and every guide,
+management of students, teachers, the menu, administrators and the site's colour,
+an orders browser and a receipt delivery monitor with retry.
 
-Payroll, reports and the export are the next phase. See
+Payroll, reports and the export are next. See
 [`docs/GAME_PLAN.md`](docs/GAME_PLAN.md).
-
-[`docs/IPAD_SETUP.md`](docs/IPAD_SETUP.md) is the one-page guide for whoever runs
-the cart: home screen, Guided Access, and what to do when something goes wrong.
 
 ## Licence
 
-Not yet chosen.
+[MIT](LICENSE).

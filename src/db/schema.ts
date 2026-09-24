@@ -157,8 +157,8 @@ export const shifts = pgTable(
     /** 3.25 hours stored as 325. Integers only; see the note at the top. */
     hoursHundredths: integer("hours_hundredths"),
     /**
-     * Named for the concept, not the deployment. The first program calls these
-     * "Blue Tickets"; that label is white-label config, so the column is not.
+     * Named for the concept, not the deployment. Each program has its own name
+     * for the reward; that label is white-label config, so the column is not.
      */
     rewardTickets: integer("reward_tickets"),
     /**

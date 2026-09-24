@@ -153,6 +153,10 @@ async function main() {
   console.log(`  ${seededStudents.length} students`);
   console.log(`  ${seededPersons.length} teachers`);
   console.log(`  ${supplies.length} inventory items`);
+  // Without an email key the sign-in code is printed by the dev server, so this
+  // address is all a new contributor needs to reach the admin side.
+  console.log(`\nAdministrator: sign in at /admin/sign-in as ${adminPerson.email}.`);
+  console.log("With no RESEND_API_KEY, the code appears in the dev server's output.");
   console.log(`\nDone. Every student's PIN is ${DEMO_PIN}.`);
 }
 
