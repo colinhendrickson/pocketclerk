@@ -22,7 +22,7 @@ export function DemoBanner() {
     >
       <p className="text-[18px] font-bold">This is a demo. Everything resets every hour.</p>
       <form action={startOver}>
-        <button type="submit" className="btn btn-outline min-h-[60px] text-[18px] font-bold text-neutral-content">
+        <button type="submit" className="btn btn-outline min-h-[60px] border-neutral-content text-[18px] font-bold text-neutral-content">
           Start over
         </button>
       </form>
