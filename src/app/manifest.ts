@@ -1,21 +1,21 @@
 import type { MetadataRoute } from "next";
 
-import { branding } from "@/lib/branding";
 import { LOGO_COLORS } from "@/lib/logo";
+import { PRODUCT_NAME } from "@/lib/site-mode";
 
 /**
  * The web app manifest, for "Add to Home Screen" on the cart's iPad.
  *
- * Named after the cart rather than the product, because the name under the
- * icon is what students look for. Opens full screen without the browser's
+ * Named after the product, not the cart: the manifest is public, and a
+ * school's copy names the school only after sign-in. Opens full screen without the browser's
  * address bar, which is also what Guided Access expects. Colours are literal
  * because a manifest is read outside the page and cannot use the theme.
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: branding.cartName,
-    short_name: branding.cartName,
-    description: `${branding.cartName}, run by ${branding.programName}`,
+    name: PRODUCT_NAME,
+    short_name: PRODUCT_NAME,
+    description: "Point of sale and work training for student-run carts",
     start_url: "/",
     display: "standalone",
     background_color: LOGO_COLORS.paper,

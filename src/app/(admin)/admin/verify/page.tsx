@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { branding } from "@/lib/branding";
+import { PRODUCT_NAME } from "@/lib/site-mode";
 import { getAdmin } from "@/lib/admin-auth";
 
 import { redeemLink } from "../actions";
@@ -34,14 +34,14 @@ export default async function VerifyPage({
     <main className="flex min-h-full flex-1 items-center justify-center p-4 md:p-8">
       <div className="flex w-full max-w-md flex-col gap-6 rounded-box border border-base-300 bg-base-100 p-8">
         <div>
-          <p className="text-sm font-bold opacity-70">{branding.programName}</p>
+          <p className="text-sm font-bold opacity-70">{PRODUCT_NAME}</p>
           <h1 className="text-3xl font-extrabold">Finish signing in</h1>
         </div>
         <p>You opened the sign-in link from your email. One more step.</p>
         <form action={redeemLink}>
           <input type="hidden" name="token" value={token} />
           <button type="submit" className="btn btn-primary w-full">
-            Sign in to {branding.cartName}
+            Sign in
           </button>
         </form>
       </div>

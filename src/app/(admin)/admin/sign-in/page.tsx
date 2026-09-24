@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { branding } from "@/lib/branding";
+import { PRODUCT_NAME } from "@/lib/site-mode";
 import { getAdmin } from "@/lib/admin-auth";
 
 import { sendSignInLink, signInWithCode } from "../actions";
@@ -38,7 +38,7 @@ export default async function AdminSignInPage({
     <main className="flex min-h-full flex-1 items-center justify-center p-4 md:p-8">
       <div className="flex w-full max-w-md flex-col gap-6 rounded-box border border-base-300 bg-base-100 p-8">
         <div>
-          <p className="text-sm font-bold opacity-70">{branding.programName}</p>
+          <p className="text-sm font-bold opacity-70">{PRODUCT_NAME}</p>
           <h1 className="text-2xl font-extrabold sm:text-3xl">Administrator sign-in</h1>
         </div>
 

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ThemeColor } from "@/app/theme-color";
 import { Logo } from "@/components";
 import { branding } from "@/lib/branding";
+import { PRODUCT_NAME } from "@/lib/site-mode";
 import { getAdmin } from "@/lib/admin-auth";
 
 import { TourButton } from "./_help/tour";
@@ -30,11 +31,13 @@ export default async function AdminLayout({
 }) {
   const admin = await getAdmin();
 
+  // Signed out, the header names only the product: a stranger at this
+  // address learns nothing about the school.
   const title = (
     <Link href="/admin" className="flex min-w-0 items-center gap-2 text-lg font-extrabold sm:text-xl">
       <Logo size={28} />
       <span className="truncate">
-        {branding.cartName}
+        {admin ? branding.cartName : PRODUCT_NAME}
         <span className="ml-2 hidden text-sm font-bold opacity-75 sm:inline">admin</span>
       </span>
     </Link>

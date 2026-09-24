@@ -1,14 +1,13 @@
 import type { MetadataRoute } from "next";
 
+import { siteMode } from "@/lib/site-mode";
+
 /**
- * Nothing here should be in a search engine.
- *
- * This is a school tool for one cart, not a website. Even with device pairing in
- * front of the student screens, an indexed URL is an invitation, and the sign-in
- * page carries the school's name.
+ * A school's copy asks every search engine to stay away: nothing on it is meant
+ * to be found. pocket-clerk.com, the demo, is meant to be.
  */
 export default function robots(): MetadataRoute.Robots {
-  return {
-    rules: [{ userAgent: "*", disallow: "/" }],
-  };
+  return siteMode() === "demo"
+    ? { rules: { userAgent: "*", allow: "/" } }
+    : { rules: { userAgent: "*", disallow: "/" } };
 }

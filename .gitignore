@@ -54,3 +54,6 @@ docs/private/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Plan execution scratch (ledgers, briefs)
+.superpowers/

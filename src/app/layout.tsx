@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import { RouteFocus, SkipLink } from "@/components";
+import { siteMode } from "@/lib/site-mode";
 
 import "./globals.css";
 
@@ -13,6 +14,8 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "PocketClerk",
   description: "Student-run cart POS and work-readiness training",
+  // A school's copy is not meant to be found; the demo is.
+  ...(siteMode() === "instance" ? { robots: { index: false, follow: false } } : {}),
 };
 
 // Typed explicitly rather than with Next's generated `LayoutProps`, which only

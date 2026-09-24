@@ -1,5 +1,5 @@
 import { Logo } from "@/components";
-import { branding } from "@/lib/branding";
+import { PRODUCT_NAME } from "@/lib/site-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,7 @@ export default function NotSetUpPage() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
       <Logo size={72} />
-      <h1 className="text-[34px] font-extrabold">{branding.cartName}</h1>
+      <h1 className="text-[34px] font-extrabold">{PRODUCT_NAME}</h1>
       <p className="max-w-md text-[22px] font-bold">
         This device is not set up for the cart yet.
       </p>
