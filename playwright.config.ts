@@ -1,10 +1,14 @@
 import { config as loadEnv } from "dotenv";
 import { defineConfig, devices } from "@playwright/test";
 
+import { demoDatabaseUrl } from "./tests/e2e/demo-database";
+
 // Playwright runs outside Next.js, so it does not read .env.local on its own.
 // Without this the suite cannot pair with a deployment that requires it, and
 // every student test fails at the door for a reason that looks like a bug.
 loadEnv({ path: [".env.local", ".env"] });
+
+const DEMO_PORT = 3100;
 
 /**
  * End-to-end configuration.
@@ -37,14 +41,43 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
 
-  projects: [{ name: "ipad-landscape", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      name: "ipad-landscape",
+      use: { ...devices["Desktop Chrome"] },
+      testIgnore: /demo\.spec\.ts/,
+    },
+    // The public demo, on its own server and its own database
+    // (scripts/demo-db.ts prepares it), so its resets never touch the data the
+    // other specs rely on.
+    {
+      name: "demo",
+      use: { ...devices["Desktop Chrome"], baseURL: `http://localhost:${DEMO_PORT}` },
+      testMatch: /demo\.spec\.ts/,
+    },
+  ],
 
   // Reuses an already-running dev server locally so a developer does not wait
   // for a second one to boot; CI always starts its own.
-  webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: "pnpm dev",
+      url: "http://localhost:3000",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+    {
+      command: `pnpm exec next dev -p ${DEMO_PORT}`,
+      url: `http://localhost:${DEMO_PORT}/api/health`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      env: {
+        NEXT_DIST_DIR: ".next-demo",
+        NEXT_PUBLIC_SITE_MODE: "demo",
+        DATABASE_URL: demoDatabaseUrl(process.env.DATABASE_URL ?? "postgresql://localhost/pocketclerk"),
+        // The public demo has no pairing code: anyone may try the cart.
+        DEVICE_CODE: "",
+      },
+    },
+  ],
 });
