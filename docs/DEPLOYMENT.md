@@ -3,6 +3,12 @@
 Two services, both on free tiers: Supabase for Postgres, Vercel for the app.
 Budget about forty minutes the first time, most of it waiting for DNS.
 
+Each school gets its own copy: its own Supabase database and its own Vercel
+project, from this repository, on its own address
+([ADR 14](adr/0014-one-copy-per-school-and-a-demo.md)). Schools share nothing,
+so one school can never see another's students. The steps below set up one
+school's copy; repeat them for the next school.
+
 Do these in order. Each step depends on the one before it.
 
 ---
@@ -238,6 +244,42 @@ is broken" into a specific missing variable.
 2. A test order completes and shows the right change.
 3. `/admin/receipts` shows the receipt as `sent`, or shows why it is not.
 4. `/admin/orders` shows the order.
+
+## A school on a subdomain of pocket-clerk.com
+
+1. In the school's Vercel project, **Settings → Domains**, add the subdomain,
+   for example `cart1.pocket-clerk.com`. Pick a name that does not identify the
+   school: the address is public even when nothing on it is.
+2. In Cloudflare DNS, add the `CNAME` record Vercel shows for it, **DNS only**
+   (grey cloud). Cloudflare's proxy in front of Vercel caused timeouts.
+3. Set `NEXT_PUBLIC_APP_URL` to `https://cart1.pocket-clerk.com` and redeploy,
+   or sign-in links point at the old address.
+4. Moving an existing school to a new address signs everyone out, because
+   cookies belong to an address: pair the iPad again (step 7) and staff sign
+   in again.
+
+Never set `NEXT_PUBLIC_SITE_MODE=demo` on a school's copy. Its database would
+still refuse the demo's powers, but the landing page would replace the cart.
+
+## The public demo
+
+pocket-clerk.com is the same code in demo mode, with a database of its own.
+
+1. A separate Supabase project, with the schema applied (step 2), then seeded
+   as the demo's:
+
+   ```bash
+   DATABASE_URL="<the demo database>" pnpm seed --demo
+   ```
+
+2. A separate Vercel project from this repository, with `DATABASE_URL`,
+   `SESSION_SECRET`, `NEXT_PUBLIC_APP_URL=https://pocket-clerk.com` and
+   `NEXT_PUBLIC_SITE_MODE=demo`. No `DEVICE_CODE`, no `RESEND_API_KEY`, no
+   branding: the defaults are the made-up cart.
+3. `pocket-clerk.com` and `www.pocket-clerk.com` on that project.
+
+It resets itself on the first visit after each hour, and on **Start over** at
+most every five minutes. No cron is needed.
 
 ## Things that can go wrong
 

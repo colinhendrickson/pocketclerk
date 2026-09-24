@@ -13,6 +13,10 @@ brand-neutral: names, logo and reward currency are deployment config, and staff
 set the school's colour themselves, so another program can run it without
 touching code.
 
+**Try it:** [pocket-clerk.com](https://pocket-clerk.com) is a live demo on
+made-up data. Take an order as a student (every PIN is 1234), or look around
+the admin side. Everything resets every hour.
+
 ![Making change](docs/screenshots/make-change.png)
 
 ---
@@ -139,7 +143,7 @@ fixes built on reasoning alone had missed.
 
 ## Testing
 
-218 Vitest cases across 25 files, and 20 Playwright tests across 7 specs.
+234 Vitest cases across 28 files, and 33 Playwright tests across 9 specs.
 
 The coverage is deliberately uneven. `src/lib/money.ts` has the most tests
 because a bug there teaches a student the wrong answer in front of a customer.
@@ -157,6 +161,9 @@ five sizes, from a 320px phone to a desktop, failing on sideways scroll or a
 change amount cut off, and runs axe against WCAG 2.2 A and AA on each. What axe
 cannot judge is tested by keyboard: the skip link, focus after navigation, the
 menu drawer, the tour.
+
+The public demo runs as a second Playwright project, on its own server and its
+own database, so its resets never touch the data the other specs use.
 
 A test written for a bug is run against the old code first, to show it fails.
 
@@ -217,6 +224,10 @@ docs/             game plan, design system, ADRs, deployment and iPad guides
 ```
 
 ## Deploying
+
+Each school runs its own copy: its own Vercel project and database, on its own
+subdomain. pocket-clerk.com is the same code in demo mode
+([ADR 14](docs/adr/0014-one-copy-per-school-and-a-demo.md)).
 
 See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md). After deploying, `/api/health`
 reports whether the app is configured: which required settings are missing by

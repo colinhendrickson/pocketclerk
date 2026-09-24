@@ -21,8 +21,6 @@ export interface Branding {
   rewardName: string;
   /** Optional logo for the sign-in email. Falls back to the PocketClerk mark. */
   logoUrl: string | null;
-  /** Shows a banner and permits the nightly reset on the public demo. */
-  demoMode: boolean;
 }
 
 function env(name: string, fallback: string): string {
@@ -35,5 +33,4 @@ export const branding: Branding = {
   cartName: env("NEXT_PUBLIC_CART_NAME", "Sunrise Snack Cart"),
   rewardName: env("NEXT_PUBLIC_REWARD_NAME", "Tickets"),
   logoUrl: process.env.NEXT_PUBLIC_LOGO_URL || null,
-  demoMode: process.env.NEXT_PUBLIC_DEMO_MODE === "true",
 };

@@ -2,8 +2,8 @@ import { timingSafeEqual } from "node:crypto";
 
 import { NextResponse } from "next/server";
 
-import { branding } from "@/lib/branding";
 import { deliverQueuedEmails } from "@/lib/deliver-receipts";
+import { siteMode } from "@/lib/site-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +29,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const expected = process.env.CRON_SECRET;
 
   if (!expected) {
-    const openByDesign = branding.demoMode || process.env.NODE_ENV !== "production";
+    const openByDesign = siteMode() === "demo" || process.env.NODE_ENV !== "production";
     if (!openByDesign) {
       console.error(
         "[config] CRON_SECRET is not set, so the receipt sweep is refusing all callers. Set it and redeploy.",

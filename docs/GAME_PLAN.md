@@ -145,7 +145,7 @@ Every commit names its ticket: `feat(4.8): ...`. Work that is not on this list g
 | 3.3 | Export All (CSV/JSON) button | Open |
 | 3.4 | Scheduled backup → JSON dump emailed to admin | Open |
 | 3.5 | Real printer integration behind ReceiptPrinter | Done as 4.8 |
-| 3.6 | Demo mode banner + nightly demo reset | Open |
+| 3.6 | Public demo at pocket-clerk.com: landing page, demo banner, admin entry without email, console-only email, hourly reset in one transaction (ADR 14) | Done |
 | 3.7 | Card/badge payment (deferred from V1, client to opt in): "How is [teacher] paying?" screen, badge confirmation modal, admin toggle for enabled methods | Open |
 
 ### V4 — Go-live hardening
@@ -164,6 +164,9 @@ Built after the first deployment met real staff and students. Each came from som
 | 4.8 | Receipt printing on iPad | Web Bluetooth ESC/POS to a 58mm BLE thermal printer (first deployment: PT-210), in the Bluefy browser; staff guide | Done, awaiting a test on the real printer |
 | 4.9 | Product mark | PocketClerk logo, favicon, home-screen icons, web app manifest | Done |
 | 4.10 | Open-source readiness | Licence, contributing and security docs, accurate README, ADRs for every architectural decision | Done |
+| 4.11 | Nothing names the school before sign-in | The address is public; sign-in pages, the manifest and metadata say only PocketClerk, and search engines are asked to stay away | Done |
+| 4.12 | Student sign-in at /cart | Frees / for the landing page; / on a school's copy still reaches the cart | Done |
+| 4.13 | One copy per school | Each school on its own subdomain, project and database; pocket-clerk.com becomes the demo (ADR 14) | Done in code; the move needs the owner |
 
 ---
 
@@ -221,7 +224,7 @@ The public repo never references the real school. The first deployment is privat
 | Item | Detail |
 |---|---|
 | README | Screenshots, architecture overview, provider-pattern explanation, "run locally in a few commands" |
-| Live demo | Vercel URL, Demo Mode banner, nightly reset, fake data (3.6) |
+| Live demo | pocket-clerk.com, demo banner, hourly reset, fake data (3.6) |
 | White-label proof | `/themes` shows the same screen in two themes side by side |
 | CI | GitHub Actions: typecheck, lint, Vitest against Postgres, Playwright with axe; badge in README |
 | Tests | Vitest on money math and every database rule; Playwright: a whole shift, every screen at five sizes with axe, keyboard, tour, colors, menu prices, admin access |
