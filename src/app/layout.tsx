@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
-import { RouteFocus, SkipLink } from "@/components";
+import { DemoBanner, RouteFocus, SkipLink } from "@/components";
+import { maybeResetDemo } from "@/lib/demo";
 import { siteMode } from "@/lib/site-mode";
 
 import "./globals.css";
@@ -21,7 +22,10 @@ export const metadata: Metadata = {
 // Typed explicitly rather than with Next's generated `LayoutProps`, which only
 // exists after a build has written .next/types and therefore breaks `tsc` on a
 // clean checkout — including in CI, where typecheck runs before build.
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // The demo puts itself back on the first visit after the hour. Returns at
+  // once on a school's copy.
+  await maybeResetDemo();
   return (
     <html
       lang="en"
@@ -31,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full flex flex-col bg-base-100 text-base-content">
         <SkipLink />
         <RouteFocus />
+        {siteMode() === "demo" && <DemoBanner />}
         {children}
       </body>
     </html>

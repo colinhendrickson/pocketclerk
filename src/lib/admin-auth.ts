@@ -167,7 +167,7 @@ export async function redeemSignInLink(token: string): Promise<AdminIdentity | n
   `);
 
   if (!claimed) return null;
-  return startSessionFor(claimed.person_id);
+  return startAdminSession(claimed.person_id);
 }
 
 export type RedeemCodeResult =
@@ -228,7 +228,7 @@ export async function redeemSignInCode(
     `);
 
     if (claimed) {
-      const identity = await startSessionFor(claimed.person_id);
+      const identity = await startAdminSession(claimed.person_id);
       return identity
         ? { ok: true, identity }
         : { ok: false, error: "invalid" };
@@ -260,7 +260,7 @@ export async function redeemSignInCode(
  * The check happens at redemption, not only at issue: access revoked in the
  * fifteen minutes since the mail was sent must actually be revoked.
  */
-async function startSessionFor(personId: string): Promise<AdminIdentity | null> {
+export async function startAdminSession(personId: string): Promise<AdminIdentity | null> {
   const [person] = await db
     .select({ id: persons.id, name: persons.name, email: persons.email })
     .from(persons)

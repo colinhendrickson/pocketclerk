@@ -43,3 +43,4 @@ export type { TeacherCardProps } from "./teacher-card";
 export { RouteFocus, SkipLink } from "./page-focus";
 export { Logo } from "./logo";
 export type { LogoProps } from "./logo";
+export { DemoBanner } from "./demo-banner";

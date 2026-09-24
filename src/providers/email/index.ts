@@ -43,6 +43,7 @@ export interface EmailSender {
 
 import { ConsoleSender } from "./console";
 import { ResendSender } from "./resend";
+import { siteMode } from "@/lib/site-mode";
 
 export { ConsoleSender, ResendSender };
 
@@ -52,8 +53,12 @@ export { ConsoleSender, ResendSender };
  * The absence of a key is a supported configuration, not a failure. A missing
  * credential should mean "log it" in development, never a crash on the first
  * completed order.
+ *
+ * The demo only ever logs. Anyone can type any address into it, so a key left in
+ * its settings must not turn it into a way to mail strangers.
  */
 export function getEmailSender(): EmailSender {
+  if (siteMode() === "demo") return new ConsoleSender();
   const key = process.env.RESEND_API_KEY;
   return key ? new ResendSender(key) : new ConsoleSender();
 }
