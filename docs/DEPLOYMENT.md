@@ -281,6 +281,20 @@ pocket-clerk.com is the same code in demo mode, with a database of its own.
 It resets itself on the first visit after each hour, and on **Start over** at
 most every five minutes. No cron is needed.
 
+## Keeping every copy up to date
+
+Every copy deploys from `main`, so a push updates the demo and every school at
+once. Migrations do not run on deploy: when a change adds one, apply it to
+**every** database, the demo's included, before pushing the code that needs it.
+New columns are added so the running code keeps working in the meantime.
+
+```bash
+DIRECT_URL="<each database in turn>" pnpm db:migrate
+```
+
+Then load `/api/health` on every copy: `migrations` should show the same
+`applied` and `expected` count everywhere.
+
 ## Things that can go wrong
 
 **"DATABASE_URL is not set"** on Vercel means the variable was added to only one
