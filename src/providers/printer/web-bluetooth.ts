@@ -1,3 +1,6 @@
+// TypeScript 6 no longer loads @types packages on its own; name this one.
+/// <reference types="web-bluetooth" />
+
 import { renderReceiptText, type Receipt } from "../renderer/receipt";
 import type { PrintResult, ReceiptPrinter } from "./index";
 
