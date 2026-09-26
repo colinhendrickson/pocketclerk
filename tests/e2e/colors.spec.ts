@@ -55,6 +55,10 @@ test("a blue chosen on Colors is used on the cart, and reads well", async ({ pag
   await expect(page.getByRole("status").filter({ hasText: "Easy to read" })).toBeVisible();
   await page.getByRole("button", { name: "Save color" }).click();
   await expect(page.getByText("Every page, including the cart, uses this color now.")).toBeVisible();
+  // Saving refreshes the whole layout. In CI with React 19.3, axe ran while
+  // the page's <title> was not yet back. The title must come back; axe runs
+  // once it has, rather than in the gap, and this fails if it never does.
+  await expect(page).toHaveTitle("PocketClerk");
 
   const { violations } = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
