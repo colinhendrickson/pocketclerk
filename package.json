@@ -50,7 +50,7 @@
     "@faker-js/faker": "^10.6.0",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^24.13.3",
+    "@types/node": "^26.6.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/web-bluetooth": "^0.0.21",
