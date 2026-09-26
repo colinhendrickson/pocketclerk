@@ -34,7 +34,7 @@ jobs:
       SESSION_SECRET: ci-session-secret-that-is-at-least-32-chars
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Reads the pnpm version from package.json "packageManager".
       - uses: pnpm/action-setup@v4
@@ -92,7 +92,7 @@ jobs:
       DEVICE_CODE: ci-device-pairing-code
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
