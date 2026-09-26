@@ -85,11 +85,11 @@ export async function seedDatabase(
     const menu = await tx
       .insert(menuItems)
       .values([
-        { name: "Coffee", priceCents: 100, category: "drink", sortOrder: 1 },
-        { name: "Hot chocolate", priceCents: 100, category: "drink", sortOrder: 2 },
-        { name: "Tea", priceCents: 100, category: "drink", sortOrder: 3 },
-        { name: "Decaf coffee", priceCents: 100, category: "drink", sortOrder: 4 },
-        { name: "Cookie", priceCents: 100, category: "treat", isSpecial: true, sortOrder: 5 },
+        { name: "Coffee", priceCents: 100, category: "drink", icon: "mug", sortOrder: 1 },
+        { name: "Hot chocolate", priceCents: 100, category: "drink", icon: "mug", sortOrder: 2 },
+        { name: "Tea", priceCents: 100, category: "drink", icon: "tea", sortOrder: 3 },
+        { name: "Decaf coffee", priceCents: 100, category: "drink", icon: "decaf", sortOrder: 4 },
+        { name: "Cookie", priceCents: 100, category: "treat", icon: "cookie", isSpecial: true, sortOrder: 5 },
       ])
       .returning();
 
@@ -98,11 +98,11 @@ export async function seedDatabase(
     const extras = await tx
       .insert(addons)
       .values([
-        { name: "Cream", priceCents: 0, sortOrder: 1 },
-        { name: "Non-dairy creamer", priceCents: 0, sortOrder: 2 },
-        { name: "Sugar", priceCents: 0, sortOrder: 3 },
+        { name: "Cream", priceCents: 0, icon: "cream", sortOrder: 1 },
+        { name: "Non-dairy creamer", priceCents: 0, icon: "no-dairy", sortOrder: 2 },
+        { name: "Sugar", priceCents: 0, icon: "sugar", sortOrder: 3 },
         { name: "Sweetener", priceCents: 0, sortOrder: 4 },
-        { name: "Vanilla syrup", priceCents: 25, sortOrder: 5 },
+        { name: "Vanilla syrup", priceCents: 25, icon: "syrup", sortOrder: 5 },
       ])
       .returning();
 

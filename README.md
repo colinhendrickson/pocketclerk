@@ -143,7 +143,7 @@ fixes built on reasoning alone had missed.
 
 ## Testing
 
-234 Vitest cases across 28 files, and 33 Playwright tests across 9 specs.
+245 Vitest cases across 29 files, and 34 Playwright tests across 10 specs.
 
 The coverage is deliberately uneven. `src/lib/money.ts` has the most tests
 because a bug there teaches a student the wrong answer in front of a customer.

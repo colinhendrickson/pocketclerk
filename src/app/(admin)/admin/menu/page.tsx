@@ -30,6 +30,7 @@ export default async function AdminMenuPage() {
     name: item.name,
     priceCents: item.priceCents,
     active: item.active,
+    icon: item.icon,
     isSpecial: item.isSpecial,
   }));
 
@@ -39,6 +40,7 @@ export default async function AdminMenuPage() {
     name: addon.name,
     priceCents: addon.priceCents,
     active: addon.active,
+    icon: addon.icon,
     isSpecial: null,
   }));
 

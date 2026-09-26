@@ -184,6 +184,11 @@ export const menuItems = pgTable(
     category: text("category").notNull().default("drink"),
     /** The rotating "special treat" the administrator can switch on or off. */
     isSpecial: boolean("is_special").notNull().default(false),
+    /**
+     * Optional picture beside the name, for students who cannot read it yet.
+     * One of the keys in src/lib/menu-icons.ts; a CHECK constraint holds it.
+     */
+    icon: text("icon"),
     active: boolean("active").notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),
   },
@@ -197,6 +202,8 @@ export const addons = pgTable(
     name: text("name").notNull(),
     /** Often zero. A free add-on must not change the total. */
     priceCents: integer("price_cents").notNull().default(0),
+    /** Optional picture, as on menu items. */
+    icon: text("icon"),
     active: boolean("active").notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),
   },

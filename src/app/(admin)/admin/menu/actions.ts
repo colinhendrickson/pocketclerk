@@ -8,6 +8,7 @@ import { addons, menuItems } from "@/db/schema";
 import {
   parseMenuEdit,
   parseMenuFlag,
+  parseMenuIcon,
   parseNewMenuEntry,
   type MenuKind,
 } from "@/lib/validate";
@@ -153,6 +154,35 @@ export async function setMenuEntryActive(
       : await db
           .update(addons)
           .set({ active: parsed.value })
+          .where(eq(addons.id, parsed.id))
+          .returning({ id: addons.id });
+
+  if (updated.length === 0) return { ok: false, error: "not_found" };
+
+  revalidatePath("/admin/menu");
+  return { ok: true };
+}
+
+/**
+ * The picture beside a name at the cart, or none. Chosen from the fixed set in
+ * src/lib/menu-icons.ts; the database refuses anything else as well.
+ */
+export async function setMenuEntryIcon(input: unknown): Promise<MenuMutationResult> {
+  await requireAdmin();
+
+  const parsed = parseMenuIcon(input);
+  if (!parsed) return { ok: false, error: "invalid" };
+
+  const updated =
+    parsed.kind === "item"
+      ? await db
+          .update(menuItems)
+          .set({ icon: parsed.icon })
+          .where(eq(menuItems.id, parsed.id))
+          .returning({ id: menuItems.id })
+      : await db
+          .update(addons)
+          .set({ icon: parsed.icon })
           .where(eq(addons.id, parsed.id))
           .returning({ id: addons.id });
 

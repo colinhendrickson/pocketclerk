@@ -167,6 +167,7 @@ Built after the first deployment met real staff and students. Each came from som
 | 4.11 | Nothing names the school before sign-in | The address is public; sign-in pages, the manifest and metadata say only PocketClerk, and search engines are asked to stay away | Done |
 | 4.12 | Student sign-in at /cart | Frees / for the landing page; / on a school's copy still reaches the cart | Done |
 | 4.13 | One copy per school | Each school on its own subdomain, project and database; pocket-clerk.com becomes the demo (ADR 14) | Done |
+| 4.14 | Pictures beside menu names | Asked for by the first program: some students cannot read the menu yet. Staff choose an optional picture for each item and add-on from a fixed set of line icons (decaf gets a mug with a D); not emoji, which look different on every device | Done |
 
 ---
 

@@ -10,6 +10,7 @@ import {
   students,
   teacherProfiles,
 } from "@/db/schema";
+import { isMenuIconKey, type MenuIconKey } from "@/lib/menu-icons";
 
 /**
  * Read helpers for the administrator's screens.
@@ -222,6 +223,7 @@ export interface MenuItemRow {
   name: string;
   priceCents: number;
   isSpecial: boolean;
+  icon: MenuIconKey | null;
   active: boolean;
 }
 
@@ -229,6 +231,7 @@ export interface AddonRow {
   id: string;
   name: string;
   priceCents: number;
+  icon: MenuIconKey | null;
   active: boolean;
 }
 
@@ -246,10 +249,12 @@ export async function listMenuForAdmin(): Promise<MenuItemRow[]> {
       name: menuItems.name,
       priceCents: menuItems.priceCents,
       isSpecial: menuItems.isSpecial,
+      icon: menuItems.icon,
       active: menuItems.active,
     })
     .from(menuItems)
-    .orderBy(asc(menuItems.sortOrder), asc(menuItems.name));
+    .orderBy(asc(menuItems.sortOrder), asc(menuItems.name))
+    .then((rows) => rows.map((row) => ({ ...row, icon: asIcon(row.icon) })));
 }
 
 export async function listAddonsForAdmin(): Promise<AddonRow[]> {
@@ -258,8 +263,15 @@ export async function listAddonsForAdmin(): Promise<AddonRow[]> {
       id: addons.id,
       name: addons.name,
       priceCents: addons.priceCents,
+      icon: addons.icon,
       active: addons.active,
     })
     .from(addons)
-    .orderBy(asc(addons.sortOrder), asc(addons.name));
+    .orderBy(asc(addons.sortOrder), asc(addons.name))
+    .then((rows) => rows.map((row) => ({ ...row, icon: asIcon(row.icon) })));
+}
+
+/** The column is text; the CHECK constraint keeps it to the set. */
+function asIcon(value: string | null): MenuIconKey | null {
+  return isMenuIconKey(value) ? value : null;
 }

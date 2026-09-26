@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition } from "react";
 
+import { MenuIcon } from "@/components";
+import { MENU_ICONS, menuIconLabel, type MenuIconKey } from "@/lib/menu-icons";
 import { formatUSD } from "@/lib/money";
 import { dollarsToCents, type MenuKind } from "@/lib/validate";
 
 import {
   createMenuEntry,
   setMenuEntryActive,
+  setMenuEntryIcon,
   setMenuItemSpecial,
   updateMenuEntry,
 } from "./actions";
@@ -17,6 +20,8 @@ export interface MenuEntryView {
   name: string;
   priceCents: number;
   active: boolean;
+  /** The picture shown beside the name at the cart, if any. */
+  icon: MenuIconKey | null;
   /** Menu items only. Add-ons have no such column, and pass null. */
   isSpecial: boolean | null;
 }
@@ -82,6 +87,7 @@ export function MenuSection({
         <table className="table table-sm">
           <thead>
             <tr>
+              <th>Picture</th>
               <th>Name</th>
               <th className="text-right">Price</th>
               {kind === "item" ? <th>Special</th> : null}
@@ -103,7 +109,7 @@ export function MenuSection({
             ))}
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={kind === "item" ? 5 : 4} className="py-6 text-center opacity-70">
+                <td colSpan={kind === "item" ? 6 : 5} className="py-6 text-center opacity-70">
                   Nothing here yet.
                 </td>
               </tr>
@@ -281,6 +287,7 @@ function EntryRow({ kind, row, isEditing, onToggleEdit }: EntryRowProps) {
   if (isEditing) {
     return (
       <tr className="bg-base-200">
+        <td />
         <td>
           <input
             value={name}
@@ -331,6 +338,9 @@ function EntryRow({ kind, row, isEditing, onToggleEdit }: EntryRowProps) {
 
   return (
     <tr className={row.active ? undefined : "opacity-75"}>
+      <td>
+        <PicturePicker kind={kind} row={row} />
+      </td>
       <td className="font-bold">{row.name}</td>
       <td className="text-right tabular">{formatUSD(row.priceCents)}</td>
       {kind === "item" ? (
@@ -367,5 +377,111 @@ function EntryRow({ kind, row, isEditing, onToggleEdit }: EntryRowProps) {
         </div>
       </td>
     </tr>
+  );
+}
+
+interface PicturePickerProps {
+  kind: MenuKind;
+  row: MenuEntryView;
+}
+
+/**
+ * The picture beside a name at the cart, for students who cannot read it yet.
+ *
+ * Chosen from a fixed grid in a native modal dialog, so there is nothing to
+ * type and nothing unexpected can reach the cart. A tap saves; the dialog
+ * closes once the save lands.
+ */
+function PicturePicker({ kind, row }: PicturePickerProps) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const headingId = useId();
+  const [error, setError] = useState(false);
+  const [pending, startTransition] = useTransition();
+
+  function choose(icon: MenuIconKey | null) {
+    setError(false);
+    startTransition(async () => {
+      const result = await setMenuEntryIcon({ kind, id: row.id, icon });
+      if (result.ok) dialog.current?.close();
+      else setError(true);
+    });
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => dialog.current?.showModal()}
+        aria-label={
+          row.icon
+            ? `Change the picture for ${row.name}, now ${menuIconLabel(row.icon)}`
+            : `Add a picture for ${row.name}`
+        }
+        className="btn btn-ghost btn-sm min-h-11 min-w-11 px-2"
+      >
+        {row.icon ? (
+          <MenuIcon icon={row.icon} size={28} className="text-primary" />
+        ) : (
+          <span className="text-sm font-bold opacity-70">Add</span>
+        )}
+      </button>
+
+      <dialog ref={dialog} aria-labelledby={headingId} className="modal">
+        <div className="modal-box max-w-xl">
+          <h3 id={headingId} className="text-lg font-extrabold">
+            Picture for {row.name}
+          </h3>
+          <p className="text-sm opacity-75">
+            Shown beside the name at the cart, for students who cannot read it yet.
+          </p>
+
+          <ul className="mt-4 grid auto-rows-fr grid-cols-2 gap-2 sm:grid-cols-4">
+            {MENU_ICONS.map((option) => {
+              const chosen = row.icon === option.key;
+              return (
+                <li key={option.key}>
+                  <button
+                    type="button"
+                    aria-pressed={chosen}
+                    disabled={pending}
+                    onClick={() => choose(option.key)}
+                    className={`btn h-full min-h-[88px] w-full flex-col gap-1 rounded-field py-2 text-sm font-bold ${
+                      chosen ? "border-2 border-primary bg-base-200" : "border-base-300 bg-base-100"
+                    }`}
+                  >
+                    <MenuIcon icon={option.key} size={32} className="text-primary" />
+                    <span className="text-center leading-tight">{option.label}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          {error ? (
+            <p role="alert" className="mt-3 text-sm font-bold text-error">
+              That did not save. Try again.
+            </p>
+          ) : null}
+
+          <div className="modal-action">
+            {row.icon ? (
+              <button type="button" disabled={pending} onClick={() => choose(null)} className="btn btn-outline btn-sm">
+                No picture
+              </button>
+            ) : null}
+            <form method="dialog">
+              <button type="submit" className="btn btn-ghost btn-sm">
+                Close
+              </button>
+            </form>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button type="submit" tabIndex={-1}>
+            Close
+          </button>
+        </form>
+      </dialog>
+    </>
   );
 }

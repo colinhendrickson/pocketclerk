@@ -156,3 +156,31 @@ describe("shift completeness", () => {
     expect(failure.constraint).toBe("shifts_closed_fields_check");
   });
 });
+
+describe("menu pictures", () => {
+  it("accepts a picture from the set, or none", async () => {
+    // A throwaway row, so the seeded menu keeps its pictures.
+    const name = `Picture check ${Date.now()}`;
+    await expect(
+      db.execute(sql`INSERT INTO menu_items (name, price_cents, icon) VALUES (${name}, 100, 'mug')`),
+    ).resolves.toBeDefined();
+    await expect(
+      db.execute(sql`UPDATE menu_items SET icon = NULL WHERE name = ${name}`),
+    ).resolves.toBeDefined();
+    await db.execute(sql`DELETE FROM menu_items WHERE name = ${name}`);
+  });
+
+  it("refuses a picture outside the set, on items and add-ons", async () => {
+    const item = await violation(() =>
+      db.execute(sql`UPDATE menu_items SET icon = 'rocket' WHERE id = (SELECT id FROM menu_items LIMIT 1)`),
+    );
+    expect(item.code).toBe(CHECK_VIOLATION);
+    expect(item.constraint).toBe("menu_items_icon_check");
+
+    const addon = await violation(() =>
+      db.execute(sql`UPDATE addons SET icon = 'rocket' WHERE id = (SELECT id FROM addons LIMIT 1)`),
+    );
+    expect(addon.code).toBe(CHECK_VIOLATION);
+    expect(addon.constraint).toBe("addons_icon_check");
+  });
+});

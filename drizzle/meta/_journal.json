@@ -85,6 +85,13 @@
       "when": 1790268726114,
       "tag": "0011_demo_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790435163877,
+      "tag": "0012_menu_icons",
+      "breakpoints": true
     }
   ]
 }

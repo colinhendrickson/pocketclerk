@@ -54,7 +54,14 @@ test("a student works a whole shift", async ({ page }) => {
     await expect(page).toHaveURL(/\/shift\/order$/);
 
     await page.locator("button:has(.card-body)").first().click();
+    // Pictures beside the names, for students who cannot read them yet. The
+    // seed gives decaf its own mug with a D, and sugar a sugar cube.
+    await expect(page.locator('svg[data-menu-icon="decaf"]')).toBeVisible();
+
     await page.getByRole("button", { name: /Add one Coffee$/i }).first().click();
+    await expect(
+      page.getByRole("button", { name: "Sugar", exact: true }).locator('svg[data-menu-icon="sugar"]'),
+    ).toBeVisible();
 
     // A dollar coffee.
     await expect(page.getByText("$1.00").first()).toBeVisible();

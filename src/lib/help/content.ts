@@ -256,6 +256,19 @@ export const GUIDES: Guide[] = [
     page: "/admin/menu",
   },
   {
+    id: "menu-pictures",
+    topic: "Menu",
+    title: "Adding a picture beside a name",
+    steps: [
+      "Open Menu and find the item or add-on.",
+      "Press Add in the Picture column, or the picture already there.",
+      "Choose a picture. It appears beside the name at the cart straight away.",
+      "To remove it, open it again and press No picture.",
+    ],
+    note: "Pictures help students who cannot read the words yet. Some items share one, such as coffee and hot chocolate, so the name still matters. Decaf has its own mug with a D.",
+    page: "/admin/menu",
+  },
+  {
     id: "take-off-menu",
     topic: "Menu",
     title: "Taking something off the menu",
@@ -410,7 +423,7 @@ export const PAGE_HELP: Record<AdminRoute, PageHelp> = {
   "/admin/menu": {
     purpose:
       "What students can sell and what it costs. Changes appear at the cart straight away and never alter past orders.",
-    tasks: ["add-menu-item", "change-price", "set-special", "add-ons", "take-off-menu"],
+    tasks: ["add-menu-item", "change-price", "set-special", "add-ons", "menu-pictures", "take-off-menu"],
   },
   "/admin/orders": {
     purpose: "Every sale, one day at a time: who served it, what was bought, and the change given.",

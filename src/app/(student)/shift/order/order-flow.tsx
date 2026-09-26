@@ -9,11 +9,13 @@ import {
   BillButtons,
   ChangeCard,
   Keypad,
+  MenuIcon,
   MoneyDisplay,
   NoteBanner,
   StepHeader,
 } from "@/components";
 import type { Addon, MenuItem } from "@/db/schema";
+import { isMenuIconKey } from "@/lib/menu-icons";
 import { formatUSD, orderTotalCents } from "@/lib/money";
 import type { TeacherSummary } from "@/lib/queries";
 
@@ -215,6 +217,9 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
                     key={item.id}
                     className="flex min-h-[64px] items-center gap-4 rounded-box border border-base-300 bg-base-100 p-3 md:min-h-[110px] md:p-4"
                   >
+                    {isMenuIconKey(item.icon) ? (
+                      <MenuIcon icon={item.icon} size={44} className="shrink-0 text-primary" />
+                    ) : null}
                     <div className="min-w-0 flex-1">
                       <p className="text-[26px] font-extrabold">{item.name}</p>
                       {item.isSpecial ? (
@@ -270,6 +275,7 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
                       }`}
                     >
                       {on ? <Check size={22} aria-hidden="true" /> : null}
+                      {isMenuIconKey(addon.icon) ? <MenuIcon icon={addon.icon} size={26} /> : null}
                       {addon.name}
                       {addon.priceCents > 0 ? ` (${formatUSD(addon.priceCents)})` : ""}
                     </button>

@@ -7,6 +7,8 @@
  * make the exact accepted range of every field readable in one screen.
  */
 
+import { isMenuIconKey, type MenuIconKey } from "@/lib/menu-icons";
+
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -404,6 +406,27 @@ export function parseMenuFlag(input: unknown): MenuFlagInput | null {
   if (!isUuid(id) || !isBoolean(value)) return null;
 
   return { kind, id, value };
+}
+
+export interface MenuIconInput {
+  kind: MenuKind;
+  id: string;
+  icon: MenuIconKey | null;
+}
+
+/**
+ * Validates a picture chosen for a menu item or add-on. `icon` must be present:
+ * null clears the picture, and a missing field is a malformed request rather
+ * than a quiet "clear".
+ */
+export function parseMenuIcon(input: unknown): MenuIconInput | null {
+  if (typeof input !== "object" || input === null) return null;
+  const { kind, id, icon } = input as Record<string, unknown>;
+
+  if (!isMenuKind(kind) || !isUuid(id)) return null;
+  if (icon !== null && !isMenuIconKey(icon)) return null;
+
+  return { kind, id, icon };
 }
 
 export interface NewAdminInput {

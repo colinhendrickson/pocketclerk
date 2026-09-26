@@ -44,3 +44,5 @@ export { RouteFocus, SkipLink } from "./page-focus";
 export { Logo } from "./logo";
 export type { LogoProps } from "./logo";
 export { DemoBanner } from "./demo-banner";
+export { MenuIcon } from "./menu-icon";
+export type { MenuIconProps } from "./menu-icon";
