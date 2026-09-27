@@ -156,7 +156,7 @@ test("a wrong PIN is refused, with a message a student can act on", async ({
 
   // The exact wording depends on how many attempts this student has already
   // used, which persists in the database. All three outcomes are correct
-  // behaviour; what matters is that the student is told what to do next rather
+  // behavior; what matters is that the student is told what to do next rather
   // than shown a failure.
   await expect(message).toContainText(
     /tries left|One more try|Too many tries/,

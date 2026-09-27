@@ -10,7 +10,7 @@ import { parseNewAdmin } from "@/lib/validate";
  *
  * Access used to be granted only by a command-line script, which meant every
  * new member of staff was a request to the developer. The allowlist is still
- * the whole authorisation model (see admin-auth.ts); this is the same table,
+ * the whole authorization model (see admin-auth.ts); this is the same table,
  * managed from a page instead.
  *
  * Removing access removes the `admin_users` row and nothing else. The person

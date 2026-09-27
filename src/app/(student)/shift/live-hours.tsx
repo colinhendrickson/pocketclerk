@@ -8,7 +8,7 @@ import { branding } from "@/lib/branding";
 import { formatHours, rewardTickets } from "@/lib/money";
 
 export interface LiveHoursProps {
-  /** Clock-in instant from the database, serialised across the client boundary. */
+  /** Clock-in instant from the database, serialized across the client boundary. */
   clockInIso: string;
 }
 

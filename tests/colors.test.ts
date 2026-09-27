@@ -15,7 +15,7 @@ import {
 } from "@/lib/colors";
 
 /**
- * The main colour is the one design decision staff can make, so it is the one
+ * The main color is the one design decision staff can make, so it is the one
  * that has to be impossible to get unreadably wrong.
  */
 
@@ -26,7 +26,7 @@ describe("normalizeHex", () => {
     expect(normalizeHex(" #14d ")).toBe("#1144dd");
   });
 
-  it("refuses anything that is not a colour", () => {
+  it("refuses anything that is not a color", () => {
     for (const bad of ["blue", "#12345", "#1234567", "#gggggg", "", null, 123]) {
       expect(normalizeHex(bad), String(bad)).toBeNull();
     }
@@ -43,7 +43,7 @@ describe("contrastRatio", () => {
 });
 
 describe("checkPrimary", () => {
-  it("passes the original teal and every ready-made colour", () => {
+  it("passes the original teal and every ready-made color", () => {
     expect(checkPrimary(DEFAULT_PRIMARY).ok).toBe(true);
     for (const preset of PRESET_COLORS) {
       const check = checkPrimary(preset.hex);
@@ -60,7 +60,7 @@ describe("checkPrimary", () => {
     expect(checkPrimary(check.suggestion!).ok).toBe(true);
   });
 
-  it("picks button text that reads on the colour", () => {
+  it("picks button text that reads on the color", () => {
     expect(checkPrimary("#1e3a8a").buttonText).toBe("#ffffff");
     expect(BUTTON_TEXT_OPTIONS).toContain(checkPrimary("#1d4ed8").buttonText);
   });

@@ -14,7 +14,7 @@ import { LOCKOUT_MINUTES, MAX_FAILED_ATTEMPTS } from "@/lib/auth";
  * constraints exist to prevent everywhere else, applied to a counter.
  *
  * Here the increment, the decision, and the lock happen in one UPDATE. Postgres
- * serialises concurrent updates to the same row and re-checks the WHERE clause
+ * serializes concurrent updates to the same row and re-checks the WHERE clause
  * against the row each one finally sees, so no two guesses can count as one.
  */
 

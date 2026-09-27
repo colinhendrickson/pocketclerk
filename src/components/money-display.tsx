@@ -2,9 +2,9 @@
  * MoneyDisplay — the only place integer cents become visible text.
  *
  * Implements the MoneyDisplay row of the DESIGN.md §4 map: plain text meant to
- * sit inside a `stat-value`, a `card`, or a `table td`, carrying no colour of
+ * sit inside a `stat-value`, a `card`, or a `table td`, carrying no color of
  * its own so it inherits `base-content` or `neutral-content` from whatever it is
- * dropped into. That inheritance is why this component sets no text colour.
+ * dropped into. That inheritance is why this component sets no text color.
  *
  * Every size here is a literal step off the DESIGN.md §2 type scale rather than
  * a Tailwind `text-*` keyword, because the scale is specified in px and the
@@ -27,7 +27,7 @@ import { formatUSD } from "@/lib/money";
  * this size exists in exactly one place in the app: the change amount on the
  * cash-change screen, inside ChangeCard. It is the largest text in the product and the thing
  * a student reads across the counter. If `size="change"` ever appears outside
- * ChangeCard, that is a design-system violation, not a judgement call.
+ * ChangeCard, that is a design-system violation, not a judgment call.
  */
 export type MoneySize = "change" | "total" | "running" | "stat" | "row";
 
@@ -35,7 +35,7 @@ export interface MoneyDisplayProps {
   /** Integer cents. Never a float, never a dollar amount. */
   cents: number;
   size?: MoneySize;
-  /** Layout-only extras. Never a colour or a font-size. */
+  /** Layout-only extras. Never a color or a font-size. */
   className?: string;
 }
 

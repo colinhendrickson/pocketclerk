@@ -1,7 +1,7 @@
 # PocketClerk
 
 [![CI](https://github.com/colinhendrickson/pocketclerk/actions/workflows/ci.yml/badge.svg)](https://github.com/colinhendrickson/pocketclerk/actions/workflows/ci.yml)
-[![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A white-label point-of-sale and workforce-training app for student-run carts.
 Students clock in, take orders from customers they learn to remember, count
@@ -10,7 +10,7 @@ change, print receipts, and clock out to earn simulated wages.
 The first deployment is a special-education work program at a K-8 school, where
 it runs on the cart's iPad with a $30 Bluetooth receipt printer. The app ships
 brand-neutral: names, logo and reward currency are deployment config, and staff
-set the school's colour themselves, so another program can run it without
+set the school's color themselves, so another program can run it without
 touching code.
 
 **Try it:** [pocket-clerk.com](https://pocket-clerk.com) is a live demo on
@@ -59,9 +59,9 @@ names were asked for by the program's teacher; decaf gets a mug with a D.
 
 Several staff share the admin side, and some open it a few times a term, so it
 explains itself. Admin home has a setup checklist that ticks itself off from the
-real data, and every guide, searchable. Every page opens with "About this page"
+real data, and a searchable list of every guide. Every page opens with "About this page"
 and the tasks people come to it for, and a "Show me around" tour walks through
-it. Staff add each other on the Admins page and set the school's colour on the
+it. Staff add each other on the Admins page and set the school's color on the
 Colors page; neither needs a developer.
 
 | | |
@@ -109,9 +109,9 @@ default when no key and no hardware are present, so a fresh clone can complete
 an order and see the receipt it would have produced.
 → [ADR 13](docs/adr/0013-providers-for-every-effect.md)
 
-**Themes are data, and the school's colour is the school's.** No component names
-a colour. Staff choose the main colour on the Colors page; it is stored in the
-deployment's own database, and a colour that would make text hard to read is
+**Themes are data, and the school's color is the school's.** No component names
+a color. Staff choose the main color on the Colors page; it is stored in the
+deployment's own database, and a color that would make text hard to read is
 refused with a darker one offered.
 → [ADR 6](docs/adr/0006-themes-as-data.md),
 [ADR 11](docs/adr/0011-staff-chosen-main-color.md)
@@ -129,7 +129,7 @@ points at a page or a button that no longer exists.
 
 ### The printer is attached to the tablet, not the network
 
-Worth calling out because it shaped the queue. iPadOS refuses classic Bluetooth
+This shaped the receipt queue. iPadOS refuses classic Bluetooth
 to anything without MFi certification, and MFi printers start around $250, so the
 only affordable printer a web page can reach is a Bluetooth Low Energy one,
 driven from the browser. Print jobs are therefore claimed by the tablet and email
@@ -145,7 +145,7 @@ driver probes a list of known candidates rather than hard-coding one vendor.
 ### A production bug worth reading
 
 The first deployment's admin pages hung for five minutes each. The cause was
-Supabase's transaction pooler splitting postgres.js's two-step parameterised
+Supabase's transaction pooler splitting postgres.js's two-step parameterized
 queries, found by reading `pg_stat_activity` while a page was stuck, after two
 fixes built on reasoning alone had missed.
 → [ADR 8](docs/adr/0008-session-pooler-and-idle-connections.md)
@@ -204,7 +204,7 @@ sign-in code appears in the dev server's output.
 |---|---|
 | `pnpm dev` | Development server |
 | `pnpm check` | Typecheck, lint, and the unit and database tests |
-| `pnpm test:e2e` | Playwright: a whole shift, every screen at five sizes with axe, keyboard, tour, colours, prices, admin access, and the demo on its own database |
+| `pnpm test:e2e` | Playwright: a whole shift, every screen at five sizes with axe, keyboard, tour, colors, prices, admin access, and the demo on its own database |
 | `pnpm build` | Production build |
 | `pnpm db:up` / `db:down` | Local Postgres in Docker |
 | `pnpm db:migrate` | Apply migrations |
@@ -225,7 +225,7 @@ src/app/          routes and server actions only
   (admin)/admin/  the staff side, and _help/ (guides, page help, tour)
   demo/           the public demo's actions: admin entry, Start over
   landing.tsx     the landing page, shown at / in demo mode
-src/lib/          business logic, importable without Next.js (money, colours,
+src/lib/          business logic, importable without Next.js (money, colors,
                   help content, setup checklist, sign-in, settings)
 src/providers/    printer, email and renderers behind interfaces
 src/db/           schema, client, seed (also the demo's hourly reset)
@@ -258,7 +258,7 @@ values through the environment; nothing school-specific is committed.
 | `NEXT_PUBLIC_LOGO_URL` | The PocketClerk mark, in the sign-in email |
 | `NEXT_PUBLIC_TIME_ZONE` | America/New_York |
 | `NEXT_PUBLIC_SITE_MODE` | `instance`, a school's copy; `demo` only for pocket-clerk.com |
-| Main colour | The pocketclerk theme's teal; staff change it on the admin Colors page |
+| Main color | The pocketclerk theme's teal; staff change it on the admin Colors page |
 
 Visit `/themes` to see the same components under both committed themes.
 
@@ -270,7 +270,6 @@ Visit `/themes` to see the same components under both committed themes.
 | [`docs/DESIGN.md`](docs/DESIGN.md) | Design system: themes, type scale, breakpoints, primitives |
 | [`docs/adr/`](docs/adr) | Architecture decision records |
 | [`docs/specs/`](docs/specs) | Design specs for larger pieces of work |
-| [`docs/plans/`](docs/plans) | The implementation plans that followed them |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Deploying to Vercel and Supabase, free tier |
 | [`docs/IPAD_SETUP.md`](docs/IPAD_SETUP.md) | One-page iPad guide for whoever runs the cart |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to run, check and contribute |
@@ -284,7 +283,7 @@ restock, work the closing checklist, clock out.
 
 The staff side has sign-in, a dashboard with the setup checklist and every guide,
 management of students, teachers, the menu (with pictures), administrators and
-the site's colour, an orders browser and a receipt delivery monitor with retry.
+the site's color, an orders browser and a receipt delivery monitor with retry.
 
 The first school runs its own copy on a subdomain, and pocket-clerk.com is the
 public demo, reset every hour.
@@ -292,6 +291,6 @@ public demo, reset every hour.
 Payroll, reports and the export are next. See
 [`docs/GAME_PLAN.md`](docs/GAME_PLAN.md).
 
-## Licence
+## License
 
 [MIT](LICENSE).

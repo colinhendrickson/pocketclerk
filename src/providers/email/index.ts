@@ -29,7 +29,7 @@ export interface EmailSender {
    *
    * `idempotencyKey` is the receipt job's id. Delivery is at-least-once: if the
    * mail goes out and marking the job sent then fails, the job is retried, and
-   * a provider that honours the key sends nothing the second time. It was
+   * a provider that honors the key sends nothing the second time. It was
    * documented on the Resend sender from the start and never passed by the
    * caller, because this signature had no room for it.
    */

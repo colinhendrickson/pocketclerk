@@ -8,7 +8,7 @@
  * below md so the running answer stays visible while the student is still
  * tapping in what the customer handed over.
  *
- * The dark neutral surface is the reason MoneyDisplay carries no colour class:
+ * The dark neutral surface is the reason MoneyDisplay carries no color class:
  * the figure inherits `neutral-content` here and `base-content` everywhere else,
  * which is what keeps the primitive theme-agnostic.
  *

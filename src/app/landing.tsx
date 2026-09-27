@@ -76,7 +76,7 @@ export function Landing() {
         </h2>
         <p className="mb-8 max-w-3xl text-[18px] font-bold opacity-80">
           Teachers and job coaches who run a cart, a coffee service or a school store as work
-          training. Each school gets its own copy, with its own students, menu and colours.
+          training. Each school gets its own copy, with its own students, menu and colors.
         </p>
         <ul className="grid gap-4 md:grid-cols-2">
           {IDEAS.map((idea) => (
@@ -116,7 +116,7 @@ export function Landing() {
           <a className="link" href={`${REPO}/blob/main/docs/DEPLOYMENT.md`}>
             Run a copy for your school
           </a>
-          <span className="opacity-80">Open source, MIT licence.</span>
+          <span className="opacity-80">Open source, MIT license.</span>
         </div>
       </footer>
     </main>

@@ -10,7 +10,7 @@ export default defineConfig({
     },
   },
   test: {
-    // Money math is pure: no DOM, no React, no mocks. Component behaviour is
+    // Money math is pure: no DOM, no React, no mocks. Component behavior is
     // covered by the Playwright flow instead, so jsdom is not a dependency.
     environment: "node",
     setupFiles: ["./tests/setup.ts"],

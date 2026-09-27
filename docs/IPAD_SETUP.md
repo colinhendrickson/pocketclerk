@@ -108,8 +108,9 @@ button to force a restart, which ends Guided Access.
 
 ## Signing in to the admin pages from the iPad
 
-Do not sign your email into the cart's iPad. It is a shared device a student
-uses, and a mailbox opened on it stays open.
+Apart from connecting it once (step 1), keep your email off the cart's iPad.
+It is a shared device a student uses, and a mailbox opened on it stays open;
+if you opened Mail for step 1, sign out of it afterwards.
 
 You do not have to. Go to the address and add **/admin**, type your email
 address, and a six-digit code arrives on your phone. Usually you can read it

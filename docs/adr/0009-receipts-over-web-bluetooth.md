@@ -24,7 +24,7 @@ behind the `ReceiptPrinter` interface).
 The printers in this class are a handful of boards that disagree about which GATT
 service carries the print characteristic, so the app does not hard-code one: it
 asks for any device, then probes the known services and uses the first writable
-characteristic. Only four ESC/POS commands are used (initialise, align, feed,
+characteristic. Only four ESC/POS commands are used (initialize, align, feed,
 cut), the ones every firmware agrees on.
 
 On the iPad the cart runs in Bluefy, a free browser that implements Web

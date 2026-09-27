@@ -35,7 +35,7 @@ it.
 
 ## Consequences
 
-The one thing the program most wants students to practise happens on every
+The one thing the program most wants students to practice happens on every
 single order, rather than being skippable by choosing the faster button.
 
 The work already done on the card screens is discarded. That is the cheaper

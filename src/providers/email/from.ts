@@ -1,5 +1,5 @@
 /**
- * The `From` header, with a name a person can recognise.
+ * The `From` header, with a name a person can recognize.
  *
  * `EMAIL_FROM` is usually a bare address, and a bare address is what an inbox
  * shows: the first sign-in email arrived as "info", indistinguishable from any

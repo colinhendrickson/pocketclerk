@@ -16,7 +16,7 @@
  * owns the entered amount in cents and these report taps upward, which keeps all
  * money arithmetic in `src/lib/money.ts` and out of the input layer.
  *
- * Digit keys are labelled explicitly rather than relying on their glyph, and the
+ * Digit keys are labeled explicitly rather than relying on their glyph, and the
  * two edit keys get verb labels, because a student using VoiceOver should hear
  * "Delete last digit", not "backspace symbol".
  */

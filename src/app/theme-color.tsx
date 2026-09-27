@@ -2,12 +2,12 @@ import { checkPrimary, normalizeHex } from "@/lib/colors";
 import { getPrimaryColor } from "@/lib/settings";
 
 /**
- * Applies the main colour chosen on the admin Colors page, over the theme's.
+ * Applies the main color chosen on the admin Colors page, over the theme's.
  *
  * Rendered by the admin and student layouts rather than the root one: those
  * pages are dynamic anyway, while a database read in the root layout would put
  * one into every static page and into `next build`, which runs with no
- * database. Overrides only the main colour and the text on it; daisyUI derives
+ * database. Overrides only the main color and the text on it; daisyUI derives
  * hover and focus shades from these at runtime.
  *
  * The value reaches CSS unescaped, so it is re-checked here: the database's

@@ -9,7 +9,5 @@ This project exists to help students in a special-education program learn to
 work. Please treat everyone here, and everyone the software serves, with the
 same respect.
 
-To report a problem, use GitHub's private reporting on this repository
-(**Security → Report a vulnerability** reaches the maintainers privately), or
-contact the maintainer through their GitHub profile. Reports are kept
-confidential.
+To report a problem, contact the maintainer privately through their GitHub
+profile. Reports are kept confidential.

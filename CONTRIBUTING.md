@@ -26,13 +26,13 @@ production build has left files in `.next` that confuse the dev server. Delete
 
 **Tickets.** Work is planned in [`docs/GAME_PLAN.md`](docs/GAME_PLAN.md). Every
 commit names its ticket: `feat(4.8): receipts print through Bluefy on iPad`.
-Docs and chores use `docs(…)` and `chore(…)` with the ticket too. If what you
+Docs, tests and chores use `docs(…)`, `test(…)` and `chore(…)` with the ticket too. If what you
 want to do is not a ticket, propose it as one first.
 
 **Money is integer cents.** Columns and variables end in `_cents` or `Cents`.
 Hours are integer hundredths. No floats, no `numeric` columns. Money math lives in
 `src/lib/money.ts` as pure functions, and its tests land before any UI. See
-[ADR 0001](docs/adr/0001-money-as-integer-cents.md).
+[ADR 1](docs/adr/0001-money-as-integer-cents.md).
 
 **Where code goes.** `src/app/` is routes and server actions only. Business logic
 lives in `src/lib/`, importable without the framework. Anything that talks to the

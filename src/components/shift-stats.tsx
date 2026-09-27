@@ -30,7 +30,7 @@ export interface ShiftStatsProps {
   audience?: "student" | "admin";
   /** Pins values to the 22px phone step at every width. */
   compact?: boolean;
-  /** Layout-only extras. Never a colour. */
+  /** Layout-only extras. Never a color. */
   className?: string;
 }
 

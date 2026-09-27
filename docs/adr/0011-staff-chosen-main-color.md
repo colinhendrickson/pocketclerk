@@ -4,7 +4,7 @@ Status: accepted (ticket 4.7)
 
 ## Context
 
-The program's staff asked for the site in the school's blue. The school's colors
+The program's staff asked for the site in the school's color. The school's colors
 cannot be committed ([ADR 6](0006-themes-as-data.md)), and a variable in the
 host's environment would make every change a request to the developer.
 
@@ -15,7 +15,7 @@ make the cart harder to use, and the app is tested against WCAG 2.2 AA.
 ## Decision
 
 The main color is a setting, stored in a single-row `site_settings` table and
-chosen on the admin Colors page: ready-made blues, or an exact color by picker or
+chosen on the admin Colors page: ready-made colors, or an exact color by picker or
 code. The admin and student layouts apply it by overriding the theme's
 `--color-primary` and `--color-primary-content`; daisyUI derives hover and focus
 shades from those at runtime.

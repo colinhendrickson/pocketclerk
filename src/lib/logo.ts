@@ -21,9 +21,9 @@ export const LOGO_SHAPES = {
 } as const;
 
 /**
- * Colours for the icon files only: the PocketClerk theme's primary and cream.
+ * Colors for the icon files only: the PocketClerk theme's primary and cream.
  * A favicon is loaded outside the page and cannot read the theme, so it needs
- * literal values. Inside the app the mark uses the theme's semantic colours
+ * literal values. Inside the app the mark uses the theme's semantic colors
  * instead, per the no-ad-hoc-hex rule, and so it takes on a deployment's skin.
  */
 export const LOGO_COLORS = { tile: "#0b6e5f", paper: "#fffcf7" } as const;

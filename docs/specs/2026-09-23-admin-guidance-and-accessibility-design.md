@@ -49,7 +49,7 @@ Checklist steps, each done when:
 | Add your students | one or more active students | Students |
 | Check the teachers and add emails | one or more active teachers with an email | Teachers |
 | Set up the menu | one or more active menu items | Menu |
-| Pair the cart's iPad | any shift has ever been clocked in (clock-in only works on a paired device) | guide |
+| Connect the cart's iPad | any shift has ever been clocked in (clock-in only works on a paired device) | guide |
 | Run a first sale | any order exists | guide |
 | Give another staff member access (optional) | two or more admins | Admins |
 
@@ -66,7 +66,7 @@ access (signing in, shared devices, giving and removing access).
 
 ## Help on every page
 
-A "What this page is for" panel under each admin page title, listing the page's
+An "About this page" panel under each admin page title, listing the page's
 common tasks as links to their guides. Collapsible per person; the choice is
 remembered on the device. Hints under the fields people get wrong, tied to the
 field with `aria-describedby`.

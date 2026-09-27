@@ -16,7 +16,7 @@ on the Menu page. The pictures are a fixed set of twenty line icons
 emoji, and not uploads:
 
 - Emoji are drawn by the device, so the same menu looks different on the iPad, a
-  phone and a Windows laptop, and their colour and detail clash with the rest of
+  phone and a Windows laptop, and their color and detail clash with the rest of
   the screen.
 - Uploaded images would need storage, moderation and sizing, for a feature
   whose whole value is being simple and consistent.

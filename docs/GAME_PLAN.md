@@ -14,7 +14,7 @@
 | Working tool | Students run a full shift independently: clock in → orders → change → receipt → inventory → clock out |
 | Modular | Printer, email, and document rendering are swappable providers; zero business-logic changes to swap |
 | White-label | Ships brand-neutral: names, logo, main color, and reward currency are deploy config or admin settings. Another program deploys from the README without touching code |
-| Portfolio piece | Public repo, live demo, CI badges, README that sells it in 30 seconds |
+| Public and documented | Public repo, live demo, CI badge, a README that explains the design, ADRs for every decision |
 
 **Non-goals (V1):** real payments, native app, offline-first sync, multi-school tenancy (design for it, don't build it), configurable workflows, and any theme builder. White-label = names, a main color, logo, reward currency. Nothing more. (Ticket 4.7 added one color picker for staff; that is the whole of it.)
 
@@ -32,13 +32,13 @@
 | Email | Resend, custom domain, reply-to = the program admin's school address | Free tier |
 | Receipts | Plain-text renderer; ESC/POS to a 58mm Bluetooth LE thermal printer over Web Bluetooth; HTML email | Free |
 | Hosting | Vercel Hobby + Vercel Cron (daily receipt sweep) | Free |
-| Domain | pocket-clerk.com (already owned) | ~$10/yr renewal |
+| Domain | pocket-clerk.com | ~$10/yr renewal |
 
 ---
 
 ## 3. Architecture: provider pattern
 
-Every external effect sits behind an interface. This is the modularity story AND the interview story. The real interfaces are in `src/providers/`.
+Every external effect sits behind an interface, so a printer or email service can change without touching business logic. The real interfaces are in `src/providers/`.
 
 ```ts
 interface ReceiptPrinter {
@@ -163,7 +163,7 @@ Built after the first deployment met real staff and students. Each came from som
 | 4.7 | Staff-chosen main color | The school's colors, set on a Colors page and stored in the database, with a readability gate | Done |
 | 4.8 | Receipt printing on iPad | Web Bluetooth ESC/POS to a 58mm BLE thermal printer (first deployment: PT-210), in the Bluefy browser; staff guide | Done, awaiting a test on the real printer |
 | 4.9 | Product mark | PocketClerk logo, favicon, home-screen icons, web app manifest | Done |
-| 4.10 | Open-source readiness | Licence, contributing and security docs, accurate README, ADRs for every architectural decision | Done |
+| 4.10 | Open-source readiness | License, contributing and security docs, accurate README, ADRs for every architectural decision | Done |
 | 4.11 | Nothing names the school before sign-in | The address is public; sign-in pages, the manifest and metadata say only PocketClerk, and search engines are asked to stay away | Done |
 | 4.12 | Student sign-in at /cart | Frees / for the landing page; / on a school's copy still reaches the cart | Done |
 | 4.13 | One copy per school | Each school on its own subdomain, project and database; pocket-clerk.com becomes the demo (ADR 14) | Done |
@@ -171,9 +171,9 @@ Built after the first deployment met real staff and students. Each came from som
 
 ---
 
-## 6a. Design system (decided)
+## 6. Design system (decided)
 
-Locked via Claude Design pass 2; full spec lives in `docs/DESIGN.md`.
+Full spec: `docs/DESIGN.md`.
 
 | Decision | Value |
 |---|---|
@@ -184,7 +184,7 @@ Locked via Claude Design pass 2; full spec lives in `docs/DESIGN.md`.
 | Primitives | BigButton, MoneyDisplay, NoteBanner, StepHeader, ChangeCard, Keypad/BillButtons, ShiftStats, TeacherCard, Logo, Admin shell, HelpPanel, TourButton. PaymentChoice and BadgeModal wait for 3.7 |
 | Casing | Student-facing labels sentence case in every theme; `.btn` text-transform reset |
 
-## 6. UX rules (non-negotiable, this audience is the point)
+## 7. UX rules (non-negotiable, this audience is the point)
 
 - One primary action per screen; app always advances to the next step itself.
 - Touch targets ≥ 60px on student screens, ≥ 24px on admin; text large; minimal reading.
@@ -195,7 +195,7 @@ Locked via Claude Design pass 2; full spec lives in `docs/DESIGN.md`.
 
 ---
 
-## 6b. White-label configuration
+## 8. White-label configuration
 
 The public repo never references the real school. The first deployment is private config.
 
@@ -207,7 +207,7 @@ The public repo never references the real school. The first deployment is privat
 | Main color | `pocketclerk` theme teal | Set by staff on the admin Colors page; stored in `site_settings` |
 | Seed data | Fake teachers/students | Real data via admin |
 
-## 7. Security & privacy
+## 9. Security & privacy
 
 | Rule | Implementation |
 |---|---|
@@ -220,7 +220,7 @@ The public repo never references the real school. The first deployment is privat
 
 ---
 
-## 8. Portfolio plan
+## 10. Deliverables
 
 | Item | Detail |
 |---|---|
@@ -230,12 +230,10 @@ The public repo never references the real school. The first deployment is privat
 | CI | GitHub Actions: typecheck, lint, Vitest against Postgres, Playwright with axe; badge in README |
 | Tests | Vitest on money math and every database rule; Playwright: a whole shift, every screen at five sizes with axe, keyboard, tour, colors, menu prices, admin access |
 | ADRs | `docs/adr/`: one per architectural decision |
-| Positioning | "White-label POS + workforce training platform; first deployment is a special-education program." Not "a coffee app for one school." |
-| Resume bullet | Offline-tolerant job queue, provider abstraction, accessibility-first UI, RLS security model |
 
 ---
 
-## 9. Build order (as it happened)
+## 11. Build order (as it happened)
 
 | When | Did |
 |---|---|
@@ -246,7 +244,7 @@ The public repo never references the real school. The first deployment is privat
 
 ---
 
-## 10. Open items
+## 12. Open items
 
 | Item | Owner | Blocking |
 |---|---|---|

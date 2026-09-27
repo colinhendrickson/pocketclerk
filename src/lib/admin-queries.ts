@@ -202,7 +202,7 @@ export async function listTeachersWithTotals(): Promise<TeacherRow[]> {
       teacherId: row.teacher_id,
       totalCents: row.total_cents,
       // postgres.js hands back a Date for timestamptz, but the raw-SQL path is
-      // untyped, so this is normalised here rather than trusted downstream.
+      // untyped, so this is normalized here rather than trusted downstream.
       createdAt: new Date(row.created_at),
     });
     byTeacher.set(row.teacher_id, list);

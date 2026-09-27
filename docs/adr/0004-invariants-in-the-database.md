@@ -46,12 +46,11 @@ Requests can race the application. They cannot race a unique index. The double
 clock-in is now impossible rather than unlikely.
 
 The violation surfaces as a Postgres error code, which the clock-in action
-catches and turns into the correct behaviour: a student who double-taps is
+catches and turns into the correct behavior: a student who double-taps is
 resumed into the shift they already have, and sees success rather than an error.
-Turning the failure path into the feature is the part worth noticing.
 
-An order whose change does not add up is unrepresentable. Not rejected by a
-code path someone might forget to call: unrepresentable.
+An order whose change does not add up cannot be stored at all, rather than
+being rejected by a code path someone might forget to call.
 
 The cost is that some logic now lives in SQL, where TypeScript cannot see it,
 and a developer who changes the money rules must change them in two places. The

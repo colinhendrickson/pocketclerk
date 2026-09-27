@@ -24,7 +24,7 @@ export const CODE_LENGTH = 6;
  * A uniformly random code.
  *
  * `randomInt` rejects biased samples rather than taking a modulus, which is the
- * standard way this gets subtly wrong: `randomBytes(4) % 1_000_000` favours low
+ * standard way this gets subtly wrong: `randomBytes(4) % 1_000_000` favors low
  * codes slightly, and a predictable bias in a six-digit secret is exactly the
  * kind of edge worth not giving away.
  *

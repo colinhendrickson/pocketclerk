@@ -8,7 +8,7 @@ import { PRODUCT_NAME } from "@/lib/site-mode";
  *
  * Named after the product, not the cart: the manifest is public, and a
  * school's copy names the school only after sign-in. Opens full screen without the browser's
- * address bar, which is also what Guided Access expects. Colours are literal
+ * address bar, which is also what Guided Access expects. Colors are literal
  * because a manifest is read outside the page and cannot use the theme.
  */
 export default function manifest(): MetadataRoute.Manifest {

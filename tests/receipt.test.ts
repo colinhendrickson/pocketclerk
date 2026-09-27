@@ -80,7 +80,7 @@ describe("renderReceiptText", () => {
 describe("encodeReceipt", () => {
   const bytes = encodeReceipt(receipt);
 
-  it("starts with the ESC/POS initialise command", () => {
+  it("starts with the ESC/POS initialize command", () => {
     expect(bytes[0]).toBe(0x1b);
     expect(bytes[1]).toBe(0x40);
   });

@@ -19,7 +19,7 @@ import type { Receipt, ReceiptLine } from "@/providers/renderer/receipt";
  *
  * A job is claimed with a single `UPDATE ... RETURNING` guarded on its current
  * status. That is what makes concurrent consumers safe: two overlapping runs
- * both issue the update, Postgres serialises them, and only one sees a row
+ * both issue the update, Postgres serializes them, and only one sees a row
  * returned. The scaled-up form of this is `FOR UPDATE SKIP LOCKED`; at this
  * volume the guarded update is the same guarantee with less machinery.
  */

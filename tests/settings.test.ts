@@ -5,7 +5,7 @@ import { db, getClient } from "@/db";
 import { getPrimaryColor, setPrimaryColor } from "@/lib/settings";
 
 /**
- * The main colour, saved and read back through the real table.
+ * The main color, saved and read back through the real table.
  */
 
 let admin: string;
@@ -25,7 +25,7 @@ async function anAdmin() {
   return admin;
 }
 
-describe("the main colour", () => {
+describe("the main color", () => {
   it("is the theme's own until someone sets one", async () => {
     expect(await getPrimaryColor()).toBeNull();
   });
@@ -41,14 +41,14 @@ describe("the main colour", () => {
     expect(await getPrimaryColor()).toBeNull();
   });
 
-  it("refuses a colour too light to read, with a shade that would pass", async () => {
+  it("refuses a color too light to read, with a shade that would pass", async () => {
     const result = await setPrimaryColor("#93c5fd", await anAdmin());
     expect(result).toMatchObject({ ok: false, error: "unreadable" });
     expect(result.ok === false && result.suggestion).toMatch(/^#[0-9a-f]{6}$/);
     expect(await getPrimaryColor()).toBeNull();
   });
 
-  it("refuses something that is not a colour", async () => {
+  it("refuses something that is not a color", async () => {
     expect(await setPrimaryColor("blue", await anAdmin())).toEqual({ ok: false, error: "invalid" });
   });
 });

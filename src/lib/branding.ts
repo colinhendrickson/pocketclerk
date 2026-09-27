@@ -3,9 +3,9 @@
  *
  * The public repository ships fictional defaults. A real deployment supplies its
  * own values through environment variables, so no school's name or reward
- * currency ever enters git. The main colour is the one setting staff change
+ * currency ever enters git. The main color is the one setting staff change
  * themselves, on the admin Colors page (stored in `site_settings`, see
- * src/lib/settings.ts). Names, colour, logo and reward currency are data, and
+ * src/lib/settings.ts). Names, color, logo and reward currency are data, and
  * nothing else is configurable.
  *
  * These are `NEXT_PUBLIC_` because the values are printed on screen and on

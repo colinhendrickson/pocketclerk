@@ -1,11 +1,11 @@
-# 7. Administrator sign-in is an emailed link, issued in-process
+# 7. Administrator sign-in is an emailed code or link, issued in-process
 
 Status: accepted
 
 ## Context
 
-There is one administrator. She signs in from a school laptop a handful of times
-a term, to add a teacher, change a price, or check why a receipt did not arrive.
+Administrators sign in from a school laptop or phone a handful of times a term,
+to add a teacher, change a price, or check why a receipt did not arrive.
 
 A password is the obvious answer and a bad one here. A password used four times
 a year is a password that gets written down or reset every time, and a reset
@@ -31,9 +31,9 @@ bytes, stores only an HMAC of them, and sends the link through the same
 console, so sign-in works on a fresh clone with nothing configured.
 
 Opening the link does not redeem it. It lands on a page with one button, and
-the button's POST redeems the token. Mail security scanners, Microsoft's Safe
-Links among them and most school mail sits behind it, open every link in
-incoming mail to inspect it; when a GET redeemed the token, the scanner's visit
+the button's POST redeems the token. Mail security scanners, such as
+Microsoft's Safe Links, which most school mail passes through, open every link
+in incoming mail to inspect it; when a GET redeemed the token, the scanner's visit
 spent it, and the person clicking a moment later was told the link had expired.
 Scanners fetch pages and do not submit forms. It also keeps a state change off
 a GET, where it did not belong. (Redemption was first a GET route handler,
@@ -107,24 +107,17 @@ row, so neither outlives the other.
 
 Authentication is now code in this repository, and authentication code is worth
 being uncomfortable about. The mitigation is that the surface is small and each
-property above is stated where it is implemented. This is a single-administrator
-tool on a school network; a system with staff turnover, shared mailboxes or
+property above is stated where it is implemented. This is a small-staff tool on a
+school network; a system with staff turnover, shared mailboxes or
 compliance requirements should use a hosted provider, and the seam to do so is
 one module.
 
-The `is_admin()` function used by the RLS policies read a JWT claim that nothing
-now sets, so those policies evaluate false. That is deliberate and leaves the
-floor exactly where ADR 3 put it: the anonymous surface reaches nothing, and the
+The `is_admin()` function behind the RLS admin policies now returns `false`
+(migration 0010, and ADR 3's amendment). That leaves the floor exactly where
+ADR 3 put it: the anonymous surface reaches nothing, and the
 server remains the enforcement point for both students and administrators.
 
 ## Amendments
-
-**A code as well as a link.** The email carries a six-digit code alongside the
-link, and the code is the primary path: signing in on the cart's iPad should not
-mean opening a personal mailbox on a shared device. Five wrong codes spend the
-token. The link lands on a page with a button, because school mail scanners open
-links to inspect them, and a link redeemed on a plain GET was spent by the
-scanner before the person clicked.
 
 **Thirty-day sessions.** Staff check the cart from their own phones, and signing
 in every day was the friction. Sessions last thirty days; Sign out ends one at

@@ -26,7 +26,7 @@ Do these in order. Each step depends on the one before it.
      IPv6. This is `DIRECT_URL`, for migrations.
 
 The app runs on the session pooler, not the transaction pooler, because the
-transaction pooler split its parameterised queries and left pages hanging for
+transaction pooler split its parameterized queries and left pages hanging for
 five minutes ([ADR 8](adr/0008-session-pooler-and-idle-connections.md)). Each app
 instance holds one connection and closes it after a few idle seconds, so session
 mode's cost in connections does not matter at this scale.
@@ -151,8 +151,7 @@ protecting anything valuable, and being locked out mid-shift is the real cost.
 
 ### Time zone
 
-Vercel and Supabase run on UTC. Set the zone the cart actually operates in, as
-type **Config**:
+Vercel and Supabase run on UTC. Set the zone the cart actually operates in:
 
 ```
 NEXT_PUBLIC_TIME_ZONE = America/New_York
@@ -170,7 +169,7 @@ student on the roster and sit guessing four-digit PINs. Rate limiting makes the
 guessing impractical; it does nothing about the names, and the names are the
 part that matters.
 
-Set one more variable in Vercel, type **Secret**, and redeploy:
+Set one more variable in Vercel, marked **Sensitive**, and redeploy:
 
 ```
 DEVICE_CODE = <a long random value>
@@ -248,11 +247,11 @@ is broken" into a specific missing variable.
 ## A school on a subdomain of pocket-clerk.com
 
 1. In the school's Vercel project, **Settings → Domains**, add the subdomain,
-   for example `cart1.pocket-clerk.com`. Pick a name that does not identify the
+   for example `school-a.pocket-clerk.com`. Pick a name that does not identify the
    school: the address is public even when nothing on it is.
 2. In Cloudflare DNS, add the `CNAME` record Vercel shows for it, **DNS only**
-   (grey cloud). Cloudflare's proxy in front of Vercel caused timeouts.
-3. Set `NEXT_PUBLIC_APP_URL` to `https://cart1.pocket-clerk.com` and redeploy,
+   (gray cloud). Cloudflare's proxy in front of Vercel caused timeouts.
+3. Set `NEXT_PUBLIC_APP_URL` to `https://school-a.pocket-clerk.com` and redeploy,
    or sign-in links point at the old address.
 4. Moving an existing school to a new address signs everyone out, because
    cookies belong to an address: pair the iPad again (step 7) and staff sign

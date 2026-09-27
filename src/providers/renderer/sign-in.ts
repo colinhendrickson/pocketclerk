@@ -8,15 +8,15 @@ import { formatSignInCode } from "@/lib/sign-in-code";
  * text body and an HTML body are produced, because a mail client that cannot
  * render HTML must still show a usable code.
  *
- * The HTML is built to be recognised at a glance in a crowded inbox. The first
+ * The HTML is built to be recognized at a glance in a crowded inbox. The first
  * version was plain text from a bare address, and the person receiving it could
  * not tell it apart from any other automated mail. The cart's name heads the
  * message, the code is the largest thing in it, and the preview line that mail
  * clients show beside the subject carries the code too.
  *
- * Colours are the committed `pocketclerk` theme, written out as literals because
+ * Colors are the committed `pocketclerk` theme, written out as literals because
  * mail clients do not load stylesheets. A deployment's own theme is never read
- * here: the white-label rule keeps a real school's colours out of the source.
+ * here: the white-label rule keeps a real school's colors out of the source.
  */
 
 export interface SignInEmail {
@@ -39,7 +39,7 @@ export interface RenderedEmail {
 }
 
 /** Mirrors the `pocketclerk` daisyUI theme in `src/app/globals.css`. */
-const COLOURS = {
+const COLORS = {
   page: "#f5f0e8",
   card: "#fffcf7",
   border: "#e2d9cc",
@@ -109,7 +109,7 @@ function renderHtml(email: SignInEmail, code: string): string {
   const program = escapeHtml(email.programName);
   const name = escapeHtml(email.name);
   const link = escapeHtml(email.link);
-  const c = COLOURS;
+  const c = COLORS;
 
   const masthead = email.logoUrl
     ? `<img src="${escapeHtml(email.logoUrl)}" alt="${cart}" height="48" style="display:block;height:48px;width:auto;border:0;margin:0 auto 12px;">`

@@ -368,10 +368,10 @@ export const receiptJobs = pgTable(
 /**
  * Settings an administrator changes from the admin side. One row, ever.
  *
- * `primary_color` is the deployment's main colour as `#rrggbb`, or null for
+ * `primary_color` is the deployment's main color as `#rrggbb`, or null for
  * the committed theme's own. It lives here rather than in code or config so
- * that a school's colours never enter git (see CLAUDE.md, privacy) and staff
- * can change them without a developer. The single-row rule and the colour's
+ * that a school's colors never enter git (see CLAUDE.md, privacy) and staff
+ * can change them without a developer. The single-row rule and the color's
  * format are CHECK constraints in the migration, not only TypeScript.
  */
 export const siteSettings = pgTable("site_settings", {

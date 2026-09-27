@@ -40,7 +40,7 @@ export default async function AdminHomePage() {
     { href: "/admin/orders", title: "Orders", body: "Every sale, one day at a time." },
     { href: "/admin/receipts", title: "Receipts", body: "Whether each teacher's receipt arrived." },
     { href: "/admin/admins", title: "Admins", body: "Which staff can use this admin side." },
-    { href: "/admin/colors", title: "Colors", body: "Set buttons and highlights to the school's colour." },
+    { href: "/admin/colors", title: "Colors", body: "Set buttons and highlights to the school's color." },
   ];
 
   return (

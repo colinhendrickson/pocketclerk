@@ -18,7 +18,7 @@
  *
  * This is a client entry point only because it owns an `onClick`. That also
  * means the `icon` prop — a `LucideIcon` component reference — has to be passed
- * from another client component; a server component cannot serialise a function
+ * from another client component; a server component cannot serialize a function
  * across the boundary. Screens that are otherwise server-rendered should wrap
  * their button group in a small client component.
  */
@@ -39,7 +39,7 @@ export interface BigButtonProps {
   layout?: BigButtonLayout;
   onClick?: () => void;
   disabled?: boolean;
-  /** Layout-only extras (grid span, width). Never colour or type-size classes. */
+  /** Layout-only extras (grid span, width). Never color or type-size classes. */
   className?: string;
 }
 

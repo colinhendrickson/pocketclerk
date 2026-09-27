@@ -39,7 +39,7 @@ tests run with no mocks and no fixtures.
 
 The cost is a discipline that has to be maintained. A contributor who writes
 `price * 1.08` for a future tax feature reintroduces the problem, which is why
-the rule is stated in `CLAUDE.md` and enforced by the column naming convention
+the rule is stated in `CONTRIBUTING.md` and enforced by the column naming convention
 being uniform enough that a violation is visible in review.
 
 Database `CHECK` constraints reject negative money, so the invariant holds even

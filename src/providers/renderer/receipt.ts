@@ -46,7 +46,7 @@ function padRow(left: string, right: string, width = RECEIPT_WIDTH): string {
   return `${left}${" ".repeat(gap)}${right}`;
 }
 
-function centre(text: string, width = RECEIPT_WIDTH): string {
+function center(text: string, width = RECEIPT_WIDTH): string {
   if (text.length >= width) return text.slice(0, width);
   const pad = Math.floor((width - text.length) / 2);
   return `${" ".repeat(pad)}${text}`;
@@ -72,8 +72,8 @@ export function renderReceiptText(receipt: Receipt): string {
 
   const rule = "-".repeat(RECEIPT_WIDTH);
   const out: string[] = [
-    centre(receipt.programName.toUpperCase()),
-    centre(receipt.cartName.toUpperCase()),
+    center(receipt.programName.toUpperCase()),
+    center(receipt.cartName.toUpperCase()),
     "",
     rule,
     padRow("Teacher", receipt.teacherName),
@@ -103,7 +103,7 @@ export function renderReceiptText(receipt: Receipt): string {
     padRow("Change", formatUSD(receipt.changeCents)),
     rule,
     "",
-    centre("Thank you!"),
+    center("Thank you!"),
     "",
   );
 

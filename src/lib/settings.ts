@@ -9,10 +9,10 @@ import { checkPrimary, normalizeHex } from "@/lib/colors";
  */
 
 /**
- * The deployment's main colour, or null for the theme's own.
+ * The deployment's main color, or null for the theme's own.
  *
  * Read on every page, so a failure here must not take a page down: a site in
- * its original colours is fine, a blank error page is not.
+ * its original colors is fine, a blank error page is not.
  */
 export async function getPrimaryColor(): Promise<string | null> {
   try {
@@ -23,7 +23,7 @@ export async function getPrimaryColor(): Promise<string | null> {
       .limit(1);
     return row?.primaryColor ?? null;
   } catch (error) {
-    console.error("[settings] could not read the main colour; using the theme's own", error);
+    console.error("[settings] could not read the main color; using the theme's own", error);
     return null;
   }
 }
@@ -33,11 +33,11 @@ export type SetPrimaryColorResult =
   | { ok: false; error: "invalid" | "unreadable"; suggestion?: string | null };
 
 /**
- * Saves the main colour, or clears it with null.
+ * Saves the main color, or clears it with null.
  *
  * The readability check runs here as well as on the page, because a Server
  * Action is an open endpoint: the page's check is a courtesy, this one is the
- * rule. A colour that fails is refused with the darker shade that would pass.
+ * rule. A color that fails is refused with the darker shade that would pass.
  */
 export async function setPrimaryColor(input: unknown, by: string): Promise<SetPrimaryColorResult> {
   let color: string | null = null;

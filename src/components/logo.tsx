@@ -10,7 +10,7 @@ export interface LogoProps {
 /**
  * The PocketClerk mark, inline. The drawing lives in src/lib/logo.ts.
  *
- * Coloured with the theme's semantic colours rather than the icon files'
+ * Colored with the theme's semantic colors rather than the icon files'
  * fixed ones, so it follows a deployment's skin. Decorative: it always sits
  * beside the cart or product name, which already says what it is, so screen
  * readers skip it.

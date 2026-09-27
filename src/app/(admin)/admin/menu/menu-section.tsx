@@ -261,7 +261,7 @@ function EntryRow({ kind, row, isEditing, onToggleEdit }: EntryRowProps) {
   }
 
   /**
-   * Cancelling restores the stored values rather than leaving the abandoned
+   * Canceling restores the stored values rather than leaving the abandoned
    * text in the fields. The row is not remounted when the form closes, so
    * without this the next "Edit" would reopen on the edit nobody wanted.
    */

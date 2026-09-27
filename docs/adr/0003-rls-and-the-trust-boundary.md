@@ -72,6 +72,6 @@ scopes what a student can do; [ADR 10](0010-device-pairing.md) adds that the
 request must come from a paired device at all, checked in every student server
 action, not only on the pages.
 
-**One more public read.** `site_settings` holds the main colour chosen on the
+**One more public read.** `site_settings` holds the main color chosen on the
 admin Colors page and nothing else; it has a public read policy beside the menu's
 ([ADR 11](0011-staff-chosen-main-color.md)).

@@ -43,7 +43,7 @@
   --noise: 0;
 }
 
-/* Proof theme: plum / rose-grey. Exists to show the layout never names a colour. */
+/* Proof theme: plum / rose-gray. Exists to show the layout never names a color. */
 @plugin "daisyui/theme" {
   name: "sample";
   default: false;
@@ -101,7 +101,7 @@
 }
 
 /*
- * Muted text never drops below 75% of the text colour. daisyUI draws stat
+ * Muted text never drops below 75% of the text color. daisyUI draws stat
  * titles and table headings at 60%, which measures 4.0:1 on this theme's
  * cream, under WCAG AA's 4.5:1 for normal text; 75% measures 6.4:1 or better on
  * both shipped themes, with room for a deployment skin.
@@ -114,7 +114,7 @@
 
 /*
  * A visible focus ring on everything a keyboard can reach, in the theme's own
- * colour, including the controls daisyUI leaves to the browser default.
+ * color, including the controls daisyUI leaves to the browser default.
  */
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 3px solid var(--color-primary);

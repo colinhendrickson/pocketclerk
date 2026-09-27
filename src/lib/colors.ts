@@ -1,10 +1,10 @@
 /**
- * The deployment's main colour: parsing it, and refusing one that would make
+ * The deployment's main color: parsing it, and refusing one that would make
  * text hard to read.
  *
  * Pure functions, no database or React, so the rule is tested on its own. The
  * rule is WCAG 2.2 AA for normal text, 4.5:1, applied both ways the main
- * colour is used: as the colour of text and outlines on the page's light
+ * color is used: as the color of text and outlines on the page's light
  * backgrounds, and as the background of buttons, whose text is picked here to
  * be whichever of white or near-black reads better.
  */
@@ -13,16 +13,16 @@
 export const MIN_CONTRAST = 4.5;
 
 /**
- * The light backgrounds the main colour sits on: the pocketclerk theme's
+ * The light backgrounds the main color sits on: the pocketclerk theme's
  * base-100 (cards) and base-200 (the page). tests/colors.test.ts checks these
  * match src/app/globals.css.
  */
 export const THEME_BACKGROUNDS = ["#fffcf7", "#f5f0e8"] as const;
 
-/** Text on a main-colour button: white, or the theme's near-black. */
+/** Text on a main-color button: white, or the theme's near-black. */
 export const BUTTON_TEXT_OPTIONS = ["#ffffff", "#1c2624"] as const;
 
-/** The theme's own main colour, restored by "Back to the original". */
+/** The theme's own main color, restored by "Back to the original". */
 export const DEFAULT_PRIMARY = "#0b6e5f";
 
 /**
@@ -65,7 +65,7 @@ function luminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-/** WCAG contrast ratio between two colours, from 1 to 21. */
+/** WCAG contrast ratio between two colors, from 1 to 21. */
 export function contrastRatio(a: string, b: string): number {
   const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return (light + 0.05) / (dark + 0.05);
@@ -75,7 +75,7 @@ export interface ColorCheck {
   ok: boolean;
   /** The weaker of its two readings against the page's light backgrounds. */
   onBackground: number;
-  /** The button text colour chosen for it, and how well that reads. */
+  /** The button text color chosen for it, and how well that reads. */
   buttonText: string;
   onButton: number;
   /** When it fails: the nearest darker shade that passes. */
@@ -102,7 +102,7 @@ function darken(hex: string, step: number): string {
     .join("")}`;
 }
 
-/** Whether a main colour keeps every text readable, and a fix if it does not. */
+/** Whether a main color keeps every text readable, and a fix if it does not. */
 export function checkPrimary(hex: string): ColorCheck {
   const { onBackground, buttonText, onButton } = measure(hex);
   const ok = onBackground >= MIN_CONTRAST && onButton >= MIN_CONTRAST;

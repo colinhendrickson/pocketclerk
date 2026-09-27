@@ -9,7 +9,7 @@
  *
  * Initials stand in for photographs on purpose. The cart has no photo library
  * and school data stays out of the repo, so a two-letter disc is the only
- * identifier that is recognisable at arm's length without storing anything
+ * identifier that is recognizable at arm's length without storing anything
  * about a real person in code or seed data.
  *
  * The whole card is a 60px+ tap target and stays a server component: selection

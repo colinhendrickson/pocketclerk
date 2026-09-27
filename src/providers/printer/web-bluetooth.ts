@@ -163,7 +163,7 @@ async function findWritableCharacteristic(
 /**
  * Encodes the receipt as ESC/POS.
  *
- * Only four commands are used: initialise, set alignment, feed, and cut. Every
+ * Only four commands are used: initialize, set alignment, feed, and cut. Every
  * printer in this class implements them, and anything more elaborate is where
  * the cheap firmwares start to differ from each other.
  */
@@ -172,7 +172,7 @@ export function encodeReceipt(receipt: Receipt): Uint8Array {
   const body = new TextEncoder().encode(`${text}\n`);
 
   const prefix = Uint8Array.from([
-    ESC, 0x40, // initialise
+    ESC, 0x40, // initialize
     ESC, 0x61, 0x00, // align left
   ]);
   const suffix = Uint8Array.from([

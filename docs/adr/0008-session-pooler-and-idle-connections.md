@@ -28,11 +28,11 @@ postgres.js sends any query with parameters in two round trips: Parse and
 Describe with a Flush, then, when the parameter types come back, Bind, Execute
 and Sync. The transaction pooler (Supavisor, port 6543) lost the second half.
 The health check's queries have no parameters and go out in one round trip,
-which is why it never hung; a signed-out page skips the parameterised admin
+which is why it never hung; a signed-out page skips the parameterized admin
 lookup, which is why the same page loaded signed out and hung signed in.
 
 None of it reproduced locally: not against Postgres directly, not with bursts of
-concurrent and cancelled requests, and not behind PgBouncer in transaction mode
+concurrent and canceled requests, and not behind PgBouncer in transaction mode
 with 15ms of network delay added. A wire-level count of protocol messages is what
 showed the two-step exchange.
 

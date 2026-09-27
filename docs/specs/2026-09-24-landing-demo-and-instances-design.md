@@ -1,6 +1,6 @@
 # A neutral pocket-clerk.com, a public demo, and one copy per school — design
 
-Date: 2026-09-24 · Status: proposed
+Date: 2026-09-24 · Status: built
 
 ## Why
 

@@ -3,7 +3,7 @@
  *
  * Decorative (`aria-hidden`): the name beside it is the label, and a screen
  * reader saying "coffee mug, Coffee" helps nobody. Line icons from the same
- * set as the rest of the app, in the current text colour, so they sit in the
+ * set as the rest of the app, in the current text color, so they sit in the
  * design rather than on top of it. See src/lib/menu-icons.ts for the set.
  */
 

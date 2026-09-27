@@ -59,7 +59,7 @@ Rules that hold in every theme
   --noise: 0;
 }
 
-/* Proof theme — plum / rose-grey */
+/* Proof theme — plum / rose-gray */
 @plugin "daisyui/theme" {
   name: "sample";
   default: false;
@@ -104,7 +104,7 @@ Rules that hold in every theme
 .btn { text-transform: none; letter-spacing: 0; } /* sentence case everywhere, no brand override */
 ```
 
-**Deployment skins are not committed.** A deployment's main colour is chosen by staff on the admin Colors page and stored in its own database (see "Staff-chosen main color" below and ADR 11), so no school's palette enters git or even the deployment's configuration. The pocketclerk theme's other values (backgrounds, text, radii, font) are the same for every deployment.
+**Deployment skins are not committed.** A deployment's main color is chosen by staff on the admin Colors page and stored in its own database (see "Staff-chosen main color" below and ADR 11), so no school's palette enters git or even the deployment's configuration. The pocketclerk theme's other values (backgrounds, text, radii, font) are the same for every deployment.
 
 ### Staff-chosen main color
 
@@ -119,7 +119,7 @@ Staff can replace the theme's `--color-primary` from the admin Colors page (`sit
 | accent-content on accent | 4.9:1 | 5.6:1 |
 | neutral rail text (neutral-content on neutral) | 13.8:1 | 14.1:1 |
 
-All ≥ 4.5:1. Any deployment skin must clear the same bar: 4.5:1 for every pair above, and at minimum 3:1 for primary button text since it is always 20px+/700.
+All ≥ 4.5:1. A staff-chosen main color must clear the same bar (`src/lib/colors.ts` checks it): 4.5:1 for every pair above, and at minimum 3:1 for primary button text since it is always 20px+/700.
 
 ---
 
@@ -129,7 +129,6 @@ All ≥ 4.5:1. Any deployment skin must clear the same bar: 4.5:1 for every pair
 |---|---|---|
 | pocketclerk | **Manrope** 600/700/800 | Geometric but soft; tabular figures; distinct 1/I/l and 0/O for emerging readers. |
 | sample | Manrope | Proves the type is product-level, not theme-level. Themes may override. |
-| (comparison) | Nunito 700/800/900 | Rounder, friendlier; reads slightly younger. Shown in 2d for a decision, not mixed in. |
 
 Type scale (px / weight / use) — one scale, all themes:
 - 184–200 / 800 — **Change amount** (only place this size exists). 192px wherever it fits; narrower cards shrink it to exactly their width (container units, sized by the figure's own length), so it is never cut off and stays the largest text on screen
@@ -146,7 +145,7 @@ Numerals: `font-variant-numeric: tabular-nums` on every money and time value.
 
 ---
 
-## 3. Breakpoint behaviour per screen
+## 3. Breakpoint behavior per screen
 
 Breakpoints (Tailwind defaults): `<md` phone portrait (≤ 767), `md–lg` iPad portrait, `lg+` iPad landscape / desktop (design target), `xl+` desktop admin.
 
@@ -161,7 +160,7 @@ Breakpoints (Tailwind defaults): `<md` phone portrait (≤ 767), `md–lg` iPad 
 - <md: single column. StepHeader compresses to back button + "Step 2 of 4 / Mrs. Smith · Rm 114"; NoteBanner stays directly under it (never hidden, never collapsed); menu = full-width 64px rows; add-ons wrap (`flex-wrap`, 60px pills); order summary becomes a fixed bottom sheet (`bg-base-100`, top border) showing the item line, total at 52px and the 72px primary button. No horizontal scroll at any width.
 
 **Payment method** *(deferred to ticket 3.7: V1 is cash only, ADR 5; kept as the design for when the client asks)*
-- All widths: centred stack — question, Total, two `PaymentChoice` buttons. lg+: two columns 250px tall; <md: stack vertically, each 160px tall, full width. Nothing else is ever added to this screen.
+- All widths: centered stack — question, Total, two `PaymentChoice` buttons. lg+: two columns 250px tall; <md: stack vertically, each 160px tall, full width. Nothing else is ever added to this screen.
 
 **Cash change**
 - lg+: `grid-cols-[1fr_420px]`; left = owed/received `table`, change card, primary; right = bill quick-buttons row + 3×4 keypad.
@@ -183,20 +182,20 @@ Breakpoints (Tailwind defaults): `<md` phone portrait (≤ 767), `md–lg` iPad 
 
 | Primitive | daisyUI base | Fixed rules | Theme-driven |
 |---|---|---|---|
-| **BigButton** | `btn` (+ `btn-primary` for the one primary; plain `btn bg-base-100 border-base-300` for secondary; `btn btn-outline btn-secondary` for Clock out) | `min-h-[60px]`, icon left (Lucide 34–56px), `justify-start` for list style, `flex-col` for tile style, sentence case | colour, `--radius-field` (standard height) or `--radius-box` (tiles ≥ 110px tall, so pill themes don't produce capsules), font |
-| **MoneyDisplay** | plain text inside `stat-value` / `card` / `table td` | `tabular-nums`, weight 800, sizes from the scale; `size="change"` is only allowed once in the app | colour via `base-content` or `neutral-content` |
-| **NoteBanner** | `alert alert-warning` with `role="alert"` | Lucide `triangle-alert` 32px, 22px/800 text, always directly under the StepHeader, never collapsible | warning colour, `--radius-box` |
-| **StepHeader** | `navbar`-style bar on `bg-base-100 border-b border-base-300` + `steps` (`steps-vertical` in the rail on lg+) | back `btn btn-ghost` 60×60, "Step n of 4" (15px) over the title (26px); `steps` collapse to that text line <md | `step-primary` colour, font |
-| **PaymentChoice** *(3.7, not built)* | `btn` tile, `bg-base-100 border-2 border-base-300` | exactly two, equal width, 250px tall (160px <md), Lucide `banknote` (success) / `id-card` (info) 80px, 40px/800 label | colours, `--radius-box` |
-| **ChangeCard** | `card bg-neutral text-neutral-content` | MoneyDisplay size="change", denomination hint line beneath ("3 one-dollar bills") | neutral colours, `--radius-box` |
-| **Keypad / BillButtons** | `btn` grid (`grid-cols-3` / `grid-cols-4`) | 60px minimum keys, 34px numerals; bill buttons `btn-outline btn-secondary`, selected → `btn-secondary` | colours, `--radius-field` |
+| **BigButton** | `btn` (+ `btn-primary` for the one primary; plain `btn bg-base-100 border-base-300` for secondary; `btn btn-outline btn-secondary` for Clock out) | `min-h-[60px]`, icon left (Lucide 34–56px), `justify-start` for list style, `flex-col` for tile style, sentence case | color, `--radius-field` (standard height) or `--radius-box` (tiles ≥ 110px tall, so pill themes don't produce capsules), font |
+| **MoneyDisplay** | plain text inside `stat-value` / `card` / `table td` | `tabular-nums`, weight 800, sizes from the scale; `size="change"` is only allowed once in the app | color via `base-content` or `neutral-content` |
+| **NoteBanner** | `alert alert-warning` with `role="alert"` | Lucide `triangle-alert` 32px, 22px/800 text, always directly under the StepHeader, never collapsible | warning color, `--radius-box` |
+| **StepHeader** | `navbar`-style bar on `bg-base-100 border-b border-base-300` + `steps` (`steps-vertical` in the rail on lg+) | back `btn btn-ghost` 60×60, "Step n of 4" (15px) over the title (26px); `steps` collapse to that text line <md | `step-primary` color, font |
+| **PaymentChoice** *(3.7, not built)* | `btn` tile, `bg-base-100 border-2 border-base-300` | exactly two, equal width, 250px tall (160px <md), Lucide `banknote` (success) / `id-card` (info) 80px, 40px/800 label | colors, `--radius-box` |
+| **ChangeCard** | `card bg-neutral text-neutral-content` | MoneyDisplay size="change", denomination hint line beneath ("3 one-dollar bills") | neutral colors, `--radius-box` |
+| **Keypad / BillButtons** | `btn` grid (`grid-cols-3` / `grid-cols-4`) | 60px minimum keys, 34px numerals; bill buttons `btn-outline btn-secondary`, selected → `btn-secondary` | colors, `--radius-field` |
 | **ShiftStats** | `stats` → `stat` / `stat-title` / `stat-value` | `tabular-nums`; 3 stats max on student screens | `bg-base-100 border-base-300` |
-| **TeacherCard** | `card card-border` + `avatar avatar-placeholder` | initials disc 52–60px, name 22–26px, room below | colours, radius |
-| **BadgeModal** *(3.7, not built)* | `modal modal-open` → `modal-box` | dashed `info` ring around `id-card`, Total, Back + "Type badge number instead" | colours, `--radius-box` |
+| **TeacherCard** | `card card-border` + `avatar avatar-placeholder` | initials disc 52–60px, name 22–26px, room below | colors, radius |
+| **BadgeModal** *(3.7, not built)* | `modal modal-open` → `modal-box` | dashed `info` ring around `id-card`, Total, Back + "Type badge number instead" | colors, `--radius-box` |
 | **Admin shell** | `drawer` + `navbar` + `table` | denser type allowed (14px min) | all |
-| **HelpPanel** | native `details` in a `rounded-box border` | "About this page" under every admin page's heading (not Admin home, which lists every guide); open by default, closed state remembered per device; guides inside as nested `details` | `info` icon colour, `--radius-box` |
-| **TourButton** | `btn btn-ghost btn-sm` + native modal `dialog` | in the admin header, labelled "Show me around" ("Tour" below sm, so the cart name keeps its room); never opens by itself; dialog docked at the bottom with a transparent backdrop, target outlined in `primary` and scrolled to the top; steps in `src/lib/help/tours.ts` against `data-tour` attributes | `primary` outline, `--radius-box` |
+| **HelpPanel** | native `details` in a `rounded-box border` | "About this page" under every admin page's heading (not Admin home, which lists every guide); open by default, closed state remembered per device; guides inside as nested `details` | `info` icon color, `--radius-box` |
+| **TourButton** | `btn btn-ghost btn-sm` + native modal `dialog` | in the admin header, labeled "Show me around" ("Tour" below sm, so the cart name keeps its room); never opens by itself; dialog docked at the bottom with a transparent backdrop, target outlined in `primary` and scrolled to the top; steps in `src/lib/help/tours.ts` against `data-tour` attributes | `primary` outline, `--radius-box` |
 | **SetupChecklist** | `progress` + `ol` of step cards | Admin home only; state read from data, never stored; folds to one line when every required step is done | `success` / `info` |
-| **MenuIcon** | Lucide line icon, `aria-hidden` | an optional picture beside a menu item (44px) or inside an add-on button (26px), from the fixed set in `src/lib/menu-icons.ts` (decaf is Lucide's mug with a D); never emoji, which differ by device | `primary` on items, current colour in add-on buttons |
-| **DemoBanner** | `bg-neutral text-neutral-content` bar + `btn btn-outline` | the public demo only, on every page including the landing page, above everything but the skip link; `role="region"` labelled "Demo"; 18px/700 "This is a demo. Everything resets every hour."; **Start over** 60px tall, never `btn-primary` | `neutral` |
-| **Logo** | inline `svg`, drawing in `src/lib/logo.ts` | the PocketClerk mark (a "P" on a torn receipt), the same on every deployment; decorative (`aria-hidden`) because it always sits beside a name; 28px in the admin header, 72px on the student sign-in and not-set-up screens | `fill-primary` / `fill-base-100`, so it follows the theme. The icon files (`src/app/icon.svg`, `favicon.ico`, `apple-icon.png`, `public/icon-*.png`) use the pocketclerk theme's literal colours and are rendered by `scripts/render-icons.ts`; never edit them by hand |
+| **MenuIcon** | Lucide line icon, `aria-hidden` | an optional picture beside a menu item (44px) or inside an add-on button (26px), from the fixed set in `src/lib/menu-icons.ts` (decaf is Lucide's mug with a D); never emoji, which differ by device | `primary` on items, current color in add-on buttons |
+| **DemoBanner** | `bg-neutral text-neutral-content` bar + `btn btn-outline` | the public demo only, on every page including the landing page, above everything but the skip link; `role="region"` labeled "Demo"; 18px/700 "This is a demo. Everything resets every hour."; **Start over** 60px tall, never `btn-primary` | `neutral` |
+| **Logo** | inline `svg`, drawing in `src/lib/logo.ts` | the PocketClerk mark (a "P" on a torn receipt), the same on every deployment; decorative (`aria-hidden`) because it always sits beside a name; 28px in the admin header, 72px on the student sign-in and not-set-up screens | `fill-primary` / `fill-base-100`, so it follows the theme. The icon files (`src/app/icon.svg`, `favicon.ico`, `apple-icon.png`, `public/icon-*.png`) use the pocketclerk theme's literal colors and are rendered by `scripts/render-icons.ts`; never edit them by hand |

@@ -55,7 +55,7 @@ export function TourButton() {
     element.setAttribute("data-tour-active", "");
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // To the top of the screen, not the middle: the tour card sits at the
-    // bottom, and on a phone a centred section disappears behind it.
+    // bottom, and on a phone a centered section disappears behind it.
     element.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
     return () => element.removeAttribute("data-tour-active");
   }, [current]);
