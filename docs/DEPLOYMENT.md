@@ -160,7 +160,7 @@ NEXT_PUBLIC_TIME_ZONE = America/New_York
 Without it, times are shown in `America/New_York`. That is right for the
 Eastern zone and wrong everywhere else, and the failure is silent: pages load
 normally and receipts are simply hours off. `/api/health` reports the zone in
-use.
+use (in its `setup` section, below).
 
 ## 7. Lock the cart to the school's iPad
 
@@ -234,6 +234,14 @@ Load **`/api/health`** first. It answers, in one request, whether the deployment
 is configured: which required settings are missing by name, whether the database
 is reachable, and whether the migrations have run. It returns 200 when the app
 is ready and 503 when it is not.
+
+How the deployment is set up (device pairing, email, the receipt sweep, the time
+zone and the app address) is in a `setup` section, shown only when you send the
+cron secret, because it is nobody else's business:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" https://your-address/api/health
+```
 
 It reports names, never values. Use it before anything else; it turns "the site
 is broken" into a specific missing variable.
