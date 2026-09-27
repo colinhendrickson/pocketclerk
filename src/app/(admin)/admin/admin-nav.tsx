@@ -71,6 +71,7 @@ const LINKS = [
   { href: "/admin/students", label: "Students" },
   { href: "/admin/teachers", label: "Teachers" },
   { href: "/admin/menu", label: "Menu" },
+  { href: "/admin/inventory", label: "Inventory" },
   { href: "/admin/orders", label: "Orders" },
   { href: "/admin/receipts", label: "Receipts" },
   { href: "/admin/admins", label: "Admins" },

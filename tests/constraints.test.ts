@@ -184,3 +184,16 @@ describe("menu pictures", () => {
     expect(addon.constraint).toBe("addons_icon_check");
   });
 });
+
+describe("supply names", () => {
+  it("refuses a second active supply with the same name, whatever the case", async () => {
+    const name = `Cups ${Date.now()}`;
+    await db.execute(sql`INSERT INTO inventory_items (name, par_level) VALUES (${name}, 10)`);
+    const failure = await violation(() =>
+      db.execute(sql`INSERT INTO inventory_items (name, par_level) VALUES (${name.toUpperCase()}, 10)`),
+    );
+    expect(failure.code).toBe("23505");
+    expect(failure.constraint).toBe("inventory_items_active_name_key");
+    await db.execute(sql`DELETE FROM inventory_items WHERE lower(name) = lower(${name})`);
+  });
+});

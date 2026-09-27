@@ -13,6 +13,7 @@ export interface SetupCounts {
   activeTeachers: number;
   teachersWithEmail: number;
   activeMenuItems: number;
+  activeSupplies: number;
   shifts: number;
   orders: number;
   admins: number;
@@ -24,6 +25,7 @@ export async function getSetupCounts(): Promise<SetupCounts> {
     active_teachers: number;
     teachers_with_email: number;
     active_menu_items: number;
+    active_supplies: number;
     shifts: number;
     orders: number;
     admins: number;
@@ -34,6 +36,7 @@ export async function getSetupCounts(): Promise<SetupCounts> {
       (SELECT count(*)::int FROM teacher_profiles t JOIN persons p ON p.id = t.person_id
          WHERE t.active AND coalesce(p.email, '') <> '') AS teachers_with_email,
       (SELECT count(*)::int FROM menu_items WHERE active) AS active_menu_items,
+      (SELECT count(*)::int FROM inventory_items WHERE active) AS active_supplies,
       (SELECT count(*)::int FROM (SELECT 1 FROM shifts LIMIT 1) s) AS shifts,
       (SELECT count(*)::int FROM (SELECT 1 FROM orders LIMIT 1) o) AS orders,
       (SELECT count(*)::int FROM admin_users) AS admins
@@ -43,13 +46,21 @@ export async function getSetupCounts(): Promise<SetupCounts> {
     activeTeachers: row?.active_teachers ?? 0,
     teachersWithEmail: row?.teachers_with_email ?? 0,
     activeMenuItems: row?.active_menu_items ?? 0,
+    activeSupplies: row?.active_supplies ?? 0,
     shifts: row?.shifts ?? 0,
     orders: row?.orders ?? 0,
     admins: row?.admins ?? 0,
   };
 }
 
-export type SetupStepId = "students" | "teachers" | "menu" | "ipad" | "first-sale" | "admins";
+export type SetupStepId =
+  | "students"
+  | "teachers"
+  | "menu"
+  | "supplies"
+  | "ipad"
+  | "first-sale"
+  | "admins";
 
 export interface SetupStep {
   id: SetupStepId;
@@ -91,6 +102,12 @@ export function setupChecklist(counts: SetupCounts): SetupStep[] {
       done: counts.activeMenuItems > 0,
       optional: false,
       status: counts.activeMenuItems > 0 ? plural(counts.activeMenuItems, "item") : "Nothing on the menu yet",
+    },
+    {
+      id: "supplies",
+      done: counts.activeSupplies > 0,
+      optional: false,
+      status: counts.activeSupplies > 0 ? plural(counts.activeSupplies, "supply", "supplies") : "No supplies yet",
     },
     {
       id: "ipad",

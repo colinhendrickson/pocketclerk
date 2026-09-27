@@ -9,6 +9,7 @@ export const ADMIN_ROUTES = [
   "/admin/students",
   "/admin/teachers",
   "/admin/menu",
+  "/admin/inventory",
   "/admin/orders",
   "/admin/receipts",
   "/admin/admins",
@@ -23,6 +24,7 @@ export const PAGE_NAMES: Record<AdminRoute, string> = {
   "/admin/students": "Students",
   "/admin/teachers": "Teachers",
   "/admin/menu": "Menu",
+  "/admin/inventory": "Inventory",
   "/admin/orders": "Orders",
   "/admin/receipts": "Receipts",
   "/admin/admins": "Admins",
@@ -34,6 +36,7 @@ export type GuideTopic =
   | "Students"
   | "Teachers"
   | "Menu"
+  | "Inventory"
   | "Orders and receipts"
   | "Access and signing in"
   | "Colors";

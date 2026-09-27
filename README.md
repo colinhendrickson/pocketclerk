@@ -152,7 +152,7 @@ fixes built on reasoning alone had missed.
 
 ## Testing
 
-245 Vitest cases across 29 files, and 34 Playwright tests across 10 specs.
+257 Vitest cases across 32 files, and 35 Playwright tests across 11 specs.
 
 The coverage is deliberately uneven. `src/lib/money.ts` has the most tests
 because a bug there teaches a student the wrong answer in front of a customer.
@@ -282,8 +282,8 @@ change, print or email the receipt, view today's orders, count the inventory,
 restock, work the closing checklist, clock out.
 
 The staff side has sign-in, a dashboard with the setup checklist and every guide,
-management of students, teachers, the menu (with pictures), administrators and
-the site's color, an orders browser and a receipt delivery monitor with retry.
+management of students, teachers, the menu (with pictures), inventory supplies,
+administrators and the site's color, an orders browser and a receipt delivery monitor with retry.
 
 The first school runs its own copy on a subdomain, and pocket-clerk.com is the
 public demo, reset every hour.

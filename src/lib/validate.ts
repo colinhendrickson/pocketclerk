@@ -372,6 +372,45 @@ export function parseMenuIcon(input: unknown): MenuIconInput | null {
   return { kind, id, icon };
 }
 
+/* -------------------------------------------------------------------------- */
+/* Admin: inventory supplies                                                  */
+/* -------------------------------------------------------------------------- */
+
+export interface SupplyInput {
+  name: string;
+  /** What it is counted in, e.g. "cups". Defaults to "items". */
+  unit: string;
+  /** How many a full cart carries; the restock target. */
+  parLevel: number;
+}
+
+const MAX_PAR_LEVEL = 9_999;
+const MAX_UNIT_LENGTH = 20;
+
+export function parseNewSupply(input: unknown): SupplyInput | null {
+  if (typeof input !== "object" || input === null) return null;
+  const { name, unit, parLevel } = input as Record<string, unknown>;
+
+  const trimmedName = parseName(name, 60);
+  if (trimmedName === null) return null;
+
+  if (unit !== undefined && typeof unit !== "string") return null;
+  const trimmedUnit = (unit ?? "").trim() || "items";
+  if (trimmedUnit.length > MAX_UNIT_LENGTH) return null;
+
+  if (!isPositiveIntWithin(parLevel, MAX_PAR_LEVEL)) return null;
+
+  return { name: trimmedName, unit: trimmedUnit, parLevel };
+}
+
+export function parseSupplyEdit(input: unknown): (SupplyInput & { id: string }) | null {
+  if (typeof input !== "object" || input === null) return null;
+  const { id } = input as Record<string, unknown>;
+  if (!isUuid(id)) return null;
+  const supply = parseNewSupply(input);
+  return supply ? { id, ...supply } : null;
+}
+
 export interface NewAdminInput {
   name: string;
   email: string;

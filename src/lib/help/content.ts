@@ -31,6 +31,7 @@ export const TOPICS: GuideTopic[] = [
   "Students",
   "Teachers",
   "Menu",
+  "Inventory",
   "Orders and receipts",
   "Access and signing in",
   "Colors",
@@ -62,6 +63,7 @@ export const GUIDES: Guide[] = [
       "Add your students, each with a four-digit PIN they will remember.",
       "Add your teachers, with their school emails so they get receipts.",
       "Set up the menu: each item and its price, and any add-ons such as milk or syrup.",
+      "Add the supplies students count at the end of a shift, such as cups and lids.",
       "Connect the cart's iPad using the link in the checklist, opened in the free Bluefy browser.",
       "Set up the receipt printer: turn it on and press Connect printer on a student's shift screen.",
       "Have a student clock in and sell one item to check everything works.",
@@ -277,6 +279,45 @@ export const GUIDES: Guide[] = [
     page: "/admin/menu",
   },
 
+  /* Inventory ------------------------------------------------------------ */
+  {
+    id: "add-supply",
+    topic: "Inventory",
+    title: "Adding the supplies the cart carries",
+    steps: [
+      "Open Inventory.",
+      "Type the supply, such as Coffee cups, and what it is counted in, such as cups.",
+      "Under Full cart, enter how many the cart holds when it is stocked.",
+      "Press Add supply. Students count it from their next shift.",
+    ],
+    note: "Full cart is the restock target: when a student counts fewer, the cart tells them how many to add.",
+    page: "/admin/inventory",
+  },
+  {
+    id: "end-of-shift-count",
+    topic: "Inventory",
+    title: "What students do at the end of a shift",
+    steps: [
+      "On the shift screen, the student presses Inventory.",
+      "For each supply they count what is left, using the plus and minus buttons.",
+      "The cart shows what was used and what to restock, and the student ticks each one off as they refill it.",
+    ],
+    note: "Sales do not subtract supplies automatically. Counting at the end is part of the job training.",
+    page: "/admin/inventory",
+  },
+  {
+    id: "remove-supply",
+    topic: "Inventory",
+    title: "Changing or removing a supply",
+    steps: [
+      "Open Inventory and find the supply.",
+      "Press Edit to change its name or full cart amount, then Save.",
+      "Press Take off if the cart no longer carries it. Put back brings it back.",
+    ],
+    note: "A new full cart amount applies from the next shift. Past counts are kept.",
+    page: "/admin/inventory",
+  },
+
   /* Orders and receipts -------------------------------------------------- */
   {
     id: "day-sales",
@@ -421,6 +462,11 @@ export const PAGE_HELP: Record<AdminRoute, PageHelp> = {
       "What students can sell and what it costs. Changes appear at the cart straight away and never alter past orders.",
     tasks: ["add-menu-item", "change-price", "set-special", "add-ons", "menu-pictures", "take-off-menu"],
   },
+  "/admin/inventory": {
+    purpose:
+      "The supplies students count at the end of each shift, and how many a full cart holds of each.",
+    tasks: ["add-supply", "end-of-shift-count", "remove-supply"],
+  },
   "/admin/orders": {
     purpose: "Every sale, one day at a time: who served it, what was bought, and the change given.",
     tasks: ["day-sales"],
@@ -481,7 +527,7 @@ export function guideById(id: string): Guide | undefined {
 
 /** Text for each setup checklist step; completion comes from src/lib/setup.ts. */
 export const SETUP_STEP_TEXT: Record<
-  "students" | "teachers" | "menu" | "ipad" | "first-sale" | "admins",
+  "students" | "teachers" | "menu" | "supplies" | "ipad" | "first-sale" | "admins",
   {
     title: string;
     why: string;
@@ -507,6 +553,12 @@ export const SETUP_STEP_TEXT: Record<
     why: "What students can sell, at what price. Add-ons such as milk or syrup are set up here too.",
     action: { label: "Go to Menu", href: "/admin/menu" },
     guide: "add-menu-item",
+  },
+  supplies: {
+    title: "Add your supplies",
+    why: "Cups, lids and anything else the cart uses up. Students count them at the end of each shift.",
+    action: { label: "Go to Inventory", href: "/admin/inventory" },
+    guide: "add-supply",
   },
   ipad: {
     title: "Connect the cart's iPad",

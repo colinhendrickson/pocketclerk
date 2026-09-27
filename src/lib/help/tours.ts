@@ -124,6 +124,20 @@ export const TOURS: Record<AdminRoute, TourStep[]> = {
     },
     MENU_STEP,
   ],
+  "/admin/inventory": [
+    HELP_STEP,
+    {
+      target: "add-supply",
+      title: "Add a supply",
+      body: "Anything the cart uses up, such as cups or lids. Full cart is how many it holds when stocked.",
+    },
+    {
+      target: "supplies",
+      title: "Your supplies",
+      body: "Students count each of these at the end of a shift. Edit a name or amount, or Take off something the cart no longer carries.",
+    },
+    MENU_STEP,
+  ],
   "/admin/colors": [
     HELP_STEP,
     {

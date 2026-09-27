@@ -3,6 +3,7 @@ import { asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   addons,
+  inventoryItems,
   menuItems,
   orders,
   persons,
@@ -245,4 +246,26 @@ export async function listAddonsForAdmin(): Promise<AddonRow[]> {
 /** The column is text; the CHECK constraint keeps it to the set. */
 function asIcon(value: string | null): MenuIconKey | null {
   return isMenuIconKey(value) ? value : null;
+}
+
+export interface SupplyRow {
+  id: string;
+  name: string;
+  unit: string;
+  parLevel: number;
+  active: boolean;
+}
+
+/** Every supply, including ones taken off, for the Inventory page. */
+export async function listSuppliesForAdmin(): Promise<SupplyRow[]> {
+  return db
+    .select({
+      id: inventoryItems.id,
+      name: inventoryItems.name,
+      unit: inventoryItems.unit,
+      parLevel: inventoryItems.parLevel,
+      active: inventoryItems.active,
+    })
+    .from(inventoryItems)
+    .orderBy(asc(inventoryItems.sortOrder), asc(inventoryItems.name));
 }

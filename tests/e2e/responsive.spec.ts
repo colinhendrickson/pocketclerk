@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { ADMIN_ROUTES } from "../../src/lib/help/types";
 import { pairDevice, signInAsAdmin } from "./helpers";
 
 /**
@@ -34,7 +35,6 @@ const SIZES = [
   { name: "desktop", width: 1440, height: 900 },
 ] as const;
 
-const ADMIN_PAGES = ["", "/students", "/teachers", "/menu", "/orders", "/receipts", "/admins", "/colors"];
 
 const WCAG = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
@@ -65,10 +65,10 @@ for (const size of SIZES) {
 
     await test.step("admin", async () => {
       await signInAsAdmin(page);
-      for (const path of ADMIN_PAGES) {
-        await page.goto(`/admin${path}`);
+      for (const route of ADMIN_ROUTES) {
+        await page.goto(route);
         await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-        await checkScreen(page, `/admin${path}`, problems);
+        await checkScreen(page, route, problems);
       }
       // Below xl the navigation is a drawer, which is a screen of its own.
       if (size.width < 1280) {
