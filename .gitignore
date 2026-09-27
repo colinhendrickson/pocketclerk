@@ -58,3 +58,7 @@ docs/private/
 
 # Plan execution scratch (ledgers, briefs)
 .superpowers/
+
+# Local AI-tool files: Next.js regenerates AGENTS.md; CLAUDE.local.md holds machine-local rules
+AGENTS.md
+CLAUDE.local.md
