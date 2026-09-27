@@ -1,46 +1,26 @@
 "use client";
 
 /**
- * TeacherCard — one pickable teacher in the classroom-order flow.
- *
- * Implements the TeacherCard row of the DESIGN.md §4 map: `card card-border`
- * with an `avatar avatar-placeholder` initials disc at 56px (inside the 52–60px
- * band), the name at 26px, and the room on the line below.
- *
- * Initials stand in for photographs on purpose. The cart has no photo library
- * and school data stays out of the repo, so a two-letter disc is the only
- * identifier that is recognizable at arm's length without storing anything
- * about a real person in code or seed data.
- *
- * The whole card is a 60px+ tap target and stays a server component: selection
- * is a `Link` into the next step of the flow, not local state. Rendered without
- * `href` it is a static summary — the same card, reused in the order builder to
- * show who the order is for.
+ * TeacherCard: a teacher in the classroom-order flow (DESIGN.md §4). Uses an
+ * initials disc instead of a photo so no personal images are stored. Renders
+ * as a link (`href`), a button (`onSelect`), or a static summary (neither).
  */
 
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
 export interface TeacherCardProps {
-  /** Display name, rendered verbatim. */
   name: string;
   /** Room or location line under the name. */
   room?: string;
   /** Overrides the derived two-letter disc. */
   initials?: string;
-  /** Optional Lucide glyph on the trailing edge, e.g. a chevron or a check. */
+  /** Trailing glyph, e.g. a chevron or a check. */
   icon?: LucideIcon;
-  /** Makes the card a tap target that navigates. Omit for a static summary. */
   href?: string;
-  /**
-   * Selection handler for flows that keep their state in the client rather than
-   * in the URL. Ignored when `href` is given.
-   */
+  /** For flows whose state lives in the client. Ignored when `href` is set. */
   onSelect?: () => void;
-  /**
-   * Number of saved notes about this teacher. Surfaced on the card so a student
-   * knows before tapping that there is something to read.
-   */
+  /** Saved notes about this teacher, shown as a badge. */
   noteCount?: number;
 }
 

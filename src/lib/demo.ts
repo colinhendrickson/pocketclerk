@@ -7,8 +7,8 @@ import { seedDatabase } from "@/db/seed-data";
 import { siteMode, type SiteMode } from "@/lib/site-mode";
 
 /**
- * The public demo at pocket-clerk.com: shared by every visitor, put back to the
- * seed every hour, and on demand at most every five minutes.
+ * The public demo: shared by every visitor, reset to the seed hourly, and on
+ * demand at most every five minutes.
  */
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -19,7 +19,7 @@ export function resetDue(lastReset: Date | null, now: Date): boolean {
   return lastReset === null || now.getTime() - lastReset.getTime() >= HOUR_MS;
 }
 
-/** Whether Start over may run again, so pressing it repeatedly does nothing. */
+/** Whether Start over may run again (rate limit on manual resets). */
 export function canStartOver(lastReset: Date | null, now: Date): boolean {
   return lastReset === null || now.getTime() - lastReset.getTime() >= START_OVER_MS;
 }
@@ -39,21 +39,16 @@ async function demoRow(): Promise<{ isDemo: boolean; demoResetAt: Date | null } 
 }
 
 /**
- * Whether this is the demo. Needs both the deployment's mode and the database's
- * own flag, so a school's copy with demo mode set by mistake still refuses the
- * demo's powers, such as signing anyone in as an administrator.
+ * Whether this is the demo. Requires both the deployment mode and the
+ * database's flag, so a school's copy misconfigured as a demo still refuses
+ * demo-only powers such as open admin sign-in.
  */
 export async function isDemo(): Promise<boolean> {
   if (siteMode() !== "demo") return false;
   return (await demoRow())?.isDemo === true;
 }
 
-/**
- * What is wrong when the deployment's mode and its database disagree, for
- * /api/health, or null when they agree. Either way round is a setup mistake:
- * demo mode on a school's database replaces the cart with the landing page and
- * only logs email; a school's copy on the demo's database shows made-up data.
- */
+/** For /api/health: describes a mismatch between site mode and database, or null. */
 export function siteModeProblem(mode: SiteMode, databaseIsDemo: boolean): string | null {
   if (mode === "demo" && !databaseIsDemo) {
     return "NEXT_PUBLIC_SITE_MODE=demo on a database not seeded as the demo's. On a school's copy, remove it and redeploy; for the demo, run `pnpm seed --demo`.";
@@ -70,22 +65,17 @@ export async function databaseIsDemo(): Promise<boolean | null> {
   return row ? row.isDemo : null;
 }
 
-/** When the demo was last put back, or null if it never was or this is not it. */
+/** When the demo was last reset, or null if never or not the demo. */
 export async function lastDemoReset(): Promise<Date | null> {
   if (siteMode() !== "demo") return null;
   const row = await demoRow();
   return row?.isDemo ? row.demoResetAt : null;
 }
 
-/**
- * Puts the demo back if the hour is up. Called by the layouts; the reset runs
- * after the response, so the visitor who triggers it is not kept waiting, and
- * the next page they open is the fresh cart.
- */
+/** Resets the demo if the hour is up. Runs after the response, via `after()`. */
 export async function maybeResetDemo(): Promise<void> {
   if (siteMode() !== "demo") return;
-  // Render at request time. Without this the landing page is prerendered, so
-  // this check would run once, during the build, and never for a visitor.
+  // Opt into request-time rendering; otherwise this runs only at build time.
   await connection();
   const row = await demoRow();
   if (!row?.isDemo || !resetDue(row.demoResetAt, new Date())) return;

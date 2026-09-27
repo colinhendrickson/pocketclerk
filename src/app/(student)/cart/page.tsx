@@ -8,11 +8,8 @@ import { requirePairedDevice } from "@/app/(student)/require-device";
 export const dynamic = "force-dynamic";
 
 /**
- * Sign-in: tap your name.
- *
- * Names are large targets in a grid rather than a dropdown or a typed field.
- * There is no free-text entry anywhere on this screen by design: the only thing
- * a student has to produce from memory is four digits, on the next screen.
+ * Sign-in: students tap their name in a grid of large targets. No free-text
+ * entry; the only thing recalled from memory is the PIN on the next screen.
  */
 export default async function SignInPage() {
   await requirePairedDevice();

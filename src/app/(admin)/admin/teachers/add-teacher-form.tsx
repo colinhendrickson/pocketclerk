@@ -5,11 +5,8 @@ import { useState, useTransition } from "react";
 import { addTeacher } from "./actions";
 
 /**
- * Adding a teacher ahead of time.
- *
- * The email is optional, as it is at the cart, but the hint says plainly what
- * leaving it out costs: no emailed receipts. That is the question staff would
- * otherwise have to ask.
+ * Add-teacher form. Email is optional, as at the cart; the hint explains that
+ * without it there are no emailed receipts.
  */
 export function AddTeacherForm() {
   const [name, setName] = useState("");

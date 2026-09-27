@@ -26,16 +26,8 @@ export interface ReceiptTableProps {
 }
 
 /**
- * The receipt monitor.
- *
- * This screen exists because the queue is allowed to fail. Decoupling the sale
- * from its delivery is what keeps a dead printer from costing an order, and the
- * price of that is a place where the administrator can see what did not arrive
- * and why. A queue without this page loses receipts silently, which is worse
- * than not having a queue.
- *
- * Failed jobs are listed first, because they are the only rows that need
- * anybody to do anything.
+ * Receipt job monitor: the visible side of the async delivery queue, where
+ * failed receipts can be retried or dismissed.
  */
 export function ReceiptTable({ rows, failedCount }: ReceiptTableProps) {
   const router = useRouter();

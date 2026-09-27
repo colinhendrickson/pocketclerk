@@ -5,14 +5,8 @@ import { siteSettings } from "@/db/schema";
 import { checkPrimary, normalizeHex } from "@/lib/colors";
 
 /**
- * The admin-editable settings row. See `siteSettings` in the schema.
- */
-
-/**
- * The deployment's main color, or null for the theme's own.
- *
- * Read on every page, so a failure here must not take a page down: a site in
- * its original colors is fine, a blank error page is not.
+ * The deployment's main color, or null for the theme's own. Read on every
+ * page, so errors fall back to the theme rather than failing the page.
  */
 export async function getPrimaryColor(): Promise<string | null> {
   try {
@@ -33,11 +27,9 @@ export type SetPrimaryColorResult =
   | { ok: false; error: "invalid" | "unreadable"; suggestion?: string | null };
 
 /**
- * Saves the main color, or clears it with null.
- *
- * The readability check runs here as well as on the page, because a Server
- * Action is an open endpoint: the page's check is a courtesy, this one is the
- * rule. A color that fails is refused with the darker shade that would pass.
+ * Saves the main color, or clears it with null. The contrast check is enforced
+ * here because Server Actions are open endpoints; a failing color is refused
+ * with a darker suggestion that passes.
  */
 export async function setPrimaryColor(input: unknown, by: string): Promise<SetPrimaryColorResult> {
   let color: string | null = null;

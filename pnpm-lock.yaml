@@ -11,6 +11,9 @@ importers:
 
   .:
     dependencies:
+      '@faker-js/faker':
+        specifier: ^10.6.0
+        version: 10.6.0
       '@vercel/functions':
         specifier: ^3.9.9
         version: 3.9.9
@@ -39,9 +42,6 @@ importers:
       '@axe-core/playwright':
         specifier: ^4.13.0
         version: 4.13.0(playwright-core@1.63.0)
-      '@faker-js/faker':
-        specifier: ^10.6.0
-        version: 10.6.0
       '@playwright/test':
         specifier: ^1.63.0
         version: 1.63.0

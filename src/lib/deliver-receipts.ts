@@ -8,16 +8,10 @@ import {
 import { getEmailSender, type EmailSender } from "@/providers/email";
 
 /**
- * Drains queued email receipts.
- *
- * Extracted from the API route so it can also run immediately after an order,
- * via `after()`, once the response has already gone back to the student. That
- * matters on Vercel's free tier, where a cron job may only run once a day: a
- * teacher would otherwise wait until tomorrow for a receipt.
- *
- * The scheduled run is still worth having, as a sweep for anything the
- * post-order attempt could not deliver. Running both at once is safe, because
- * jobs are claimed with a guarded atomic update.
+ * Drains queued email receipts. Runs right after an order via `after()` (the
+ * daily cron alone would be too slow) and on the cron as a sweep. Concurrent
+ * runs are safe because jobs are claimed with a guarded atomic update.
+ * See docs/adr/0002-receipt-job-queue.md.
  */
 export interface DeliveryOutcome {
   claimed: number;
@@ -46,15 +40,13 @@ export async function deliverQueuedEmails(
         continue;
       }
       if (!to) {
-        // Nothing will ever make this deliverable, so it is retired rather than
-        // retried until it exhausts its attempts.
+        // Permanently undeliverable; fail it rather than retry.
         await markFailed(job.id, "No email address saved for this teacher.");
         failed += 1;
         continue;
       }
 
-      // The job id makes a retry of an already-delivered receipt a no-op at
-      // the provider, instead of a second email to the teacher.
+      // The job id is the idempotency key, so a retry never sends twice.
       const result = await sender.send(to, receipt, job.id);
       if (result.ok) {
         await markSent(job.id);
@@ -66,10 +58,8 @@ export async function deliverQueuedEmails(
     } catch (error) {
       failed += 1;
       const reason = error instanceof Error ? error.message : "Unexpected error.";
-      // Recording the failure can itself fail, on the same dead connection or
-      // bug that caused it. That must not escape the loop: it would abandon
-      // every remaining job in the batch mid-flight. The job is reclaimed once
-      // it has sat in processing long enough, so logging is enough here.
+      // Recording the failure can itself fail; that must not abandon the rest
+      // of the batch. Stale processing jobs are reclaimed later.
       try {
         await markFailed(job.id, reason);
       } catch (recordError) {

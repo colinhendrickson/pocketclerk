@@ -10,10 +10,8 @@ export interface PairingLinkProps {
 }
 
 /**
- * The link that connects the cart's iPad, and two ways to get it onto the iPad.
- *
- * Typing a long link on an iPad is where setup stalls, so the realistic path is
- * to email it to yourself and tap it there. Copying covers everyone else.
+ * The device pairing link, with email and copy buttons so nobody has to type
+ * it on the iPad. See docs/adr/0010-device-pairing.md.
  */
 export function PairingLink({ url, email }: PairingLinkProps) {
   const [copied, setCopied] = useState(false);

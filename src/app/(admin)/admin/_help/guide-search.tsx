@@ -12,19 +12,15 @@ export interface GuideSearchProps {
 }
 
 /**
- * Every guide, grouped by topic, with a box to narrow them down.
- *
- * The search matches the words in a guide's steps as well as its title, since
- * people search for what they see ("PIN", "receipt", "email"), not for how a
- * guide happens to be titled. The number of matches is announced as it changes.
+ * All guides grouped by topic, with a search box that matches titles, steps
+ * and notes. The match count is announced via a live region.
  */
 export function GuideSearch({ topics, guides }: GuideSearchProps) {
   const [query, setQuery] = useState("");
   const inputId = useId();
 
-  // "How to do this" in the setup checklist links to #guide-<id>. A link to a
-  // closed guide would scroll to a one-line title, so the guide is opened,
-  // shown even if a search was hiding it, and given focus.
+  // Setup checklist links target #guide-<id>: clear the search, then open,
+  // scroll to and focus that guide.
   useEffect(() => {
     function openFromHash() {
       if (!window.location.hash.startsWith("#guide-")) return;

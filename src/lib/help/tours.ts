@@ -1,18 +1,14 @@
 import type { AdminRoute } from "./types";
 
 /**
- * "Show me around": a short walk through each admin page.
- *
- * Kept apart from content.ts because the tour runs in the browser, and
- * content.ts imports rules that live in server-only code. Each step points at
- * a `data-tour` attribute on the page; tests check every one exists.
- *
- * A step whose target is not on screen at the current size (the sidebar on a
- * phone, say) names a fallback target, or is skipped.
+ * "Show me around" tours for admin pages. Separate from content.ts because
+ * tours run in the browser and content.ts imports server-only rules. Steps
+ * target `data-tour` attributes (tests verify they exist); a step whose target
+ * is hidden at the current size uses its fallback or is skipped.
  */
 
 export interface TourStep {
-  /** The `data-tour` value of the element to point at. */
+  /** `data-tour` value of the target element. */
   target: string;
   title: string;
   body: string;

@@ -14,17 +14,9 @@ export interface StudentTableProps {
 }
 
 /**
- * The roster, with lifetime totals and the two things that are ever done to a
- * student: a PIN reset and a deactivation.
- *
- * A client component because the PIN reset opens in place. Routing to a detail
- * page to change one four-digit field, then routing back, is three screens for
- * a job that takes four keystrokes.
- *
- * Inactive students stay in the table rather than moving to a separate list.
- * The question the administrator actually asks is "why can't this student sign
- * in?", and a row that is present but visibly switched off answers it; a row
- * that has vanished looks like data loss.
+ * Roster table with lifetime totals, inline PIN reset, and deactivation.
+ * Inactive students stay in the table, visibly marked, so it is clear why they
+ * cannot sign in.
  */
 export function StudentTable({ rows, rewardName }: StudentTableProps) {
   const [resetting, setResetting] = useState<string | null>(null);
@@ -79,9 +71,8 @@ interface StudentRowsProps {
 }
 
 /**
- * Returns a fragment of one or two `<tr>`s rather than a single row, so the
- * reset form can occupy a full-width row underneath without nesting a second
- * table or breaking the column alignment above it.
+ * One or two `<tr>`s: the student row, plus a full-width reset-form row when
+ * open, keeping column alignment.
  */
 function StudentRows({ row, isResetting, onToggleReset }: StudentRowsProps) {
   const [pending, startTransition] = useTransition();
@@ -159,10 +150,8 @@ interface ResetPinFormProps {
 }
 
 /**
- * The new PIN is shown in plain text while it is typed and is never shown
- * again. There is nothing to read back: only the scrypt hash is stored, so a
- * forgotten PIN is always a reset, never a lookup. Saying so here is what stops
- * the administrator hunting for a "view PIN" button that cannot exist.
+ * PIN reset. The new PIN is visible while typed and never shown again: only
+ * the scrypt hash is stored, so a forgotten PIN can only be reset.
  */
 function ResetPinForm({ studentId, studentName, onDone }: ResetPinFormProps) {
   const [pin, setPin] = useState("");

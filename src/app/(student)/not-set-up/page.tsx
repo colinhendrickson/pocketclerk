@@ -4,11 +4,7 @@ import { PRODUCT_NAME } from "@/lib/site-mode";
 export const dynamic = "force-dynamic";
 
 /**
- * What an unpaired visitor sees.
- *
- * Deliberately says almost nothing. No student names, no menu, no indication of
- * how to get in. Someone who reached this address by accident learns only that
- * the cart exists, which the branding already tells them.
+ * Shown to unpaired devices. Reveals no student names, menu, or sign-in hints.
  */
 export default function NotSetUpPage() {
   return (

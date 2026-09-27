@@ -20,45 +20,36 @@ export interface MenuEntryView {
   name: string;
   priceCents: number;
   active: boolean;
-  /** The picture shown beside the name at the cart, if any. */
+  /** Picture shown beside the name at the cart. */
   icon: MenuIconKey | null;
-  /** Menu items only. Add-ons have no such column, and pass null. */
+  /** Menu items only; null for add-ons. */
   isSpecial: boolean | null;
 }
 
 export interface MenuSectionProps {
   kind: MenuKind;
   title: string;
-  /** One line under the heading explaining what this list is for. */
+  /** One-line explanation under the heading. */
   description: string;
   addLabel: string;
   rows: MenuEntryView[];
 }
 
 /**
- * Turns integer cents into the string the price input starts with.
- *
- * Not `formatUSD`: that produces "$3.50", and a dollar sign sitting in an edit
- * field is something the administrator has to delete before typing. The value
- * still round-trips through `dollarsToCents`, which is the only conversion that
- * matters.
+ * Integer cents to an editable "3.50" (no "$", unlike `formatUSD`). Round-trips
+ * through `dollarsToCents`.
  */
 function centsToInputValue(cents: number): string {
   return `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, "0")}`;
 }
 
 /**
- * One of the two menu lists.
+ * One menu list (items or add-ons, which share a shape), so price entry is
+ * written once.
  *
- * Both lists are the same table with one extra column, so they share a
- * component and differ by `kind`. That keeps the price-entry rules — the one
- * genuinely delicate part of this page — written once.
- *
- * Prices are typed in dollars and converted to cents before the payload is
- * built, so the dollar figure never exists anywhere but the input box. The
- * conversion is `dollarsToCents`, which parses the string rather than
- * multiplying a float; see the note on that function for why that distinction
- * decides what a teacher is charged.
+ * Prices are typed in dollars and converted with `dollarsToCents`, which parses
+ * the string instead of multiplying a float, before anything is sent. Only
+ * integer cents leave this component.
  */
 export function MenuSection({
   kind,
@@ -144,7 +135,6 @@ function AddEntryForm({ kind, label }: AddEntryFormProps) {
       const result = await createMenuEntry({
         kind,
         name,
-        // Sent as cents, named as cents. The dollar string stops here.
         priceCents,
         isSpecial: kind === "item" ? isSpecial : false,
       });
@@ -260,11 +250,7 @@ function EntryRow({ kind, row, isEditing, onToggleEdit }: EntryRowProps) {
     });
   }
 
-  /**
-   * Canceling restores the stored values rather than leaving the abandoned
-   * text in the fields. The row is not remounted when the form closes, so
-   * without this the next "Edit" would reopen on the edit nobody wanted.
-   */
+  /** Resets the fields; the row is not remounted when editing closes. */
   function cancel() {
     setName(row.name);
     setPrice(centsToInputValue(row.priceCents));
@@ -386,11 +372,8 @@ interface PicturePickerProps {
 }
 
 /**
- * The picture beside a name at the cart, for students who cannot read it yet.
- *
- * Chosen from a fixed grid in a native modal dialog, so there is nothing to
- * type and nothing unexpected can reach the cart. A tap saves; the dialog
- * closes once the save lands.
+ * Picks the picture shown beside a name at the cart, for pre-readers, from a
+ * fixed grid in a modal dialog. A tap saves; the dialog closes on success.
  */
 function PicturePicker({ kind, row }: PicturePickerProps) {
   const dialog = useRef<HTMLDialogElement>(null);

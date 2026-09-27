@@ -10,16 +10,10 @@ import { isUuid } from "@/lib/validate";
 import { requireAdmin } from "../require-admin";
 
 /**
- * Retrying a delivery that gave up.
- *
- * A job that exhausted its attempts sits in `failed` with the reason it failed.
- * Retrying resets the counter and returns it to the queue, which is the whole
- * recovery story: the administrator fixes the cause (reloads the printer,
- * corrects a mistyped address) and puts the job back.
- *
- * Only failed jobs are eligible. Retrying something already queued or already
- * sent would either do nothing or send a duplicate, so the status is part of
- * the update's predicate rather than something checked beforehand and trusted.
+ * Requeues a failed receipt job with its attempt counter reset. Only `failed`
+ * jobs qualify, and the status is in the UPDATE predicate (not checked first)
+ * so a queued or sent job can never be resent. See
+ * docs/adr/0002-receipt-job-queue.md.
  */
 export async function retryReceiptJob(jobId: string): Promise<boolean> {
   await requireAdmin();
@@ -52,12 +46,8 @@ export async function retryAllFailed(): Promise<number> {
 }
 
 /**
- * Abandons a job that will never succeed, such as a receipt for a teacher whose
- * address was wrong and who has since been given a printed copy.
- *
- * Deleting the job rather than marking it abandoned is deliberate: the order it
- * belongs to is the permanent record, and a queue is allowed to forget work
- * nobody wants done.
+ * Deletes a job that will never succeed. A hard delete is fine here: the order
+ * is the permanent record, and the job is only pending work.
  */
 export async function dismissReceiptJob(jobId: string): Promise<boolean> {
   await requireAdmin();

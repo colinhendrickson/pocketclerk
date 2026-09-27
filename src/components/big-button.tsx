@@ -1,26 +1,12 @@
 "use client";
 
 /**
- * BigButton — the only button students tap on a task screen.
+ * BigButton: the student task-screen button (DESIGN.md §4). At most one
+ * `primary` per screen. Minimum height is 60px; tiles use `rounded-box` so a
+ * large theme `--radius-field` cannot turn them into capsules.
  *
- * Implements the BigButton row of the DESIGN.md §4 primitive map: daisyUI `btn`
- * with `btn-primary` reserved for the single primary action per screen, plain
- * `btn bg-base-100 border-base-300` for secondary actions, and
- * `btn btn-outline btn-secondary` for Clock out. Height floor is the 60px touch
- * target from the global rules; tiles go to 110px so that a theme with a large
- * `--radius-field` cannot render them as capsules — tiles therefore take
- * `rounded-box` instead, which is exactly the "theme-driven" column of the map.
- *
- * Label sizes come from the type scale in DESIGN.md §2: 34px/800 for the
- * primary (26px below lg), 22px/800 for everything else. Labels are sentence
- * case; this file never upper-cases them and `globals.css` pins
- * `.btn { text-transform: none }`.
- *
- * This is a client entry point only because it owns an `onClick`. That also
- * means the `icon` prop — a `LucideIcon` component reference — has to be passed
- * from another client component; a server component cannot serialize a function
- * across the boundary. Screens that are otherwise server-rendered should wrap
- * their button group in a small client component.
+ * The `icon` prop is a component reference, so it must be passed from a client
+ * component; server-rendered screens should wrap their button group in one.
  */
 
 import type { LucideIcon } from "lucide-react";
@@ -29,13 +15,13 @@ export type BigButtonVariant = "primary" | "secondary" | "clockOut";
 export type BigButtonLayout = "list" | "tile";
 
 export interface BigButtonProps {
-  /** Sentence-case label. Student-facing copy, never a sentence fragment in caps. */
+  /** Sentence-case label. */
   children: React.ReactNode;
-  /** Optional Lucide glyph rendered to the left of the label (or above it in tile layout). */
+  /** Shown left of the label, or above it in tile layout. */
   icon?: LucideIcon;
-  /** Only one `primary` may exist per screen — that is the one-primary-action rule. */
+  /** Only one `primary` per screen. */
   variant?: BigButtonVariant;
-  /** `list` is the full-width row; `tile` is the 110px square used in the 2x2 secondary grid. */
+  /** `list` is a full-width row; `tile` is the 110px square for the 2x2 grid. */
   layout?: BigButtonLayout;
   onClick?: () => void;
   disabled?: boolean;
@@ -49,9 +35,7 @@ const VARIANT_CLASS: Record<BigButtonVariant, string> = {
   clockOut: "btn btn-outline btn-secondary",
 };
 
-// The primary label steps down to 26px below lg: at 34px, "Start classroom
-// order" wrapped to three lines on a phone, and "Go to payment" to two in the
-// tablet's 340px order column.
+// The primary label drops to 26px below lg so it fits narrow columns.
 const LABEL_CLASS: Record<BigButtonVariant, string> = {
   primary: "text-[26px] lg:text-[34px]",
   secondary: "text-[22px]",
@@ -73,8 +57,7 @@ export function BigButton({
   disabled,
   className,
 }: BigButtonProps) {
-  // Below md a tile is a full-width 64px row with its icon on the left, per
-  // DESIGN.md §3: a 2x2 grid of tall tiles does not fit a phone.
+  // Below md a tile renders as a full-width row (DESIGN.md §3).
   const layoutClass =
     layout === "tile"
       ? "justify-start gap-4 min-h-[64px] md:flex-col md:justify-center md:gap-2 md:min-h-[110px] rounded-box md:text-center"

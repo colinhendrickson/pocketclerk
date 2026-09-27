@@ -26,15 +26,8 @@ import { HelpPanel } from "../_help/help-panel";
 export const dynamic = "force-dynamic";
 
 /**
- * Every sale, one day at a time.
- *
- * A day is the unit the administrator thinks in, because the cart runs one
- * shift a day and the question is almost always "what happened on Tuesday".
- * Paging by day rather than by row count keeps that question answerable without
- * a filter builder.
- *
- * Line items are read from the snapshot columns, so this page shows what was
- * actually charged rather than what the menu says today.
+ * Orders, paged by day. Line items come from the snapshot columns, so this
+ * shows what was charged rather than current menu prices.
  */
 export default async function AdminOrdersPage({
   searchParams,
@@ -44,9 +37,7 @@ export default async function AdminOrdersPage({
   await requireAdmin();
   const params = await searchParams;
 
-  // A day is a calendar date at the cart, bounded by its local midnights. Not
-  // UTC midnight, which is 8 PM at the cart, and not midnight plus 24 hours,
-  // which is wrong on the two days a year that are 23 and 25 hours long.
+  // Bounded by local midnights: not UTC, and not +24h (wrong on DST days).
   const date = parseLocalDate(params.date) ?? today();
   const day = startOfLocalDay(date);
   const next = startOfLocalDay(addDays(date, 1));

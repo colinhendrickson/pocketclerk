@@ -1,14 +1,7 @@
 import { renderReceiptText, type Receipt } from "../renderer/receipt";
 import type { PrintResult, ReceiptPrinter } from "./index";
 
-/**
- * Prints to the console.
- *
- * The fallback when no hardware is attached, which is the normal state in
- * development and in CI. It exists so the whole order flow can be exercised
- * with zero configuration and zero secrets, and so a contributor can see
- * exactly what a teacher would receive.
- */
+/** Prints receipts to the console; the fallback when no printer is attached. */
 export class ConsolePrinter implements ReceiptPrinter {
   readonly name = "console";
   readonly runsOn = "server" as const;

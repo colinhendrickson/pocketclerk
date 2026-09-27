@@ -13,15 +13,10 @@ type Status = "unsupported" | "disconnected" | "connected" | "printing" | "error
 const POLL_MS = 8000;
 
 /**
- * Connects the printer and drains the print queue.
- *
- * Connecting has to be a deliberate tap because the browser only opens its
- * device chooser from a user gesture, so this is one action at the start of a
- * shift rather than something that can happen on its own. The rest is
- * automatic: once connected, queued receipts print as they appear.
- *
- * If no printer is connected the receipts simply wait. A sale is never blocked
- * on this, which is the entire point of the queue sitting between them.
+ * Connects the printer and drains the print queue. Connecting requires a tap
+ * because the browser's device chooser needs a user gesture; after that,
+ * queued receipts print automatically. Without a printer, jobs wait in the
+ * queue and sales are unaffected.
  */
 export function PrinterBar() {
   const printerRef = useRef<WebBluetoothPrinter | null>(null);
@@ -84,9 +79,8 @@ export function PrinterBar() {
     return (
       <div className="alert rounded-box border-base-300 bg-base-100 text-[18px] font-bold">
         <TriangleAlert size={28} aria-hidden="true" />
-        {/* Read by a student, so it names the fix and who does it, with no
-            link that would take them out of the cart. The steps are in the
-            admin guide "Setting up the receipt printer". */}
+        {/* Names the fix and who does it, with no link out of the cart. See
+            the admin guide "Setting up the receipt printer". */}
         <span>
           Receipts are saved. To print them, a teacher opens the cart in the
           Bluefy app on this iPad.

@@ -15,19 +15,14 @@ import { SetupChecklist } from "./setup-checklist";
 export const dynamic = "force-dynamic";
 
 /**
- * Admin landing page: what the cart still needs, what needs attention, what
- * happened today, and how to do anything.
- *
- * Deliberately not a wall of charts. Staff open this a few times a term, so it
- * answers their questions in order: is the cart ready, is anything wrong, how
- * did today go, and how do I…. The last is every guide, searchable, so a
- * question never has to go to whoever built this.
+ * Admin landing page: setup checklist, anything needing attention, today's
+ * totals, and the searchable guides.
  */
 export default async function AdminHomePage() {
   const admin = await requireAdmin();
 
-  // "Today" at the cart. The database's current_date is UTC, which rolls over
-  // at 8 PM there, so an evening look at the dashboard read zero sales.
+  // Local midnight, not the database's UTC current_date, which rolls over in
+  // the evening.
   const since = startOfLocalDay(today());
 
   const [stats, counts] = await Promise.all([getDashboardStats(since), getSetupCounts()]);

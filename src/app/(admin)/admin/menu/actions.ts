@@ -18,19 +18,12 @@ import { isUniqueViolation } from "@/lib/pg-errors";
 import { requireAdmin } from "../require-admin";
 
 /**
- * Server actions for the menu.
+ * Menu server actions. Each calls `requireAdmin()` first: a server action is its
+ * own POST endpoint and does not pass through the layout.
  *
- * `requireAdmin()` runs first in each one, because each is its own POST
- * endpoint and the layout that renders the page is not in the request path.
- *
- * Every price crossing this boundary is already integer cents: the forms call
- * `dollarsToCents` on what was typed, and these signatures accept nothing else.
- * The dollar figure exists only as the string in the input box.
- *
- * Editing a price never rewrites history. `order_items.unit_price_cents` is a
- * snapshot taken at the moment of sale, so yesterday's receipts still say what
- * was actually charged; a change here applies to the next cup sold and nothing
- * before it.
+ * Prices arrive as integer cents (the forms convert with `dollarsToCents`).
+ * Editing a price affects only future sales; `order_items.unit_price_cents`
+ * snapshots the price at sale time. Items are never deleted, only deactivated.
  */
 
 export type MenuMutationResult =
@@ -38,17 +31,11 @@ export type MenuMutationResult =
   | { ok: false; error: "invalid" | "not_found" | "duplicate" };
 
 /**
- * New rows go to the end of the list.
- *
- * `sort_order` is what the student screen orders the grid by, and the
- * administrator has no drag handle here. Appending means a new item shows up in
- * a predictable place instead of landing in the middle of a layout the students
- * have learned.
+ * Next `sort_order` for appending, so new entries do not reshuffle the
+ * student grid.
  */
 async function nextSortOrder(kind: MenuKind): Promise<number> {
-  // The two branches are spelled out rather than selecting from a
-  // `menuItems | addons` union. Drizzle's builder types are per-table, so the
-  // union collapses to something unusable and would have to be cast away.
+  // Separate branches because Drizzle's per-table builder types do not union.
   const rows =
     kind === "item"
       ? await db
@@ -71,14 +58,9 @@ export async function createMenuEntry(input: unknown): Promise<MenuMutationResul
   const parsed = parseNewMenuEntry(input);
   if (!parsed) return { ok: false, error: "invalid" };
 
-  // A menu with two rows reading "Hot chocolate" is a menu the student has to
-  // guess at, so the same name is refused within its own list. The two lists
-  // are separate: "Whipped cream" can reasonably be both a treat you buy and an
-  // extra you add, and each has its own partial unique index.
-  //
-  // The index is the authority. Checking first and inserting second leaves a
-  // gap two requests can both pass, so the insert is attempted and its refusal
-  // is translated.
+  // Names are unique among active rows within each list (a partial unique
+  // index per table). Insert and translate the violation rather than
+  // check-then-insert, which would race.
   const sortOrder = await nextSortOrder(parsed.kind);
 
   try {
@@ -90,7 +72,7 @@ export async function createMenuEntry(input: unknown): Promise<MenuMutationResul
         sortOrder,
       });
     } else {
-      // Add-ons have no `is_special`; the flag is dropped rather than faked.
+      // Add-ons have no `is_special` column.
       await db.insert(addons).values({
         name: parsed.name,
         priceCents: parsed.priceCents,
@@ -132,9 +114,8 @@ export async function updateMenuEntry(input: unknown): Promise<MenuMutationResul
 }
 
 /**
- * Switching an item off is how it leaves the menu. There is no delete: past
- * orders reference the row, and a free add-on that was on the cart last spring
- * is part of how last spring's sales are explained.
+ * Soft-deletes or restores an entry. There is no hard delete: past orders
+ * reference these rows.
  */
 export async function setMenuEntryActive(
   input: unknown,
@@ -164,8 +145,8 @@ export async function setMenuEntryActive(
 }
 
 /**
- * The picture beside a name at the cart, or none. Chosen from the fixed set in
- * src/lib/menu-icons.ts; the database refuses anything else as well.
+ * Sets or clears an entry's picture, from the fixed set in src/lib/menu-icons.ts
+ * (also enforced by the database). See docs/adr/0015-menu-pictures.md.
  */
 export async function setMenuEntryIcon(input: unknown): Promise<MenuMutationResult> {
   await requireAdmin();
@@ -192,14 +173,7 @@ export async function setMenuEntryIcon(input: unknown): Promise<MenuMutationResu
   return { ok: true };
 }
 
-/**
- * The rotating special.
- *
- * Deliberately not exclusive: the schema allows several items to be flagged at
- * once, and a week with two treats is a real thing. Enforcing "only one" here
- * would be a rule the database does not hold, which is exactly the kind of
- * invariant that drifts once anything else writes the column.
- */
+/** Sets or clears the special. At most one item can be the special. */
 export async function setMenuItemSpecial(
   input: unknown,
 ): Promise<MenuMutationResult> {
@@ -207,14 +181,11 @@ export async function setMenuItemSpecial(
 
   const parsed = parseMenuFlag(input);
   if (!parsed) return { ok: false, error: "invalid" };
-  // Add-ons have no such column, so a payload claiming one is malformed rather
-  // than a no-op worth pretending succeeded.
+  // Add-ons cannot be the special.
   if (parsed.kind !== "item") return { ok: false, error: "invalid" };
 
-  // "Today's special treat" is singular, and the database now enforces that
-  // with a unique index. Choosing a new one therefore means replacing the old
-  // one rather than reporting a conflict: clearing and setting happen in one
-  // transaction so the pair is never briefly empty or briefly two.
+  // A unique index allows only one special, so choosing a new one replaces the
+  // old one within a single transaction.
   const updated = await db.transaction(async (tx) => {
     if (parsed.value) {
       await tx

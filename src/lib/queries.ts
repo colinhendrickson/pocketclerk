@@ -11,13 +11,7 @@ import {
   teacherProfiles,
 } from "@/db/schema";
 
-/**
- * Read helpers for the student side.
- *
- * These live outside `src/app` so they are importable and testable without the
- * framework, and so route files stay thin: a page's job is to fetch and render,
- * not to know how a shift is looked up.
- */
+/** Read helpers for the student side. */
 
 export async function listActiveStudents() {
   return db
@@ -39,9 +33,8 @@ export interface ActiveShift {
 }
 
 /**
- * Resolves the shift id from the session cookie into a shift that is still
- * open. Returns null for an unknown or already closed shift, so a stale cookie
- * sends the student back to sign-in instead of into a broken screen.
+ * The open shift for a session's shift id, or null if unknown or closed (so a
+ * stale cookie leads back to sign-in).
  */
 export async function getActiveShift(shiftId: string): Promise<ActiveShift | null> {
   const row = await db
@@ -59,7 +52,7 @@ export async function getActiveShift(shiftId: string): Promise<ActiveShift | nul
   return row[0] ?? null;
 }
 
-/** Totals for the dashboard stats. One query, computed in the database. */
+/** Order count and sales for the dashboard stats. */
 export async function getShiftTotals(shiftId: string) {
   const row = await db
     .select({
@@ -136,12 +129,8 @@ export interface ShiftSummary {
 }
 
 /**
- * A finished shift, looked up by the session cookie after clock-out.
- *
- * The cookie deliberately outlives the shift by one screen so the student can
- * see what they earned. `getActiveShift` returns null for a closed shift, which
- * is what every other screen wants; this is the one place that wants the
- * opposite.
+ * A closed shift, for the post-clock-out summary screen. The session cookie
+ * outlives the shift by that one screen; everywhere else uses `getActiveShift`.
  */
 export async function getFinishedShift(shiftId: string): Promise<ShiftSummary | null> {
   const rows = await db

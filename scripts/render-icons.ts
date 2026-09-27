@@ -1,18 +1,14 @@
 /**
- * Renders every icon file from the one drawing of the mark in src/lib/logo.ts.
+ * Renders all icon files from src/lib/logo.ts using Playwright's Chromium.
+ * Run after changing the logo and commit the output:
  *
  *   pnpm exec tsx scripts/render-icons.ts
  *
- * Run it after changing the mark, and commit what it writes:
- *
- *   src/app/icon.svg        the favicon, for every browser that takes SVG
- *   src/app/favicon.ico     16, 32 and 48px, for everything else
- *   src/app/apple-icon.png  180px, square: iOS rounds home-screen icons itself
- *   public/icon-192.png     the web app manifest's icons, for "Add to Home
- *   public/icon-512.png     Screen" on the cart's iPad
- *
- * Next.js serves the src/app files by name and writes the <link> tags itself.
- * Rendering uses the Chromium Playwright already installs for the tests.
+ *   src/app/icon.svg        SVG favicon
+ *   src/app/favicon.ico     16, 32, 48px fallback
+ *   src/app/apple-icon.png  180px full-bleed (iOS rounds the corners)
+ *   public/icon-192.png     web app manifest icons
+ *   public/icon-512.png
  */
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -38,7 +34,7 @@ async function render(svg: string, size: number): Promise<Buffer> {
   }
 }
 
-/** An .ico holding PNG images, which every current browser reads. */
+/** Builds a PNG-compressed .ico. */
 function ico(images: { size: number; png: Buffer }[]): Buffer {
   const header = Buffer.alloc(6);
   header.writeUInt16LE(0, 0); // reserved

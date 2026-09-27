@@ -6,20 +6,16 @@ import { MAX_ATTEMPTS } from "@/lib/receipt-jobs";
 import type { AdminRoute, ExternalLink, GlossaryEntry, Guide, GuideTopic, PageHelp } from "./types";
 
 /**
- * Everything the admin side says to explain itself.
- *
- * Written for someone who opens this a few times a term and has never been
- * shown it: plain words, one action per step, buttons named exactly as they
- * appear on screen. Numbers that are rules elsewhere in the code (the PIN
- * lockout, how long a sign-in code lasts) are imported, not retyped, so the
- * help cannot drift from what the app does.
+ * Admin help content: plain words, one action per step, buttons named as they
+ * appear. Numbers that are rules elsewhere (PIN lockout, code lifetime) are
+ * imported so the help cannot drift from the app.
+ * See docs/adr/0012-help-in-code-and-tested-accessibility.md.
  */
 
 /**
- * Safari on iPad cannot reach Bluetooth devices, and neither can a home-screen
- * web app, which runs on Safari. Bluefy is a free iPad browser that can, so it
- * is how the cart reaches its receipt printer. See the Web Bluetooth printer
- * in src/providers/printer/web-bluetooth.ts.
+ * iPad Safari has no Web Bluetooth; Bluefy is a free iPad browser that does,
+ * so the cart uses it to reach the receipt printer.
+ * See docs/adr/0009-receipts-over-web-bluetooth.md.
  */
 export const BLUEFY: ExternalLink = {
   label: "Get Bluefy on the App Store",
@@ -483,11 +479,7 @@ export function guideById(id: string): Guide | undefined {
   return GUIDES.find((guide) => guide.id === id);
 }
 
-/**
- * The words for each setup checklist step. Whether a step is done comes from
- * the data (src/lib/setup.ts); what it asks and why lives here with the rest
- * of the help.
- */
+/** Text for each setup checklist step; completion comes from src/lib/setup.ts. */
 export const SETUP_STEP_TEXT: Record<
   "students" | "teachers" | "menu" | "ipad" | "first-sale" | "admins",
   {

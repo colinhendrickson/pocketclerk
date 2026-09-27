@@ -13,21 +13,15 @@ export interface LiveHoursProps {
 }
 
 /**
- * Hours ticking up during a shift.
- *
- * The clock-in instant is authoritative and comes from the database; only the
- * *elapsed* figure is computed in the browser, so a tablet with a wrong clock
- * can make this ticker look odd but can never inflate the hours that get paid.
- * Clock-out recomputes everything on the server from the two stored timestamps.
- *
- * Three stats is the student-screen ceiling from DESIGN.md, which is why the
- * order count and running sales live on the orders screen instead of here.
+ * Hours ticking up during a shift. Display only: elapsed time uses the device
+ * clock, but credited hours are recomputed on the server at clock-out from
+ * stored timestamps.
  */
 export function LiveHours({ clockInIso }: LiveHoursProps) {
   const [elapsed, setElapsed] = useState(() => hundredthsSince(clockInIso));
 
   useEffect(() => {
-    // Half a minute is finer than the display resolution and costs nothing.
+    // Finer than the display resolution (hundredths of an hour).
     const id = setInterval(() => setElapsed(hundredthsSince(clockInIso)), 30_000);
     return () => clearInterval(id);
   }, [clockInIso]);

@@ -1,11 +1,6 @@
 /**
- * The shape of the admin side's help.
- *
- * Every help surface (the panel on each page, the guides on admin home, the
- * setup checklist and the tour) reads from one module of these, so the same
- * task is never described two ways. tests/help.test.ts checks the content
- * against the app itself: every admin page has help, every guide it points to
- * exists, every page a guide points to exists.
+ * Types for admin help. Every help surface reads from one module so a task is
+ * described once; tests/help.test.ts checks cross-references against the app.
  */
 
 /** Every page of the admin side, by URL. */
@@ -51,11 +46,10 @@ export interface Guide {
   title: string;
   /** Numbered steps, each one action, naming buttons exactly as they appear. */
   steps: string[];
-  /** Anything worth knowing that is not a step. */
   note?: string;
   /** The page where the steps happen, offered as a button. */
   page?: AdminRoute;
-  /** Somewhere outside the app the steps need, such as an App Store page. */
+  /** External link the steps need, such as an App Store page. */
   link?: ExternalLink;
 }
 
@@ -66,9 +60,9 @@ export interface ExternalLink {
 }
 
 export interface PageHelp {
-  /** One or two sentences: what this page is for and when you would come here. */
+  /** One or two sentences on what the page is for. */
   purpose: string;
-  /** Guide ids for the tasks people come to this page to do, most common first. */
+  /** Guide ids for this page's tasks, most common first. */
   tasks: string[];
 }
 

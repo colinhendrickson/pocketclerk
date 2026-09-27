@@ -18,12 +18,9 @@ function drawerToggle(): HTMLInputElement | null {
 }
 
 /**
- * Opens the admin menu below xl.
- *
- * A real button, not the `<label>` daisyUI's drawer examples use: a label is
- * not reachable by keyboard and cannot carry a name or an open state. This
- * drives the drawer's checkbox, reports `aria-expanded`, and moves focus into
- * the menu so a keyboard or screen reader user lands where the links are.
+ * Opens the admin menu below xl. A real button rather than daisyUI's `<label>`
+ * so it is keyboard-reachable and can report `aria-expanded`; it also moves
+ * focus into the menu.
  */
 export function AdminMenuButton() {
   const [open, setOpen] = useState(false);
@@ -44,10 +41,7 @@ export function AdminMenuButton() {
     focusFirstLink();
   }
 
-  /**
-   * The drawer fades in, and a link cannot take focus until it is visible, so
-   * this retries each frame for up to half a second.
-   */
+  /** Links cannot take focus until the drawer has faded in; retry for 500ms. */
   function focusFirstLink(started = performance.now()) {
     const link = document.querySelector<HTMLElement>(`#${NAV_ID} a`);
     link?.focus();
@@ -84,12 +78,9 @@ const LINKS = [
 ] as const;
 
 /**
- * The admin sidebar's contents.
- *
- * A client component for two reasons: it marks the page you are on, which needs
- * the current path, and it closes the drawer after a link is tapped. The layout
- * survives client-side navigation, so on a phone the drawer would otherwise stay
- * open over the page it just navigated to.
+ * The admin sidebar. A client component so it can mark the current page and
+ * close the drawer on navigation (the layout persists across client-side
+ * navigation, so the drawer would otherwise stay open).
  */
 export function AdminNav() {
   const pathname = usePathname();

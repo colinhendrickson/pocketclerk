@@ -1,26 +1,14 @@
 import { formatSignInCode } from "@/lib/sign-in-code";
 
 /**
- * The sign-in email, as a document.
- *
- * Same split as the receipt: this module decides what the message says and
- * looks like, and the email provider only decides how it travels. Both a plain
- * text body and an HTML body are produced, because a mail client that cannot
- * render HTML must still show a usable code.
- *
- * The HTML is built to be recognized at a glance in a crowded inbox. The first
- * version was plain text from a bare address, and the person receiving it could
- * not tell it apart from any other automated mail. The cart's name heads the
- * message, the code is the largest thing in it, and the preview line that mail
- * clients show beside the subject carries the code too.
- *
- * Colors are the committed `pocketclerk` theme, written out as literals because
- * mail clients do not load stylesheets. A deployment's own theme is never read
- * here: the white-label rule keeps a real school's colors out of the source.
+ * The admin sign-in email, rendered as plain text and HTML (the text body keeps
+ * the code usable in clients without HTML). The code appears in the subject,
+ * the preview line and as the largest element in the body. Colors are literal
+ * copies of the committed `pocketclerk` theme, since mail clients do not load
+ * stylesheets; a deployment's own theme is never read here.
  */
 
 export interface SignInEmail {
-  /** The administrator's name, as stored. */
   name: string;
   code: string;
   link: string;
@@ -28,7 +16,7 @@ export interface SignInEmail {
   programName: string;
   /** Absolute URL of the deployment's logo, when one is configured. */
   logoUrl: string | null;
-  /** How long the code lives, as shown to the reader. */
+  /** Code lifetime, as shown to the reader. */
   expiresMinutes: number;
 }
 
@@ -54,13 +42,8 @@ const FONT =
   "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
 /**
- * Escapes text for an HTML body or attribute.
- *
- * Every value that reaches the HTML comes from configuration or the database,
- * and a name like `O'Brien & Sons` is ordinary data, not markup. Without this a
- * name containing `<` would break the layout, and one chosen maliciously by
- * whoever can edit names could inject content into mail sent under the cart's
- * name.
+ * Escapes text for an HTML body or attribute. All interpolated values come from
+ * configuration or the database and must not be able to inject markup.
  */
 export function escapeHtml(value: string): string {
   return value
@@ -74,8 +57,7 @@ export function escapeHtml(value: string): string {
 export function renderSignInEmail(email: SignInEmail): RenderedEmail {
   const code = formatSignInCode(email.code);
 
-  // Code first, so a phone's lock screen shows it without the mail being
-  // opened at all. That is the whole point of it on a shared iPad.
+  // Code first, so it shows on a lock screen without opening the mail.
   const subject = `${code} is your ${email.cartName} sign-in code`;
 
   const text = [
@@ -115,9 +97,8 @@ function renderHtml(email: SignInEmail, code: string): string {
     ? `<img src="${escapeHtml(email.logoUrl)}" alt="${cart}" height="48" style="display:block;height:48px;width:auto;border:0;margin:0 auto 12px;">`
     : "";
 
-  // Hidden preview text. Clients show this beside the subject in the inbox
-  // list, which is where recognising the mail actually happens. The trailing
-  // spacers stop the client padding the preview with the start of the body.
+  // Hidden inbox preview text. The trailing spacers stop clients filling the
+  // preview with the start of the body.
   const preheader = `Your code is ${code}. It expires in ${email.expiresMinutes} minutes.`;
   const spacer = "&#847;&zwnj;&nbsp;".repeat(40);
 

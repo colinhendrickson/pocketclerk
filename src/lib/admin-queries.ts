@@ -13,16 +13,8 @@ import {
 import { isMenuIconKey, type MenuIconKey } from "@/lib/menu-icons";
 
 /**
- * Read helpers for the administrator's screens.
- *
- * Separate from `queries.ts`, which serves the cart: the two audiences want
- * opposite things from the same tables. The student side reads only `active`
- * rows and only the current shift; the admin side reads everything, including
- * what has been deactivated, because managing the list is the whole job.
- *
- * Every total here is computed in Postgres rather than by summing rows in
- * JavaScript. A student with three years of shifts is a few hundred rows that
- * would otherwise cross the wire to produce one number.
+ * Read helpers for the admin screens. Unlike the cart's `queries.ts`, these
+ * include deactivated rows. Totals are aggregated in Postgres, not in JS.
  */
 
 /* -------------------------------------------------------------------------- */
@@ -40,12 +32,8 @@ export interface StudentRow {
 }
 
 /**
- * Every student with their lifetime totals.
- *
- * A LEFT JOIN, not an inner one: a student added this morning has no shifts and
- * must still appear, with zeros. `hours_hundredths` and `reward_tickets` are
- * null while a shift is open, so both sums coalesce — an open shift contributes
- * nothing until it is closed and its values are snapshotted.
+ * Every student with lifetime totals. LEFT JOIN keeps students with no shifts;
+ * open shifts have null hours/tickets and contribute nothing until closed.
  */
 export async function listStudentsWithTotals(): Promise<StudentRow[]> {
   return db
@@ -75,15 +63,11 @@ export interface DashboardStats {
 }
 
 /**
- * The four numbers on the admin landing page.
+ * Stats for the admin landing page.
  *
- * `since` is sent as an ISO string with an explicit cast, never as a `Date`.
- * Drizzle's postgres.js adapter swaps the driver's timestamp serializer for a
- * pass-through, trusting its column mappers to have turned every Date into a
- * string first. A raw `sql` template has no column mapper, so a bare Date went
- * straight to a serializer that only accepts strings, and the dashboard threw
- * for every administrator on every visit. It was never caught because nothing
- * tested this query; tests/admin-queries.test.ts does now.
+ * `since` is passed as an ISO string with an explicit cast, never a `Date`:
+ * Drizzle's postgres.js adapter replaces the timestamp serializer with a
+ * pass-through, and raw `sql` templates have no column mapper to convert Dates.
  */
 export async function getDashboardStats(since: Date): Promise<DashboardStats> {
   const from = since.toISOString();
@@ -134,18 +118,9 @@ export interface TeacherRow {
 const RECENT_ORDERS_PER_TEACHER = 10;
 
 /**
- * Every teacher with their note list, order count, lifetime spend and last ten
- * orders.
- *
- * The recent orders are fetched in one windowed query for all teachers rather
- * than one query per expanded row. The alternative — loading a teacher's orders
- * when their row is opened — needs a round trip, a loading state and an error
- * state for a payload that is at most ten rows per teacher; a school has tens
- * of teachers, not thousands, so the whole set is cheaper than the machinery
- * for fetching part of it.
- *
- * Note count is `array_length` rather than a join: the notes live in a text
- * array on the profile, so the count is already on the row being read.
+ * Every teacher with notes, order count, lifetime spend, and recent orders.
+ * Recent orders for all teachers come from one windowed query; the set is small
+ * enough that eager loading beats fetching per row on expand.
  */
 export async function listTeachersWithTotals(): Promise<TeacherRow[]> {
   const profiles = await db
@@ -201,8 +176,7 @@ export async function listTeachersWithTotals(): Promise<TeacherRow[]> {
       id: row.id,
       teacherId: row.teacher_id,
       totalCents: row.total_cents,
-      // postgres.js hands back a Date for timestamptz, but the raw-SQL path is
-      // untyped, so this is normalized here rather than trusted downstream.
+      // Raw SQL results are untyped; normalize to a Date.
       createdAt: new Date(row.created_at),
     });
     byTeacher.set(row.teacher_id, list);
@@ -236,11 +210,8 @@ export interface AddonRow {
 }
 
 /**
- * Both menu lists, including deactivated rows.
- *
- * Ordered so the list reads the way the cart does — `sort_order` first, name as
- * the tiebreak — rather than putting inactive rows last. An administrator
- * looking for the item she switched off yesterday finds it where she left it.
+ * Menu items including deactivated rows, in cart order (`sort_order`, then
+ * name) so inactive items stay in place rather than sinking to the bottom.
  */
 export async function listMenuForAdmin(): Promise<MenuItemRow[]> {
   return db

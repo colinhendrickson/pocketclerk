@@ -17,6 +17,7 @@ import {
 import { isLockedOut, lockoutMinutesRemaining, verifyPin } from "@/lib/auth";
 import { changeCents, hoursHundredthsBetween, orderTotalCents, rewardTickets } from "@/lib/money";
 import { deliverQueuedEmails } from "@/lib/deliver-receipts";
+import { isUniqueViolation } from "@/lib/pg-errors";
 import { acceptCorrectPin, recordFailedPin } from "@/lib/pin-lockout";
 import { getActiveShift } from "@/lib/queries";
 import { parseClockIn, parseCompleteOrder, parseNewTeacher } from "@/lib/validate";
@@ -24,28 +25,11 @@ import { clearShiftSession, getShiftSession, setShiftSession } from "@/lib/sessi
 import { insertTeacher } from "@/lib/teachers";
 
 /**
- * Server actions for the student flow.
- *
- * Every action re-derives money from the database rather than trusting numbers
- * that arrived from the browser, and every action that touches a shift checks
- * the signed session cookie first. Students have no database identity, so this
- * layer is the enforcement point; see the trust-boundary note in
- * drizzle/0001_constraints_and_rls.sql.
+ * Server actions for the student flow. Students have no database identity, so
+ * this layer is the enforcement point: money is re-derived from the database,
+ * never trusted from the browser, and shift actions check the signed session
+ * cookie. See docs/adr/0003-rls-and-the-trust-boundary.md.
  */
-
-/**
- * Postgres unique-violation (SQLSTATE 23505). A double clock-in surfaces here,
- * not as a bug.
- *
- * The code is read from `cause`, not from the error itself: Drizzle wraps
- * driver errors in its own "Failed query" error and the SQLSTATE lives on the
- * wrapped original. Checking the outer error silently never matches, which
- * turns the resume path into a 500 in front of a student.
- */
-function isUniqueViolation(error: unknown): boolean {
-  const cause = (error as { cause?: { code?: string } } | null)?.cause;
-  return cause?.code === "23505";
-}
 
 /* -------------------------------------------------------------------------- */
 /* Clock in                                                                   */
@@ -77,9 +61,8 @@ export async function clockIn(input: unknown): Promise<ClockInResult> {
   }
 
   if (!(await verifyPin(student.pinHash, parsed.pin))) {
-    // Counted in the database, in one statement. See src/lib/pin-lockout.ts
-    // for why reading the count here and writing it back let parallel guesses
-    // bypass the lockout entirely.
+    // Counted atomically in the database so parallel guesses cannot bypass the
+    // lockout. See src/lib/pin-lockout.ts.
     const failed = await recordFailedPin(student.id);
     return failed.locked
       ? {
@@ -90,9 +73,8 @@ export async function clockIn(input: unknown): Promise<ClockInResult> {
       : { ok: false, error: "wrong_pin", attemptsRemaining: failed.attemptsRemaining };
   }
 
-  // The lock is checked again as the PIN is accepted, not only at the top: a
-  // correct guess can be in flight while a burst of wrong ones locks the
-  // student, and the lock has to win.
+  // Re-check the lock atomically on acceptance: a correct guess racing a burst
+  // of wrong ones must not win over the lockout.
   if (!(await acceptCorrectPin(student.id))) {
     const [current] = await db
       .select({ lockedUntil: students.lockedUntil })
@@ -113,9 +95,8 @@ export async function clockIn(input: unknown): Promise<ClockInResult> {
     await setShiftSession(shift.id);
     return { ok: true, resumed: false };
   } catch (error) {
-    // The partial unique index refused a second open shift. That is not a
-    // failure: the student double-tapped, or came back to a device that lost
-    // its cookie. Resume the shift they already have.
+    // The one-open-shift partial unique index refused the insert (double tap or
+    // lost cookie). Resume the existing open shift.
     if (isUniqueViolation(error)) {
       const open = await db.query.shifts.findFirst({
         where: and(eq(shifts.studentId, student.id), isNull(shifts.clockOut)),
@@ -138,13 +119,9 @@ export type CompleteOrderResult =
   | { ok: false; error: "no_shift" | "invalid" | "insufficient" | "unknown_item" };
 
 /**
- * Writes the order, its lines, its add-ons and its receipt jobs in a single
- * transaction. Either the whole sale exists or none of it does.
- *
- * Prices come from the database, never from the request, and the total and
- * change are recomputed here. A client that posts its own arithmetic is a
- * client that can be wrong or lying; the server is the only place the money is
- * decided.
+ * Writes the order, lines, add-ons, and receipt jobs in one transaction.
+ * Prices come from the database and the total and change are recomputed here;
+ * client-supplied arithmetic is never trusted.
  */
 export async function completeOrder(input: unknown): Promise<CompleteOrderResult> {
   await assertPairedDevice();
@@ -228,15 +205,12 @@ export async function completeOrder(input: unknown): Promise<CompleteOrderResult
       }
     }
 
-    // Queued in the same transaction as the sale. Delivery is somebody else's
-    // problem: the tablet claims print jobs, the server claims email jobs, and
-    // a dead printer or dropped WiFi delays a receipt without ever costing an
-    // order.
+    // Receipts are queued with the sale and delivered asynchronously, so a
+    // printer or network failure never blocks an order. See
+    // docs/adr/0002-receipt-job-queue.md.
     await tx.insert(receiptJobs).values({ orderId: order.id, channel: "print" });
 
-    // An email job only exists if there is somewhere to send it. The absence of
-    // a row is how "this teacher has no email" is represented, rather than a
-    // job that is guaranteed to fail.
+    // No email job for a teacher without an email address.
     const teacher = await tx.query.persons.findFirst({
       where: (p, { eq: equals }) => equals(p.id, teacherId),
       columns: { email: true },
@@ -248,21 +222,15 @@ export async function completeOrder(input: unknown): Promise<CompleteOrderResult
     return order.id;
   });
 
-  // Deliver the emailed receipt once the response has already reached the
-  // student. The sale is committed and the screen has moved on, so a slow mail
-  // provider cannot make the cart feel slow, and a failure here leaves the job
-  // queued for the scheduled sweep rather than losing it.
-  //
-  // This is what makes the queue work on a free Vercel plan, where a cron job
-  // may only run once a day: without it a teacher would wait until tomorrow.
+  // Send email receipts after the response so a slow provider never delays the
+  // cart. Failures leave jobs queued for the daily cron sweep, which on the free
+  // Vercel plan is otherwise the only delivery path.
   after(async () => {
     try {
       await deliverQueuedEmails();
     } catch (error) {
-      // A failure on one job is recorded against that job's row. A failure
-      // before any job is touched, such as claiming the batch on a dead
-      // connection, has no row to land on, so without this it left no trace
-      // anywhere. The receipt still waits in the queue for the nightly sweep.
+      // Per-job failures are recorded on the job row; this logs failures that
+      // happen before any job is claimed.
       console.error(
         `[receipts] post-order delivery failed: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -284,10 +252,8 @@ export type ClockOutResult =
   | { ok: false; error: "no_shift" };
 
 /**
- * Closes the shift and snapshots its derived values.
- *
- * Hours come from the two database timestamps, never from the tablet's clock:
- * a device with a wrong date must not be able to award itself a longer shift.
+ * Closes the shift and snapshots hours and tickets. Hours are computed from
+ * server timestamps, never the device clock.
  */
 export async function clockOut(): Promise<ClockOutResult> {
   await assertPairedDevice();
@@ -306,10 +272,7 @@ export async function clockOut(): Promise<ClockOutResult> {
     .set({ clockOut: now, hoursHundredths, rewardTickets: tickets })
     .where(eq(shifts.id, shift.id));
 
-  // The cookie is deliberately left in place. Clearing it here would make the
-  // next render of this page find no shift and bounce the student to sign-in
-  // before they ever saw what they earned. `finishShift` clears it when they
-  // tap through.
+  // Keep the session cookie so the summary can render; `finishShift` clears it.
   return { ok: true, hoursHundredths, tickets };
 }
 
@@ -328,16 +291,9 @@ export type CreateTeacherResult =
   | { ok: false; error: "no_shift" | "invalid" | "duplicate" };
 
 /**
- * Adds a teacher mid-order.
- *
- * This is the one place a student types free text, and it is here because the
- * client's specification asks for it: a cart that visits a classroom whose
- * teacher is not on the list has to be able to serve them rather than stop.
- * Everything else in the student flow is taps.
- *
- * The email is optional. Without one the teacher simply gets no emailed
- * receipt, which is represented by the absence of an email job rather than by a
- * job that is guaranteed to fail.
+ * Adds a teacher mid-order, so the cart can serve a classroom not yet on the
+ * list. This is the only free-text entry in the student flow. Email is
+ * optional; without one no email receipt job is created.
  */
 export async function createTeacher(input: unknown): Promise<CreateTeacherResult> {
   await assertPairedDevice();

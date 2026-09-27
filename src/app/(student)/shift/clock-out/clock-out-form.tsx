@@ -25,15 +25,9 @@ interface Summary {
 }
 
 /**
- * The end-of-shift checklist, then clocking out.
- *
- * The checklist is a gate rather than a suggestion: the clock-out button stays
- * disabled until every task is ticked. That is the client's specification and
- * it is also the lesson, which is that a shift ends when the work is finished
- * rather than when the clock says so.
- *
- * Each tick saves immediately, so a student who gets interrupted halfway
- * through comes back to the boxes they already checked.
+ * The end-of-shift checklist, then clocking out. Clock out stays disabled until
+ * every task is checked. Each check saves immediately so progress survives
+ * interruptions.
  */
 export function ClockOutForm({
   studentName,

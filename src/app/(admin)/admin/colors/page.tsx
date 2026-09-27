@@ -7,10 +7,8 @@ import { ColorPicker } from "./color-picker";
 export const dynamic = "force-dynamic";
 
 /**
- * The site's main color, chosen by staff.
- *
- * Stored in the database rather than in code, so a school's colors never
- * enter git and changing them needs no developer.
+ * The site's main color, chosen by staff and stored in the database so school
+ * colors never enter the repo. See docs/adr/0011-staff-chosen-main-color.md.
  */
 export default async function AdminColorsPage() {
   await requireAdmin();

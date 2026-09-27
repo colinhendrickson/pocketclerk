@@ -10,11 +10,8 @@ export interface HelpPanelProps {
 }
 
 /**
- * "About this page": what the page is for, and the tasks people come to it
- * for, each opening into its steps right here, without leaving the page.
- *
- * Every admin page renders one under its heading; tests/help.test.ts fails if
- * a page does not.
+ * "About this page" panel: the page's purpose and its task guides. Every admin
+ * page must render one (enforced by tests/help.test.ts).
  */
 export function HelpPanel({ route }: HelpPanelProps) {
   const help = PAGE_HELP[route];

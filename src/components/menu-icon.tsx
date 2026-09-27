@@ -1,10 +1,7 @@
 /**
- * MenuIcon — the picture staff chose for a menu item or add-on.
- *
- * Decorative (`aria-hidden`): the name beside it is the label, and a screen
- * reader saying "coffee mug, Coffee" helps nobody. Line icons from the same
- * set as the rest of the app, in the current text color, so they sit in the
- * design rather than on top of it. See src/lib/menu-icons.ts for the set.
+ * MenuIcon: the staff-chosen icon for a menu item or add-on. Decorative; the
+ * adjacent name is the label. See src/lib/menu-icons.ts and
+ * docs/adr/0015-menu-pictures.md.
  */
 
 import {
@@ -33,10 +30,7 @@ import {
 
 import type { MenuIconKey } from "@/lib/menu-icons";
 
-/**
- * The coffee mug with a D on it, for decaf. Drawn from Lucide's own mug so the
- * line weight and corners match; the D sits inside the cup.
- */
+/** Lucide's coffee mug with a "D" inside, for decaf. */
 const Decaf = createLucideIcon("decaf", [
   ["path", { d: "M10 2v2", key: "steam-1" }],
   ["path", { d: "M14 2v2", key: "steam-2" }],

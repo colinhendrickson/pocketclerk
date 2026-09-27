@@ -1,22 +1,14 @@
 /**
- * The deployment's main color: parsing it, and refusing one that would make
- * text hard to read.
- *
- * Pure functions, no database or React, so the rule is tested on its own. The
- * rule is WCAG 2.2 AA for normal text, 4.5:1, applied both ways the main
- * color is used: as the color of text and outlines on the page's light
- * backgrounds, and as the background of buttons, whose text is picked here to
- * be whichever of white or near-black reads better.
+ * Parsing and contrast-checking the staff-chosen main color. The color must
+ * meet WCAG AA (4.5:1) both as text on the theme backgrounds and as a button
+ * background with the better of white or near-black text. Pure functions.
+ * See docs/adr/0011-staff-chosen-main-color.md.
  */
 
 /** WCAG AA for normal-size text. */
 export const MIN_CONTRAST = 4.5;
 
-/**
- * The light backgrounds the main color sits on: the pocketclerk theme's
- * base-100 (cards) and base-200 (the page). tests/colors.test.ts checks these
- * match src/app/globals.css.
- */
+/** Theme base-100 and base-200. Must match src/app/globals.css (tested). */
 export const THEME_BACKGROUNDS = ["#fffcf7", "#f5f0e8"] as const;
 
 /** Text on a main-color button: white, or the theme's near-black. */
@@ -25,10 +17,7 @@ export const BUTTON_TEXT_OPTIONS = ["#ffffff", "#1c2624"] as const;
 /** The theme's own main color, restored by "Back to the original". */
 export const DEFAULT_PRIMARY = "#0b6e5f";
 
-/**
- * Ready-made blues, each already passing every check here, so choosing one
- * can never fail. Named for people, not for hex codes.
- */
+/** Presets; each passes `checkPrimary`. */
 export const PRESET_COLORS = [
   { name: "Navy", hex: "#1e3a8a" },
   { name: "Royal blue", hex: "#1d4ed8" },
@@ -38,9 +27,8 @@ export const PRESET_COLORS = [
 ] as const;
 
 /**
- * "#1D4ED8", "1d4ed8" or "#14d" to "#1d4ed8"; anything else to null. The
- * stored form is always lower-case with six digits, which is also what the
- * database's CHECK constraint accepts.
+ * Normalizes 3- or 6-digit hex (with or without `#`) to lowercase `#rrggbb`,
+ * the form the database CHECK constraint accepts; otherwise null.
  */
 export function normalizeHex(input: unknown): string | null {
   if (typeof input !== "string") return null;
@@ -73,12 +61,11 @@ export function contrastRatio(a: string, b: string): number {
 
 export interface ColorCheck {
   ok: boolean;
-  /** The weaker of its two readings against the page's light backgrounds. */
+  /** Minimum contrast against the theme backgrounds. */
   onBackground: number;
-  /** The button text color chosen for it, and how well that reads. */
   buttonText: string;
   onButton: number;
-  /** When it fails: the nearest darker shade that passes. */
+  /** On failure, the nearest darker shade that passes. */
   suggestion: string | null;
 }
 
@@ -102,7 +89,7 @@ function darken(hex: string, step: number): string {
     .join("")}`;
 }
 
-/** Whether a main color keeps every text readable, and a fix if it does not. */
+/** Checks a main color's contrast and suggests a darker fix if it fails. */
 export function checkPrimary(hex: string): ColorCheck {
   const { onBackground, buttonText, onButton } = measure(hex);
   const ok = onBackground >= MIN_CONTRAST && onButton >= MIN_CONTRAST;

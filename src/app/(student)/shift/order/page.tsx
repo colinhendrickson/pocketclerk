@@ -9,9 +9,8 @@ import { requirePairedDevice } from "@/app/(student)/require-device";
 export const dynamic = "force-dynamic";
 
 /**
- * Fetches everything the order needs in one round trip, then hands it to the
- * client flow. The menu does not change mid-order, so loading it once here
- * avoids a spinner between every step of a sale that should feel instant.
+ * Loads everything the order flow needs up front so steps within a sale never
+ * wait on the network.
  */
 export default async function OrderPage() {
   await requirePairedDevice();

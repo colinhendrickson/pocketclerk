@@ -4,12 +4,8 @@ import { LOGO_COLORS } from "@/lib/logo";
 import { PRODUCT_NAME } from "@/lib/site-mode";
 
 /**
- * The web app manifest, for "Add to Home Screen" on the cart's iPad.
- *
- * Named after the product, not the cart: the manifest is public, and a
- * school's copy names the school only after sign-in. Opens full screen without the browser's
- * address bar, which is also what Guided Access expects. Colors are literal
- * because a manifest is read outside the page and cannot use the theme.
+ * Web app manifest for "Add to Home Screen". Uses the product name because the
+ * manifest is public. Colors are literal since the theme is unavailable here.
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {

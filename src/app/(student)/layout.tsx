@@ -1,12 +1,9 @@
 import { ThemeColor } from "@/app/theme-color";
 
 /**
- * Shell for every student-facing screen.
- *
- * `touch-action: manipulation` disables double-tap-to-zoom, which on a kiosk is
- * only ever triggered by accident and leaves the screen stuck at an unusable
- * magnification mid-order. It is applied here and not globally: the admin area
- * is a desktop surface where pinch-zoom is a legitimate accessibility tool.
+ * Shell for every student-facing screen. `touch-action: manipulation` disables
+ * accidental double-tap zoom on the kiosk; it is scoped here so the admin area
+ * keeps pinch-zoom for accessibility.
  */
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   return (

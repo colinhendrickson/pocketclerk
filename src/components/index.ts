@@ -1,16 +1,7 @@
 /**
- * The PocketClerk primitive set — the components named in the DESIGN.md §4 map.
- *
- * Screens import from `@/components` and nowhere else in this directory, so the
- * design system has exactly one front door and a reviewer can tell from an
- * import line whether a screen is built from sanctioned primitives or from
- * hand-rolled markup.
- *
- * Client entry points (`big-button`, `keypad`) re-export cleanly through this
- * barrel: the `"use client"` directive lives in the source file, so a server
- * component importing them from here still gets the right boundary.
- *
- * Not yet built: PaymentChoice, BadgeModal, and the admin shell.
+ * Design-system primitives (DESIGN.md §4). Screens import from `@/components`
+ * only. Client components keep their `"use client"` directive in their own
+ * files, so re-exporting them here preserves the boundary.
  */
 
 export { BigButton } from "./big-button";

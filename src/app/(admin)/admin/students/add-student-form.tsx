@@ -5,20 +5,14 @@ import { useState, useTransition } from "react";
 import { createStudent } from "./actions";
 
 export interface AddStudentFormProps {
-  /** Rendered above the fields, so the card carries its own heading. */
+  /** Card heading, rendered above the fields. */
   heading: string;
 }
 
 /**
- * Adding a student to the roster.
- *
- * A client component because the PIN field has to be cleared the instant the
- * save succeeds. A plain `<form action={...}>` would leave four digits sitting
- * on screen in a school office, and the browser would offer to remember them.
- *
- * The PIN is typed twice. It is the only credential in the system and the
- * student it belongs to is not present to test it, so the cost of a typo is a
- * child who cannot clock in and does not know why.
+ * Add-student form. A client component so the PIN fields clear as soon as the
+ * save succeeds. The PIN is entered twice because the student is not present
+ * to test it.
  */
 export function AddStudentForm({ heading }: AddStudentFormProps) {
   const [name, setName] = useState("");
@@ -82,8 +76,8 @@ export function AddStudentForm({ heading }: AddStudentFormProps) {
             value={pin}
             onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
             inputMode="numeric"
-            // Off, not "new-password": the browser must not save or suggest a
-            // credential that belongs to someone other than the person typing.
+            // Not "new-password": this PIN belongs to someone else, so the
+            // browser must not save or suggest it.
             autoComplete="off"
             aria-describedby="new-student-pin-hint"
             className="input input-bordered input-sm w-24 tabular"

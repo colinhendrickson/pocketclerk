@@ -9,28 +9,16 @@ import { HelpPanel } from "../_help/help-panel";
 export const dynamic = "force-dynamic";
 
 /**
- * The teacher list: the cart's customers.
- *
- * Teachers come onto the list two ways: from the cart, mid-order, by the student
- * standing in the classroom, and from here, which is how the list is filled in
- * before the cart's first day. Both go through the same function and the same
- * rules. This page is also for correcting what was typed, keeping notes
- * current, and seeing who buys what.
+ * Teacher list (the cart's customers). Teachers are added here or from the cart
+ * mid-order, both through `insertTeacher`.
  */
 export default async function AdminTeachersPage() {
   await requireAdmin();
 
   const rows = await listTeachersWithTotals();
 
-  /**
-   * Dates are formatted here rather than in the table.
-   *
-   * The table is a client component, so a `Date` rendered inside it would be
-   * formatted once on the server and again in the browser, which React flags
-   * as a hydration mismatch if the two disagree. Formatting once here avoids
-   * the double render, and `cartFormatter` decides which clock: the cart's,
-   * not the server's UTC, which is what "once on the server" used to mean.
-   */
+  // Format dates on the server, in the cart's time zone, so the client table
+  // cannot hit a hydration mismatch.
   const formatter = cartFormatter({
     month: "short",
     day: "numeric",

@@ -17,11 +17,8 @@ const SHIFT_STEPS = ["Clock in", "Take orders", "Count inventory", "Clock out"] 
 const CURRENT_STEP = 2;
 
 /**
- * The employee dashboard, and the answer to "what do I do next?".
- *
- * One primary action fills the top of the screen; everything else is visibly
- * secondary. The four steps of a shift run down the left rail in order, so the
- * student can see where they are without being told.
+ * The shift dashboard: one primary action on top, everything else secondary,
+ * with the four shift steps shown in order so students can see where they are.
  */
 export default async function ShiftPage() {
   await requirePairedDevice();
@@ -29,8 +26,7 @@ export default async function ShiftPage() {
   if (!shiftId) redirect("/cart");
 
   const shift = await getActiveShift(shiftId);
-  // A cookie pointing at a closed or deleted shift sends the student back to
-  // sign-in rather than into a screen with nothing behind it.
+  // A cookie for a closed or missing shift returns to sign-in.
   if (!shift) redirect("/cart");
 
   const today = cartFormatter({
@@ -39,9 +35,8 @@ export default async function ShiftPage() {
     day: "numeric",
   }).format(new Date());
 
-  // Per DESIGN.md §3: a dark rail at lg and up, a top bar with the steps across
-  // it at md, and below md a bar with only the student, the steps reduced to
-  // one line of text.
+  // DESIGN.md §3: dark rail at lg+, top step bar at md, compact one-line bar
+  // below md.
   return (
     <div className="flex flex-1 flex-col lg:grid lg:grid-cols-[280px_1fr]">
       <aside className="flex items-center gap-4 bg-neutral px-4 py-3 text-neutral-content md:px-6 lg:flex-col lg:items-stretch lg:gap-6 lg:p-6">

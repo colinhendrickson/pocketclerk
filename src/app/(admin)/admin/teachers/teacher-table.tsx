@@ -13,12 +13,8 @@ import {
 } from "./actions";
 
 /**
- * An order as this table shows it.
- *
- * The timestamp arrives already formatted. Rendering a date in a client
- * component means the server formats it in the server's time zone and the
- * browser re-formats it in the viewer's, which React reports as a hydration
- * mismatch; formatting once, on the server, removes the second opinion.
+ * An order row. `when` is preformatted on the server to avoid a time-zone
+ * hydration mismatch.
  */
 export interface TeacherOrderView {
   id: string;
@@ -35,15 +31,8 @@ export interface TeacherTableProps {
 }
 
 /**
- * The teacher list, with each row expanding into everything about that teacher.
- *
- * Expansion in place rather than a detail route. Editing a room number or
- * adding an allergy note is a five-second job, usually done for several
- * teachers in a row; a detail page would make each one a navigation out and
- * back, and lose the list position every time.
- *
- * Only one row is open at a time. The panel is tall — notes, an edit form and
- * ten orders — and two of them open at once turns the list into a scroll hunt.
+ * Teacher list whose rows expand in place (details, notes, recent orders)
+ * instead of routing to a detail page. One row is open at a time.
  */
 export function TeacherTable({ rows }: TeacherTableProps) {
   const [openId, setOpenId] = useState<string | null>(null);
@@ -275,10 +264,8 @@ interface NotesPanelProps {
 }
 
 /**
- * Notes are what the student sees above the menu before taking this teacher's
- * order, so the panel says so. An administrator who knows the note will appear
- * on the cart writes "oat milk only"; one who thinks it is a private memo
- * writes something else entirely.
+ * Teacher notes. These are shown to students above the menu when taking this
+ * teacher's order, and the panel says so.
  */
 function NotesPanel({ row }: NotesPanelProps) {
   const [note, setNote] = useState("");
@@ -318,9 +305,8 @@ function NotesPanel({ row }: NotesPanelProps) {
         <ul className="flex flex-col gap-1">
           {row.notes.map((text, index) => (
             <li
-              // Notes have no ids and can legitimately repeat, so position is
-              // the only honest key. The list is re-rendered from the server
-              // after every change, so a stale index cannot survive an edit.
+              // Notes have no ids and may repeat, so key by position; the list
+              // is re-rendered from the server after every change.
               key={`${index}-${text}`}
               className="flex items-start gap-2 rounded-field bg-base-100 px-2 py-1"
             >

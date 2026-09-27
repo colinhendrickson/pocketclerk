@@ -9,14 +9,8 @@ import { HelpPanel } from "../_help/help-panel";
 export const dynamic = "force-dynamic";
 
 /**
- * The student roster.
- *
- * Hours and reward tickets are here rather than on a separate report because
- * they are the reason the administrator opens this page at all: the program
- * exists to record what each student worked, and the roster is where that lives.
- *
- * Totals come from the closed shifts themselves, not from a running counter, so
- * there is no second number that can drift away from the first.
+ * Student roster with hours and reward totals. Totals are computed from closed
+ * shifts rather than a running counter, so they cannot drift.
  */
 export default async function AdminStudentsPage() {
   await requireAdmin();

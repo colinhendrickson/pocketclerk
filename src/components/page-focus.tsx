@@ -1,20 +1,15 @@
 "use client";
 
 /**
- * Where keyboard and screen reader focus goes, on every screen.
+ * Root-level focus management.
  *
- * Two WCAG failures a single-page app makes by default, fixed once at the root:
+ * - `SkipLink`: first Tab stop, visible only when focused (WCAG 2.4.1).
+ * - `RouteFocus`: after a client-side navigation, moves focus to the new
+ *   screen's heading so screen readers announce it and Tab starts at the
+ *   content.
  *
- * - Nothing lets a keyboard user skip the navigation (2.4.1). `SkipLink` is the
- *   first thing Tab reaches, invisible until focused.
- * - A client-side navigation changes the page without telling anyone. Focus
- *   stays on the link that was pressed, which may no longer exist, and a screen
- *   reader says nothing about the new screen. `RouteFocus` moves focus to the
- *   new screen's heading, so it is read aloud and Tab starts from the top of
- *   the content.
- *
- * Both target the page's `h1`, which every screen has: it is the one element
- * guaranteed to mark where the content starts.
+ * Both target the page's `h1`; every screen must render exactly one.
+ * See docs/adr/0012-help-in-code-and-tested-accessibility.md.
  */
 
 import { usePathname } from "next/navigation";
@@ -23,8 +18,7 @@ import { useEffect, useRef } from "react";
 function focusHeading(): boolean {
   const heading = document.querySelector<HTMLElement>("h1");
   if (!heading) return false;
-  // Headings are not focusable by default; -1 makes them focusable by script
-  // without adding them to the Tab order.
+  // tabindex -1: focusable by script without joining the Tab order.
   if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
   heading.setAttribute("data-route-focus", "");
   heading.focus({ preventScroll: true });
@@ -50,12 +44,11 @@ export function RouteFocus() {
   const previous = useRef(pathname);
 
   useEffect(() => {
-    // Only a change of address counts. On a full page load the browser already
-    // starts at the top and a screen reader announces the page itself. (A
-    // "first render" flag is not enough: development runs effects twice.)
+    // Skip the initial load (the browser handles it). Compare pathnames rather
+    // than using a first-render flag, since dev mode runs effects twice.
     if (previous.current === pathname) return;
     previous.current = pathname;
-    // After the new screen has painted.
+    // Wait for the new screen to paint.
     const id = requestAnimationFrame(() => focusHeading());
     return () => cancelAnimationFrame(id);
   }, [pathname]);

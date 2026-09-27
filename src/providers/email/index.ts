@@ -1,12 +1,9 @@
 import type { Receipt } from "../renderer/receipt";
 
 /**
- * The email seam.
- *
- * Same shape as the printer: business logic depends on this interface, and the
- * factory picks an implementation from the environment. Without a Resend key
- * the console sender is used, so development and CI run with no secrets and a
- * contributor can watch the whole order flow work on a fresh clone.
+ * Email provider interface. The factory picks an implementation from the
+ * environment, falling back to the console sender so development and CI need
+ * no secrets. See docs/adr/0013-providers-for-every-effect.md.
  */
 export interface SendResult {
   ok: boolean;
@@ -16,28 +13,20 @@ export interface SendResult {
 export interface TextMessage {
   to: string;
   subject: string;
-  /** Always sent. The fallback for clients that do not render HTML. */
+  /** Always sent; the fallback for clients that do not render HTML. */
   body: string;
-  /** Optional rich version. Providers that cannot send HTML ignore it. */
+  /** Optional; providers that cannot send HTML ignore it. */
   html?: string;
 }
 
 export interface EmailSender {
   readonly name: string;
   /**
-   * A rendered receipt, the common case.
-   *
-   * `idempotencyKey` is the receipt job's id. Delivery is at-least-once: if the
-   * mail goes out and marking the job sent then fails, the job is retried, and
-   * a provider that honors the key sends nothing the second time. It was
-   * documented on the Resend sender from the start and never passed by the
-   * caller, because this signature had no room for it.
+   * Sends a receipt. `idempotencyKey` is the receipt job id: delivery is
+   * at-least-once, so a retry after a failed `markSent` must not send twice.
    */
   send(to: string, receipt: Receipt, idempotencyKey?: string): Promise<SendResult>;
-  /**
-   * Any other message, such as an administrator sign-in link. Kept on the same
-   * interface so a deployment configures one email provider, not two.
-   */
+  /** Any other message, such as an admin sign-in link. */
   sendText(message: TextMessage): Promise<SendResult>;
 }
 
@@ -48,14 +37,8 @@ import { siteMode } from "@/lib/site-mode";
 export { ConsoleSender, ResendSender };
 
 /**
- * Chooses a sender from the environment.
- *
- * The absence of a key is a supported configuration, not a failure. A missing
- * credential should mean "log it" in development, never a crash on the first
- * completed order.
- *
- * The demo only ever logs. Anyone can type any address into it, so a key left in
- * its settings must not turn it into a way to mail strangers.
+ * Chooses a sender from the environment; no key means the console sender. The
+ * demo always logs, so it cannot be used to mail arbitrary addresses.
  */
 export function getEmailSender(): EmailSender {
   if (siteMode() === "demo") return new ConsoleSender();

@@ -1,20 +1,8 @@
 /**
- * ShiftStats — the three numbers a student sees about their own shift.
- *
- * Implements the ShiftStats row of the DESIGN.md §4 map: daisyUI `stats` with
- * `stat` / `stat-title` / `stat-value`, on `bg-base-100 border-base-300` so the
- * theme owns the surface, `tabular` on every value, and a hard ceiling of three
- * stats on student screens. That ceiling is enforced here rather than left to
- * the caller: §3 keeps the stats row horizontal at every breakpoint including
- * phone portrait, and a fourth stat is what forces it to wrap or scroll.
- * `audience="admin"` lifts the limit for the denser admin views.
- *
- * Values come in as integer cents or integer hundredths of an hour and are
- * formatted through `src/lib/money.ts`. A stat is a display of a number the
- * database already computed; nothing in this file divides, sums, or rounds.
- *
- * Value type sizes track §2: 34px from md up, 22px in the phone row below it,
- * which is what keeps three stats on one row at phone width.
+ * ShiftStats: a daisyUI `stats` row (DESIGN.md §4). Student screens are capped
+ * at three stats so the row stays horizontal on a phone (§3); `audience="admin"`
+ * lifts the cap. Values arrive as integer cents or hundredths of an hour and
+ * are only formatted here, never computed.
  */
 
 import { formatHours, formatUSD } from "@/lib/money";

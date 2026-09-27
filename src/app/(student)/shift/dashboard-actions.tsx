@@ -6,21 +6,16 @@ import { useRouter } from "next/navigation";
 import { BigButton } from "@/components";
 
 /**
- * The five dashboard actions from the client's specification.
- *
- * Exactly one is `primary`, and it is the one a student does dozens of times a
- * shift. The rest are deliberately quieter tiles: the screen should answer
- * "what do I do next?" before it offers anything else.
- *
- * A client component because BigButton takes a callback rather than an href.
- * The data above it is still fetched on the server and passed down.
+ * The five dashboard actions. Only the most frequent one (starting an order) is
+ * `primary`. A client component because BigButton takes a callback, not an
+ * href.
  */
 export function DashboardActions() {
   const router = useRouter();
 
   return (
-    // Below md all five stack full width and Clock out sits at the bottom of
-    // the screen, apart from the rest, per DESIGN.md §3.
+    // DESIGN.md §3: below md, actions stack full width with Clock out pinned
+    // to the bottom.
     <div className="flex flex-1 flex-col gap-4">
       <BigButton
         variant="primary"

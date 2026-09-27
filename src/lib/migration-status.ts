@@ -5,18 +5,9 @@ import { db } from "@/db";
 import journal from "../../drizzle/meta/_journal.json";
 
 /**
- * Is the database at the schema this code was written for?
- *
- * Deploys and migrations are separate on purpose: code ships on every push, and
- * a migration runs only when a person runs it against live data. The cost is
- * that they can drift, and when the code is ahead the failure is a 500 from
- * whichever query first touches the missing column. The first real deployment
- * hit exactly that: a new column shipped, the migration had not been run, and
- * the health check still said "ready" because it only counted tables.
- *
- * The journal is imported rather than read from disk so it is bundled into the
- * function: the deployed code knows how many migrations it expects even where
- * the drizzle folder does not exist.
+ * Whether the database schema matches this code. Deploys and migrations run
+ * separately, so they can drift. The journal is imported (not read from disk)
+ * so it is bundled with the deployed function.
  */
 
 export const EXPECTED_MIGRATIONS: number = journal.entries.length;
@@ -28,11 +19,8 @@ export type MigrationStatus =
   | { state: "never migrated"; applied: 0; expected: number };
 
 /**
- * Compares the migrations drizzle has recorded against the journal.
- *
- * "ahead" is possible and worth naming: it means the database was migrated by
- * newer code than is deployed, typically a rollback, and the running code may
- * be reading a schema it does not know about.
+ * Compares applied migrations against the journal. "ahead" means newer code
+ * migrated the database than is deployed, typically after a rollback.
  */
 export async function migrationStatus(): Promise<MigrationStatus> {
   const expected = EXPECTED_MIGRATIONS;

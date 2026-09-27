@@ -1,4 +1,4 @@
-// Must come first: it populates process.env before anything reads DATABASE_URL.
+// Must be first: populates process.env before anything reads DATABASE_URL.
 import "../src/db/load-env";
 
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -8,12 +8,8 @@ import postgres from "postgres";
 import { DEMO_DATABASE, demoDatabaseUrl } from "../tests/e2e/demo-database";
 
 /**
- * Prepares the database the demo spec runs against: creates it beside the main
- * one if missing, applies the migrations, and seeds it as the demo's.
- *
- * `pnpm test:e2e` runs it first. On its own:
- *
- *   pnpm tsx scripts/demo-db.ts
+ * Creates, migrates, and seeds the demo e2e database. Run by `pnpm test:e2e`,
+ * or directly with `pnpm tsx scripts/demo-db.ts`.
  */
 async function main() {
   const base = process.env.DATABASE_URL;
@@ -29,8 +25,7 @@ async function main() {
   await migrate(drizzle(client), { migrationsFolder: "drizzle" });
   await client.end();
 
-  // The app's client reads DATABASE_URL when first imported, so point it at
-  // the demo's database before importing the seed.
+  // The app client reads DATABASE_URL on first import, so set it beforehand.
   process.env.DATABASE_URL = url;
   const { seedDatabase } = await import("../src/db/seed-data");
   const { getClient } = await import("../src/db/index");

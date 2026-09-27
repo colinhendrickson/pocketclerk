@@ -1,24 +1,10 @@
 "use client";
 
 /**
- * Keypad and BillButtons — how cash received gets entered.
- *
- * Implements the Keypad / BillButtons row of the DESIGN.md §4 map: `btn` grids
- * at `grid-cols-3` and `grid-cols-4`, 60px minimum keys, 34px numerals, and
- * bill buttons that are `btn-outline btn-secondary` until chosen and solid
- * `btn-secondary` once they are. Keys keep the theme's `--radius-field`, so they
- * are the only controls here that do not override radius.
- *
- * Both live in one file because they are one input surface: §3 puts the bill row
- * directly above the keypad on the cash-change screen, and the quick-buttons
- * exist so the common case (a customer hands over one bill) never requires
- * digit entry at all. Neither component holds state — the cash-change screen
- * owns the entered amount in cents and these report taps upward, which keeps all
- * money arithmetic in `src/lib/money.ts` and out of the input layer.
- *
- * Digit keys are labeled explicitly rather than relying on their glyph, and the
- * two edit keys get verb labels, because a student using VoiceOver should hear
- * "Delete last digit", not "backspace symbol".
+ * Keypad and BillButtons: cash-received entry on the cash-change screen
+ * (DESIGN.md §4). Both are stateless and report taps upward; the screen owns
+ * the amount in cents, and all money math stays in `src/lib/money.ts`.
+ * Keys carry explicit aria-labels so screen readers announce actions, not glyphs.
  */
 
 import { Delete } from "lucide-react";
@@ -30,17 +16,15 @@ const DIGIT_ROWS: readonly (readonly string[])[] = [
   ["7", "8", "9"],
 ];
 
-// No type size here: two size classes on one element leave the winner to
-// stylesheet order, which is how "Clear" came out at 34px instead of 22px.
+// No type size in the base: two size classes on one element resolve by
+// stylesheet order, not class order.
 const KEY_BASE = "btn bg-base-100 border-base-300 min-h-[60px] h-[72px] font-extrabold tabular";
 const KEY_CLASS = `${KEY_BASE} text-[34px]`;
 
 export interface KeypadProps {
-  /** Called with a single character, "0"–"9". The screen appends it. */
+  /** Called with a single character, "0"–"9". */
   onDigit: (digit: string) => void;
-  /** Clears the entry back to empty. */
   onClear?: () => void;
-  /** Removes the last entered digit. */
   onBackspace?: () => void;
   disabled?: boolean;
 }
@@ -103,15 +87,14 @@ export function Keypad({
   );
 }
 
-/** Bills a school cart realistically sees, in integer cents, smallest first. */
+/** Default bills in integer cents, smallest first. */
 const DEFAULT_BILLS: readonly number[] = [100, 500, 1000, 2000];
 
 export interface BillButtonsProps {
-  /** Called with the tapped bill's value in cents. */
   onSelect: (cents: number) => void;
   /** Bill values in integer cents. Defaults to $1 / $5 / $10 / $20. */
   bills?: readonly number[];
-  /** The currently chosen bill, in cents, rendered solid instead of outlined. */
+  /** The chosen bill in cents, rendered solid instead of outlined. */
   selectedCents?: number | null;
   disabled?: boolean;
 }
@@ -124,9 +107,7 @@ export function BillButtons({
 }: BillButtonsProps) {
   return (
     <div role="group" aria-label="Bill amounts" className="@container">
-      {/* Four across only where each bill is wide enough for "$20.00" at
-          22px; two by two otherwise. Measured on the space this group gets,
-          not the screen, because on a tablet it sits in a narrow column. */}
+      {/* Container query, not viewport: on a tablet this sits in a narrow column. */}
       <div className="grid grid-cols-2 gap-3 @min-[26rem]:grid-cols-4">
         {bills.map((cents) => {
           const selected = cents === selectedCents;

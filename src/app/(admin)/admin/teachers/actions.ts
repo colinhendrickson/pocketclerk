@@ -17,16 +17,11 @@ import {
 import { requireAdmin } from "../require-admin";
 
 /**
- * Server actions for the teacher list.
+ * Teacher list server actions. Each calls `requireAdmin()` first: a server
+ * action is its own POST endpoint and does not pass through the layout.
  *
- * `requireAdmin()` is the first statement in every one. A Server Action is a
- * POST endpoint of its own; the admin layout never runs for it, so a guard in
- * the layout would leave all of these open.
- *
- * A teacher is two rows — the `persons` row that holds the name and email, and
- * the `teacher_profiles` row that holds the room, the notes and the active
- * flag. Anything that touches both writes them in one transaction, so a teacher
- * can never end up renamed on one row and not the other.
+ * A teacher spans two rows, `persons` (name, email) and `teacher_profiles`
+ * (room, notes, active); writes touching both use one transaction.
  */
 
 export type AddTeacherResult =
@@ -34,11 +29,8 @@ export type AddTeacherResult =
   | { ok: false; error: "invalid" | "duplicate" };
 
 /**
- * Adds a teacher from the admin side, with the same rules as the cart.
- *
- * Mostly for first-time setup: entering the teachers before the cart ever
- * runs, so students tap a name instead of typing one, and so receipts go out
- * from the first sale because the emails are already there.
+ * Adds a teacher via the same `insertTeacher` rules the cart uses. Mainly for
+ * entering teachers before the cart's first day.
  */
 export async function addTeacher(input: unknown): Promise<AddTeacherResult> {
   await requireAdmin();
@@ -59,16 +51,11 @@ export type UpdateTeacherResult =
   | { ok: false; error: "invalid" | "not_found" | "duplicate" };
 
 /**
- * Edits a teacher's name, room and email.
+ * Edits a teacher's name, room and email. The email decides whether future
+ * sales queue an emailed receipt; past orders are unaffected.
  *
- * The email matters more than it looks: it is the only thing that decides
- * whether a sale queues an emailed receipt, so correcting a typo here is what
- * turns a teacher's receipts back on. Past orders are untouched, because their
- * receipts were already addressed and delivered.
- *
- * The duplicate guard is on name and room together, matching the student-side
- * `createTeacher`. Two teachers genuinely can share a surname; what makes them
- * different people on this cart is which classroom they are in.
+ * Duplicates are checked on name and room together (case-insensitive), matching
+ * the cart-side `createTeacher`.
  */
 export async function updateTeacher(input: unknown): Promise<UpdateTeacherResult> {
   await requireAdmin();
@@ -121,11 +108,8 @@ export type TeacherNoteResult =
   | { ok: false; error: "invalid" | "not_found" };
 
 /**
- * Appends a note to the teacher's list.
- *
- * `array_append` in the database rather than read-modify-write in JavaScript:
- * the append is then one atomic statement, so a note added from a second tab
- * cannot be overwritten by this one saving a list it read before that happened.
+ * Appends a note. Uses `array_append` so the write is atomic and cannot clobber
+ * a concurrent append.
  */
 export async function addTeacherNote(input: unknown): Promise<TeacherNoteResult> {
   await requireAdmin();
@@ -148,17 +132,11 @@ export async function addTeacherNote(input: unknown): Promise<TeacherNoteResult>
 }
 
 /**
- * Removes one note by its position in the list.
+ * Removes one note by index. Postgres arrays have no delete-by-index, so this
+ * reads and rewrites the row under `FOR UPDATE`; the lock stops concurrent
+ * removals from resurrecting each other's deletions.
  *
- * Postgres arrays have no delete-by-index, and the slice-and-concatenate
- * expression that emulates it is unreadable, so this reads the row and writes
- * it back inside a transaction with `FOR UPDATE`. The lock is what makes that
- * safe: without it, two concurrent removals would each write a list computed
- * from the same starting state and one deletion would silently come back.
- *
- * An index past the end of the list is treated as already gone rather than as
- * an error — that is what a double-submitted delete looks like, and it is not
- * something to show the administrator a failure for.
+ * An out-of-range index (e.g. a double submit) is treated as already removed.
  */
 export async function removeTeacherNote(input: unknown): Promise<TeacherNoteResult> {
   await requireAdmin();
@@ -198,9 +176,8 @@ export type SetTeacherActiveResult =
   | { ok: false; error: "invalid" | "not_found" };
 
 /**
- * Soft delete. A teacher who has left the school comes off the cart's list and
- * keeps every order they were ever charged for, which is what makes the sales
- * history add up.
+ * Soft-deletes or restores a teacher. Inactive teachers leave the cart's list
+ * but keep their order history.
  */
 export async function setTeacherActive(
   input: unknown,

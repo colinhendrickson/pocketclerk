@@ -9,8 +9,8 @@ import { startAdminSession } from "@/lib/admin-auth";
 import { canStartOver, isDemo, lastDemoReset } from "@/lib/demo";
 
 /**
- * The demo's two powers. Server actions are open endpoints, so each checks
- * `isDemo()` itself: on a school's copy they do nothing at all.
+ * Demo-only actions. Server actions are open endpoints, so each checks
+ * `isDemo()` itself and does nothing on a school's copy.
  */
 
 /** Signs the visitor in as the seeded administrator, without an email. */
@@ -24,11 +24,7 @@ export async function enterDemoAdmin(): Promise<void> {
   redirect("/admin");
 }
 
-/**
- * Puts the demo back now. Pressing it again within five minutes, or while
- * another reset runs, quietly does nothing: the visitor lands on the same page
- * either way.
- */
+/** Resets the demo now; a no-op within five minutes of the last reset. */
 export async function startOver(): Promise<void> {
   if (await isDemo()) {
     if (canStartOver(await lastDemoReset(), new Date())) {

@@ -1,22 +1,17 @@
 /**
- * Reading Postgres error detail through Drizzle's wrapper.
+ * Postgres error detail from behind Drizzle's wrapper.
  *
- * Drizzle wraps driver errors in its own "Failed query" error, so the SQLSTATE
- * code and the constraint name live on `cause`. Checking the outer error
- * silently never matches, which is a mistake this codebase has already made
- * once: the double clock-in resume path looked correct and never fired.
- *
- * Constraints are the authority on uniqueness and on the single special treat.
- * The application no longer checks first and writes second, because that leaves
- * a gap two concurrent requests can both pass. It writes, and turns the refusal
- * into a sentence.
+ * Drizzle wraps driver errors in a "Failed query" error, so the SQLSTATE code
+ * and constraint name live on `cause`; checking the outer error never matches.
+ * Constraints are the authority on uniqueness: callers write first and map the
+ * refusal to a message, rather than check-then-write, which races.
+ * See docs/adr/0004-invariants-in-the-database.md.
  */
 
 /** unique_violation */
 export const UNIQUE_VIOLATION = "23505";
 /** check_violation */
 export const CHECK_VIOLATION = "23514";
-/** foreign_key_violation */
 
 interface PgErrorDetail {
   code?: string;

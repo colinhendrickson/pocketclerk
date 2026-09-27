@@ -17,14 +17,10 @@ export type InsertTeacherResult =
   | { ok: false; error: "duplicate" };
 
 /**
- * Adds a teacher: a `persons` row and its `teacher_profiles` row, together.
- *
- * Shared by the cart, where a student adds a teacher mid-order, and the admin
- * Teachers page, so both apply the same duplicate rule. Two teachers can share
- * a surname; what makes them different people on this cart is the classroom,
- * so the guard is on name and room together.
- *
- * Callers validate first (`parseNewTeacher`) and check their own permissions.
+ * Adds a teacher (`persons` plus `teacher_profiles`) in one transaction. Shared
+ * by the cart and the admin Teachers page. Duplicates are matched on name and
+ * room together, case-insensitively. Callers validate input
+ * (`parseNewTeacher`) and check permissions.
  */
 export async function insertTeacher(input: NewTeacherInput): Promise<InsertTeacherResult> {
   const existing = await db

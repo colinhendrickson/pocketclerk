@@ -11,18 +11,13 @@ import {
 } from "drizzle-orm/pg-core";
 
 /**
- * Conventions enforced across every table here:
- *
- * - uuid primary keys, so ids are safe to put in URLs and cannot be enumerated.
- * - timestamptz everywhere. The iPad, the server and the admin's phone are three
- *   clocks; a naive timestamp silently picks the wrong one.
- * - Integers for everything countable. Money is `*_cents`, hours are hundredths.
- *   No numeric or float columns exist in this schema by design.
- * - Nullable columns encode state. `shifts.clock_out IS NULL` *is* "on shift";
- *   a separate status column would drift out of sync with reality.
- * - Soft deletes via `active`. School records are never destroyed.
- * - Sold prices are snapshotted onto order rows, so editing the menu can never
- *   rewrite the history of what was actually charged.
+ * Schema conventions:
+ * - uuid primary keys (safe in URLs, not enumerable); timestamptz everywhere.
+ * - Money is integer `*_cents`, hours are integer hundredths. No numeric or
+ *   float columns. See docs/adr/0001-money-as-integer-cents.md.
+ * - Nullable columns encode state: `shifts.clock_out IS NULL` means on shift.
+ * - Soft delete via `active`; school records are never hard-deleted.
+ * - Sold names and prices are snapshotted onto order rows.
  */
 
 export const paymentMethod = pgEnum("payment_method", ["cash", "card"]);
@@ -39,10 +34,8 @@ export const receiptStatus = pgEnum("receipt_status", [
 /* -------------------------------------------------------------------------- */
 
 /**
- * One row per human customer or administrator. The program administrator is a
- * single person who is both: she buys coffee and she manages the cart. Modelling
- * that as one `persons` row with two optional profiles means revoking her admin
- * access never touches her order history.
+ * One row per human. Teacher and admin are optional profiles on the same
+ * person, so revoking admin access never touches order history.
  */
 export const persons = pgTable("persons", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -58,11 +51,7 @@ export const teacherProfiles = pgTable(
       .primaryKey()
       .references(() => persons.id, { onDelete: "restrict" }),
     room: text("room"),
-    /**
-     * Customer memory: "dairy issue, use non-dairy creamer". Surfaced above the
-     * menu on every order so the UI enforces the lesson rather than relying on
-     * the student to remember to look.
-     */
+    /** Customer notes (e.g. dietary needs), shown above the menu on every order. */
     notes: text("notes").array().notNull().default([]),
     active: boolean("active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -70,11 +59,7 @@ export const teacherProfiles = pgTable(
   (t) => [index("teacher_profiles_active_idx").on(t.active)],
 );
 
-/**
- * Allowlist. Presence of a row is what grants admin access; there is no role
- * column, because there is exactly one level of privilege and a boolean column
- * would only invite a second.
- */
+/** Admin allowlist: a row's presence grants admin access. There is one privilege level. */
 export const adminUsers = pgTable("admin_users", {
   personId: uuid("person_id")
     .primaryKey()
@@ -84,12 +69,9 @@ export const adminUsers = pgTable("admin_users", {
 });
 
 /**
- * Single-use sign-in links.
- *
- * Only the hash is stored, for the same reason student PINs are hashed: a
- * leaked table must not be a set of working sign-in links. `usedAt` makes a
- * link single-use, and it is set in the same statement that redeems it so two
- * simultaneous clicks cannot both succeed.
+ * Single-use sign-in links. Only hashes are stored. `usedAt` is set in the same
+ * statement that redeems the link, so concurrent redemptions cannot both succeed.
+ * See docs/adr/0007-self-hosted-sign-in-links.md.
  */
 export const adminLoginTokens = pgTable(
   "admin_login_tokens",
@@ -100,10 +82,8 @@ export const adminLoginTokens = pgTable(
       .references(() => persons.id, { onDelete: "cascade" }),
     tokenHash: text("token_hash").notNull().unique(),
     /**
-     * The same sign-in, typed instead of clicked. The cart's iPad must never
-     * have a personal mailbox signed into it, so the mail goes to a phone and
-     * the code is typed on the iPad. Hashed like the token; guessing is bounded
-     * by `attempts` rather than by the length of a six-digit secret.
+     * Hashed six-digit code for signing in on a shared device without opening
+     * the email there. Guessing is bounded by `attempts`.
      */
     codeHash: text("code_hash"),
     attempts: integer("attempts").notNull().default(0),
@@ -114,23 +94,16 @@ export const adminLoginTokens = pgTable(
   (t) => [index("admin_login_tokens_person_idx").on(t.personId, t.createdAt)],
 );
 
-/**
- * Students deliberately have no auth identity. Accounts mean emails, passwords
- * and resets, which is friction this audience cannot absorb. A name tap plus a
- * hashed, rate-limited PIN is the whole identity model.
- */
+/** Students have no auth account: identity is a name tap plus a hashed, rate-limited PIN. */
 export const students = pgTable(
   "students",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     displayName: text("display_name").notNull(),
-    /** Hashed so a leaked table dump does not hand out every student's PIN. */
     pinHash: text("pin_hash").notNull(),
     /**
-     * Rate limiting lives in the database, not in process memory. Serverless
-     * functions do not share memory, so an in-memory counter would reset on
-     * every cold start and stop limiting anything. A four-digit PIN cannot
-     * survive brute force on its own; this is what actually stops guessing.
+     * PIN rate limiting is stored here because serverless instances share no
+     * memory. A four-digit PIN relies on this lockout to resist brute force.
      */
     failedAttempts: integer("failed_attempts").notNull().default(0),
     lockedUntil: timestamp("locked_until", { withTimezone: true }),
@@ -152,19 +125,18 @@ export const shifts = pgTable(
       .notNull()
       .references(() => students.id, { onDelete: "restrict" }),
     clockIn: timestamp("clock_in", { withTimezone: true }).notNull().defaultNow(),
-    /** NULL means the shift is open. This is the only "currently working" flag. */
-    clockOut: timestamp("clock_out", { withTimezone: true }),
-    /** 3.25 hours stored as 325. Integers only; see the note at the top. */
-    hoursHundredths: integer("hours_hundredths"),
     /**
-     * Named for the concept, not the deployment. Each program has its own name
-     * for the reward; that label is white-label config, so the column is not.
+     * NULL means the shift is open; the only "on shift" flag. A partial unique
+     * index in the migration allows one open shift per student.
      */
+    clockOut: timestamp("clock_out", { withTimezone: true }),
+    /** 3.25 hours is stored as 325. */
+    hoursHundredths: integer("hours_hundredths"),
+    /** Generic name; the display label is white-label config. */
     rewardTickets: integer("reward_tickets"),
     /**
-     * Keys of the end-of-shift tasks the student has ticked off. Stored as
-     * completed keys rather than a row per task so that changing the checklist
-     * never rewrites the history of shifts that used the old one.
+     * Keys of completed end-of-shift tasks, so later checklist changes do not
+     * rewrite past shifts.
      */
     checklist: text("checklist").array().notNull().default([]),
   },
@@ -185,8 +157,8 @@ export const menuItems = pgTable(
     /** The rotating "special treat" the administrator can switch on or off. */
     isSpecial: boolean("is_special").notNull().default(false),
     /**
-     * Optional picture beside the name, for students who cannot read it yet.
-     * One of the keys in src/lib/menu-icons.ts; a CHECK constraint holds it.
+     * Optional picture for pre-readers. A key from src/lib/menu-icons.ts,
+     * enforced by a CHECK constraint. See docs/adr/0015-menu-pictures.md.
      */
     icon: text("icon"),
     active: boolean("active").notNull().default(true),
@@ -200,9 +172,8 @@ export const addons = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
-    /** Often zero. A free add-on must not change the total. */
+    /** Often zero (free add-on). */
     priceCents: integer("price_cents").notNull().default(0),
-    /** Optional picture, as on menu items. */
     icon: text("icon"),
     active: boolean("active").notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),
@@ -226,10 +197,9 @@ export const orders = pgTable(
       .references(() => teacherProfiles.personId, { onDelete: "restrict" }),
     totalCents: integer("total_cents").notNull(),
     /**
-     * V1 only ever writes "cash": the program's own specification is cash-only
-     * and making change is the point of the exercise. The column and the two
-     * nullable cash fields exist so a badge/card method can be added later
-     * without a migration. See docs/adr/0005-cash-only-v1.md.
+     * V1 writes only "cash"; the enum and nullable cash fields leave room for
+     * card payments without a migration. A CHECK constraint ties the cash fields
+     * to the method. See docs/adr/0005-cash-only-in-v1.md.
      */
     paymentMethod: paymentMethod("payment_method").notNull().default("cash"),
     receivedCents: integer("received_cents"),
@@ -242,10 +212,7 @@ export const orders = pgTable(
   ],
 );
 
-/**
- * `nameSnapshot` and `unitPriceCents` are copies, not lookups. Renaming a menu
- * item or changing its price must never alter what a past receipt says.
- */
+/** `nameSnapshot` and `unitPriceCents` are copied at sale time so menu edits never change past receipts. */
 export const orderItems = pgTable(
   "order_items",
   {
@@ -281,19 +248,15 @@ export const orderItemAddons = pgTable(
 /* Inventory                                                                  */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Supplies the cart consumes: cups, lids, napkins, the treat of the week.
- * Separate from `menu_items` because what is sold and what is stocked are
- * different lists; one cookie is a menu item and a napkin is not.
- */
+/** Stocked supplies (cups, lids, napkins). Separate from `menu_items`: what is stocked is not what is sold. */
 export const inventoryItems = pgTable(
   "inventory_items",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
-    /** What one unit is, e.g. "cups". Shown next to the number. */
+    /** Display unit, e.g. "cups". */
     unit: text("unit").notNull().default("items"),
-    /** The level the cart should be restocked back up to. */
+    /** Restock target. */
     parLevel: integer("par_level").notNull(),
     active: boolean("active").notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),
@@ -302,12 +265,8 @@ export const inventoryItems = pgTable(
 );
 
 /**
- * One count per item per shift.
- *
- * `starting` is snapshotted when the count opens rather than derived on read,
- * because it is a claim about what was on the cart at that moment. Used is
- * `starting - remaining` and is deliberately not stored: a derived value that
- * is also stored is a value that can disagree with itself.
+ * One count per item per shift. `starting` is snapshotted when the count opens.
+ * Usage (`starting - remaining`) is derived, never stored.
  */
 export const inventoryCounts = pgTable(
   "inventory_counts",
@@ -320,7 +279,7 @@ export const inventoryCounts = pgTable(
       .notNull()
       .references(() => inventoryItems.id, { onDelete: "restrict" }),
     starting: integer("starting").notNull(),
-    /** Null until the student counts. */
+    /** Null until counted. */
     remaining: integer("remaining"),
     restocked: boolean("restocked").notNull().default(false),
     countedAt: timestamp("counted_at", { withTimezone: true }),
@@ -335,14 +294,11 @@ export const inventoryCounts = pgTable(
 /* -------------------------------------------------------------------------- */
 
 /**
- * Completing an order never blocks on a printer or an email. The order and its
- * receipt jobs commit in one transaction; delivery happens afterwards and
- * retries. The cart roams classrooms on school WiFi, so decoupling the sale
- * from the delivery is the cheapest reliability available.
- *
- * Print jobs are claimed by the tablet (the printer is attached to it over
- * Bluetooth); email jobs are claimed by the server. Both claim with an atomic
- * UPDATE ... RETURNING so two consumers cannot take the same row.
+ * Receipt delivery queue. The order and its jobs commit in one transaction;
+ * delivery happens asynchronously with retries, so a sale never blocks on a
+ * printer or email. Print jobs are claimed by the tablet, email jobs by the
+ * server, both via atomic UPDATE ... RETURNING so no row is claimed twice.
+ * See docs/adr/0002-receipt-job-queue.md.
  */
 export const receiptJobs = pgTable(
   "receipt_jobs",
@@ -366,24 +322,20 @@ export const receiptJobs = pgTable(
 );
 
 /**
- * Settings an administrator changes from the admin side. One row, ever.
- *
- * `primary_color` is the deployment's main color as `#rrggbb`, or null for
- * the committed theme's own. It lives here rather than in code or config so
- * that a school's colors never enter git (see CLAUDE.md, privacy) and staff
- * can change them without a developer. The single-row rule and the color's
- * format are CHECK constraints in the migration, not only TypeScript.
+ * Admin-editable settings; exactly one row. `primary_color` is `#rrggbb` or
+ * null for the theme default, stored here so real branding stays out of git.
+ * The single-row rule and color format are CHECK constraints. See
+ * docs/adr/0011-staff-chosen-main-color.md.
  */
 export const siteSettings = pgTable("site_settings", {
   id: integer("id").primaryKey().default(1),
   primaryColor: text("primary_color"),
   updatedBy: uuid("updated_by").references(() => persons.id, { onDelete: "set null" }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-  // The demo's own database says so. The demo's powers need this and the
-  // deployment's mode together (src/lib/demo.ts), so neither alone can turn a
-  // school's copy into the demo.
+  // Demo features require both this flag and the deployment's mode
+  // (src/lib/demo.ts), so neither alone can turn a real deployment into the demo.
   isDemo: boolean("is_demo").notNull().default(false),
-  // When the demo's data was last put back. Drives the hourly reset.
+  // Last demo data reset; drives the hourly reset.
   demoResetAt: timestamp("demo_reset_at", { withTimezone: true }),
 });
 

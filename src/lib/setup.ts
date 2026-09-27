@@ -3,13 +3,9 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 
 /**
- * What the cart still needs before it can run, read from the data itself.
- *
- * Nothing is stored: a step is done when the thing it asks for exists. So the
- * checklist cannot be ticked without the work being done, cannot be left
- * unticked after it is, and needs no migration. The one indirect step is the
- * iPad: connecting it leaves no row behind, but a student can only clock in on
- * a connected device, so the first shift is the proof.
+ * Setup checklist, derived from the data rather than stored: a step is done
+ * when what it asks for exists. The iPad step uses the first shift as proof,
+ * since clock-in requires a connected device.
  */
 
 export interface SetupCounts {
@@ -68,7 +64,7 @@ function plural(n: number, one: string, many = `${one}s`) {
   return `${n} ${n === 1 ? one : many}`;
 }
 
-/** Turns counts into steps. Pure, so the rules are tested without a database. */
+/** Turns counts into steps. Pure, for testing without a database. */
 export function setupChecklist(counts: SetupCounts): SetupStep[] {
   const missingEmail = counts.activeTeachers - counts.teachersWithEmail;
   return [
@@ -80,8 +76,7 @@ export function setupChecklist(counts: SetupCounts): SetupStep[] {
     },
     {
       id: "teachers",
-      // Done once there are teachers and every one of them has an email:
-      // a teacher without one is served, but never gets a receipt.
+      // Every teacher needs an email, or they never get receipts.
       done: counts.activeTeachers > 0 && missingEmail === 0,
       optional: false,
       status:

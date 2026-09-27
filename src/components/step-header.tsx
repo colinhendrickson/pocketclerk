@@ -1,45 +1,30 @@
 "use client";
 
 /**
- * StepHeader — where the student is, and the only way back.
- *
- * Implements the StepHeader row of the DESIGN.md §4 map: a navbar-style bar on
- * `bg-base-100 border-b border-base-300`, a 60x60 `btn btn-ghost` back control,
- * and the "Step n of 4" caption (15px, the floor for student screens per §2)
- * sitting above the 26px screen title.
- *
- * The daisyUI `steps` strip is the progress affordance at md and up. Per §3 it
- * collapses below md to the caption line alone, so the strip is `hidden md:flex`
- * while the caption always renders — the student never loses the count, and the
- * screen never scrolls sideways to keep four step labels on one row. The rail on
- * the employee dashboard uses the same strip vertically, which is what
- * `orientation` selects.
- *
- * Navigation is a `Link`, not a click handler, so this stays a server component
- * and back survives a hard reload on a school iPad.
+ * StepHeader: step caption, screen title (the page's `h1`), and back control
+ * (DESIGN.md §4). The daisyUI `steps` strip shows at md and up; below md only
+ * the "Step n of m" caption remains (§3). Prefer `backHref` over `onBack` so
+ * back works after a hard reload.
  */
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export interface StepHeaderProps {
-  /** 1-based position in the flow. Rendered as "Step {step} of {totalSteps}". */
+  /** 1-based position in the flow. */
   step: number;
   totalSteps?: number;
-  /** Sentence-case screen title, 26px. */
+  /** Sentence-case screen title. */
   title: string;
-  /** Optional context line under the title, e.g. a teacher and room. */
+  /** Context line under the title, e.g. a teacher and room. */
   subtitle?: string;
-  /** Where the back button goes. Omit to render the header without one. */
+  /** Back link target. Omit both this and `onBack` for no back control. */
   backHref?: string;
-  /**
-   * Back handler for flows that hold their step in client state rather than in
-   * the URL, such as the classroom order. Ignored when `backHref` is given.
-   */
+  /** For flows whose step lives in client state. Ignored when `backHref` is set. */
   onBack?: () => void;
-  /** Accessible name for the back control; sentence case. */
+  /** Accessible name for the back control. */
   backLabel?: string;
-  /** Step labels for the daisyUI `steps` strip. Steps up to `step` are marked done. */
+  /** Labels for the `steps` strip; steps up to `step` are marked done. */
   steps?: readonly string[];
   orientation?: "horizontal" | "vertical";
 }

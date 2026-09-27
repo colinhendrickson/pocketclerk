@@ -45,16 +45,10 @@ interface Completed {
 }
 
 /**
- * The whole classroom order, as four screens with one job each.
- *
- * The order is held in client state and committed in a single server action at
- * the end. Nothing half-finished reaches the database: there is no such thing
- * as a draft order to clean up, and a student who walks away mid-order leaves
- * no trace.
- *
- * The running total shown here is a preview for the student. The server
- * recomputes every figure from its own prices before writing anything, so what
- * is displayed can never become what is charged.
+ * The classroom order as four single-purpose steps. The order lives in client
+ * state and is committed by one server action at the end, so abandoned orders
+ * leave nothing in the database. Totals shown here are a preview; the server
+ * recomputes them from its own prices.
  */
 export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
   const router = useRouter();
@@ -195,12 +189,10 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
           onBack={() => setStage("teacher")}
         />
 
-        {/* Below md the order summary is a sheet fixed to the bottom of the
-            screen, so the bottom padding keeps the last menu row clear of it. */}
+        {/* Bottom padding clears the fixed order sheet below md. */}
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-[260px] md:grid md:grid-cols-[1fr_340px] md:items-start md:p-6 lg:grid-cols-[1fr_400px]">
           <div className="flex min-w-0 flex-col gap-4">
-            {/* Notes sit above the menu, never below it and never collapsed.
-                Remembering the customer is the lesson; the layout enforces it. */}
+            {/* Customer notes are always visible above the menu. */}
             {teacher.notes.map((note) => (
               <NoteBanner key={note}>
                 Note for {teacher.name}: {note}
@@ -286,8 +278,7 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
           </div>
 
           <aside className="flex flex-col gap-3 border-base-300 bg-base-100 max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-10 max-md:border-t max-md:p-4 md:sticky md:top-6 md:gap-4 md:rounded-box md:border md:p-6">
-            {/* The sheet has room for one line, so it names what is in the
-                order; the full list with add-ons is shown from md up. */}
+            {/* One-line summary below md; the full list shows from md up. */}
             <p className="truncate text-[20px] font-bold md:hidden">
               {lines.length === 0
                 ? "Nothing added yet"
@@ -367,9 +358,8 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
           onBack={() => setStage("build")}
         />
 
-        {/* Below md one column, in the order DESIGN.md §3 gives: what is owed,
-            the change, the bills and keypad, then the button. From md up the
-            input sits in its own column and the button moves under the change. */}
+        {/* DESIGN.md §3: one column below md (owed, change, input, button);
+            from md up the input gets its own column. */}
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 md:grid md:grid-cols-[1fr_360px] md:grid-rows-[auto_1fr] md:items-start md:p-6 lg:grid-cols-[1fr_420px]">
           <div className="flex min-w-0 flex-col gap-4 md:col-start-1 md:row-start-1">
             <table className="table rounded-box bg-base-100 text-[22px] font-extrabold">
@@ -385,8 +375,7 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
               </tbody>
             </table>
 
-            {/* The answer stays above the keypad so it is visible while the
-                student is still counting, not after they finish. */}
+            {/* Change stays above the keypad so it is visible while counting. */}
             {enough ? <ChangeCard changeCents={receivedCents - totalCents} /> : null}
 
             {error ? (
@@ -466,10 +455,8 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
 }
 
 /**
- * Appends a keypad digit to the cents entry, the way a card terminal works:
- * tapping 5, 0, 0 means $5.00, so there is no decimal point to place or to put
- * in the wrong spot. Leading zeroes are dropped and the entry is capped at six
- * digits, which is far past any plausible coffee order.
+ * Appends a keypad digit to a cents entry, terminal-style (5, 0, 0 is $5.00).
+ * Drops leading zeroes and caps the entry at six digits.
  */
 function appendDigit(current: string, digit: string): string {
   const next = (current + digit).replace(/^0+(?=\d)/, "");

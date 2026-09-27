@@ -15,23 +15,17 @@ import {
 } from "./schema";
 
 /**
- * The seed: a whole cart of made-up people, used for development, the tests,
- * and the public demo, which puts it back every hour.
- *
- * This is the privacy boundary. Every name, room and email below is generated,
- * and real people only ever enter the system through the admin UI on a school's
- * own copy. Nothing here should ever be replaced with real school data.
- *
- * The faker seed is fixed so screenshots and tests are reproducible.
+ * Fictional seed data for development, tests, and the hourly demo reset. All
+ * people are generated; real data enters only through the admin UI. The faker
+ * seed is fixed for reproducible tests and screenshots.
  */
 
 /** Shared PIN for every seeded student. */
 export const DEMO_PIN = "1234";
 
 /**
- * Advisory lock key for a seed in progress. Two resets can start together on
- * the demo (two visitors after the hour, on two servers); the second sees the
- * lock taken and skips rather than wiping the first one's work half way.
+ * Advisory lock key. Concurrent demo resets are possible across instances; the
+ * loser skips instead of truncating mid-seed.
  */
 const SEED_LOCK = 36_002_026;
 
@@ -47,20 +41,16 @@ export interface SeedSummary {
 }
 
 /**
- * Wipes the cart's data and seeds it again, in one transaction: anyone reading
- * during a reset sees the old cart or the new one, never half of either.
- *
- * `demo` marks the database as the public demo's; see `isDemo` in
- * src/lib/demo.ts. Returns "busy" without touching anything if another seed
- * holds the lock.
+ * Truncates and reseeds in one transaction, so concurrent readers see either
+ * the old data or the new. `demo` sets `site_settings.is_demo` (see
+ * src/lib/demo.ts). Returns "busy" without changes if another seed holds the lock.
  */
 export async function seedDatabase(
   options: { demo: boolean },
   onSeeded?: (summary: SeedSummary) => void,
 ): Promise<SeedResult> {
   faker.seed(20260903);
-  // Hashed before the transaction opens, so the lock is held for as short a
-  // time as possible.
+  // Hash outside the transaction to keep the lock short.
   const pinHash = await hashPin(DEMO_PIN);
 
   return db.transaction(async (tx) => {
@@ -69,8 +59,7 @@ export async function seedDatabase(
     );
     if (!lock.locked) return "busy";
 
-    // Truncating persons cascades to site_settings, whose updated_by points at
-    // it, so the settings row is written again below.
+    // site_settings references persons, so it is truncated too and rewritten below.
     await tx.execute(
       sql`TRUNCATE order_item_addons, order_items, receipt_jobs, orders,
           inventory_counts, inventory_items, shifts, students, teacher_profiles,
@@ -79,9 +68,7 @@ export async function seedDatabase(
     );
 
     // --- Menu -------------------------------------------------------------
-    // Everything is a dollar. That is the program's actual pricing, and it is
-    // deliberate: a single price keeps the mental arithmetic on making change
-    // rather than on adding up varied prices.
+    // Flat $1 pricing keeps the arithmetic focused on making change.
     const menu = await tx
       .insert(menuItems)
       .values([
@@ -93,8 +80,6 @@ export async function seedDatabase(
       ])
       .returning();
 
-    // Free add-ons must not move the total; that rule is enforced by the money
-    // module and exercised by the seed having several of them.
     const extras = await tx
       .insert(addons)
       .values([
@@ -107,8 +92,6 @@ export async function seedDatabase(
       .returning();
 
     // --- Inventory --------------------------------------------------------
-    // Supplies, not menu items: what the cart consumes rather than what it
-    // sells. Par levels are the quantity a full cart carries.
     const supplies = await tx
       .insert(inventoryItems)
       .values([
@@ -130,8 +113,6 @@ export async function seedDatabase(
       .returning();
 
     // --- Teachers ---------------------------------------------------------
-    // Notes are the "customer memory" teaching goal: the student sees these
-    // above the menu before every order, so the interface enforces the lesson.
     const noteBank = [
       "Dairy issue, use non-dairy creamer",
       "No sugar",
@@ -168,9 +149,7 @@ export async function seedDatabase(
     );
 
     // --- Administrator ----------------------------------------------------
-    // The first teacher is also the administrator, which exercises the "one
-    // person, two roles" shape the schema was built around: she buys coffee
-    // and she manages the cart, and revoking one does not touch the other.
+    // The first teacher is also the admin, exercising one person with two roles.
     const [adminPerson] = seededPersons;
     await tx.insert(adminUsers).values({ personId: adminPerson.id });
 

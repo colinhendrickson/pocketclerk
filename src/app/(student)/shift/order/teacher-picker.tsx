@@ -14,14 +14,9 @@ export interface TeacherPickerProps {
 }
 
 /**
- * Choosing a customer, or adding one.
- *
- * Filtering is by initial letter rather than a search field. A cart that serves
- * forty classrooms needs some way to narrow the list, and a row of letter
- * buttons does that without a keyboard: no spelling, no autocorrect, no
- * software keyboard covering half the screen. The letters shown are only the
- * ones that actually have teachers behind them, so a tap always produces
- * results and never an empty screen.
+ * Choosing a customer, or adding one. Filters by initial-letter buttons instead
+ * of a search field to avoid typing; only letters with matching teachers are
+ * shown, so a filter is never empty.
  */
 export function TeacherPicker({ teachers, onPick }: TeacherPickerProps) {
   const [letter, setLetter] = useState<string | null>(null);
@@ -102,11 +97,8 @@ interface AddTeacherFormProps {
 }
 
 /**
- * The only free-text entry in the student flow.
- *
- * It exists because the client's specification requires it: a cart that reaches
- * a classroom whose teacher is not on the list has to be able to serve them.
- * Email is optional, since a teacher without one simply gets a paper receipt.
+ * The only free-text entry in the student flow, for serving a teacher not yet
+ * on the list. Email is optional; without it only a paper receipt is made.
  */
 function AddTeacherForm({ onCancel, onCreated }: AddTeacherFormProps) {
   const [name, setName] = useState("");

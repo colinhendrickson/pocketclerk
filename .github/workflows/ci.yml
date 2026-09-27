@@ -5,14 +5,20 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+# A newer push to the same branch or pull request cancels the run it replaces.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   checks:
     runs-on: ubuntu-latest
 
-    # A real Postgres, so the migration and its constraints are exercised rather
-    # than assumed. The invariants in 0001 are the ones worth proving on every
-    # push: they are the difference between "we check that in the app" and
-    # "the database will not allow it".
+    # A real Postgres, so migrations and their constraints are exercised on
+    # every push rather than assumed.
     services:
       postgres:
         image: postgres:17-alpine
@@ -45,8 +51,7 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
 
-      # --frozen-lockfile so CI builds exactly what is committed. A lockfile
-      # that "fixes itself" in CI is a bug you ship.
+      # Build exactly what the lockfile pins.
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm typecheck
@@ -61,10 +66,7 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
-  # A separate job so a flaky browser cannot turn the fast checks red, and so
-  # the two run concurrently. The end-to-end specs are few on purpose:
-  # correctness is carried by the unit tests and the database constraints; they
-  # prove the seams connect, and run axe on every screen at five sizes.
+  # Browser tests run as a separate job, in parallel with the checks above.
   e2e:
     runs-on: ubuntu-latest
 
@@ -87,8 +89,8 @@ jobs:
       DATABASE_URL: postgresql://pocketclerk:pocketclerk@localhost:5432/pocketclerk
       DIRECT_URL: postgresql://pocketclerk:pocketclerk@localhost:5432/pocketclerk
       SESSION_SECRET: ci-session-secret-that-is-at-least-32-chars
-      # Exercises the paired path, which is how a real deployment runs. The
-      # suite also asserts what an unpaired visitor can see, which is nothing.
+      # Pairing on, as in a real deployment; the suite also checks what an
+      # unpaired visitor sees.
       DEVICE_CODE: ci-device-pairing-code
 
     steps:

@@ -1,10 +1,6 @@
 /**
- * Inventory rules, with no database behind them.
- *
- * Split from `inventory.ts` because the count screen is a client component. A
- * module that touches the database cannot be imported into the browser bundle,
- * and the arithmetic below is exactly the part both sides need. Keeping it pure
- * also makes it testable without a Postgres.
+ * Pure inventory rules, split from `inventory.ts` so the client-side count
+ * screen can import them without pulling in the database.
  */
 
 export interface CountRow {
@@ -19,11 +15,8 @@ export interface CountRow {
 }
 
 /**
- * The end-of-shift tasks, from the client's specification.
- *
- * Defined in code rather than a table because they describe the job, not data
- * anyone edits day to day. Shifts store the keys they completed, so editing
- * this list never rewrites what a past shift actually did.
+ * End-of-shift tasks. Shifts store the completed keys, so editing this list
+ * does not rewrite past shifts.
  */
 export const CHECKLIST = [
   { key: "inventory", label: "Inventory counted" },
@@ -40,13 +33,7 @@ export function isChecklistKey(value: unknown): value is ChecklistKey {
   return typeof value === "string" && CHECKLIST.some((e) => e.key === value);
 }
 
-/**
- * Units used this shift: what was on the cart at the start, minus what is left.
- *
- * Derived rather than stored. A value that is both computed and saved is a
- * value that can end up disagreeing with itself, and this one has an obvious
- * single source.
- */
+/** Units used this shift (starting minus remaining). Derived, never stored. */
 export function usedCount(row: CountRow): number | null {
   return row.remaining === null ? null : row.starting - row.remaining;
 }
@@ -57,7 +44,7 @@ export function restockNeeded(row: CountRow): number {
   return Math.max(0, row.parLevel - row.remaining);
 }
 
-/** True once every item has a count. The restock list is meaningless before then. */
+/** True once every item has a count. */
 export function allCounted(rows: readonly CountRow[]): boolean {
   return rows.length > 0 && rows.every((row) => row.remaining !== null);
 }

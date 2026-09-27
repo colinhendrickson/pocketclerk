@@ -18,11 +18,8 @@ import { HelpPanel } from "../_help/help-panel";
 export const dynamic = "force-dynamic";
 
 /**
- * Receipt delivery status.
- *
- * Failed jobs sort first regardless of age, because they are the only rows that
- * require anyone to act. Everything else is here to answer "did that one go
- * out?" and is ordered newest first.
+ * Receipt delivery status. Failed jobs sort first, since they are the only rows
+ * needing action; the rest are newest first.
  */
 export default async function AdminReceiptsPage() {
   await requireAdmin();

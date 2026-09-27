@@ -2,13 +2,8 @@ import { cartFormatter } from "@/lib/time";
 import { formatUSD } from "@/lib/money";
 
 /**
- * The receipt, as data.
- *
- * Rendering is deliberately separated from delivery. This module turns an order
- * into a printer-independent document, and the printer providers turn that
- * document into bytes for whatever hardware is attached. Swapping the printer
- * does not touch this file, and changing the receipt layout does not touch the
- * printers.
+ * Printer-independent receipt document. Providers turn it into bytes for their
+ * hardware, so layout and delivery change independently.
  */
 
 export interface ReceiptLine {
@@ -53,11 +48,8 @@ function center(text: string, width = RECEIPT_WIDTH): string {
 }
 
 /**
- * Renders the receipt as plain monospaced text.
- *
- * Plain text is the lowest common denominator every thermal printer
- * understands, and it is also what the console printer logs in development, so
- * what a developer sees is what a teacher gets.
+ * Renders the receipt as plain monospaced text, which every thermal printer
+ * handles and which the console printer logs verbatim.
  */
 export function renderReceiptText(receipt: Receipt): string {
   const date = cartFormatter({

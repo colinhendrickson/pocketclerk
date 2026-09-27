@@ -6,12 +6,8 @@ import { enterDemoAdmin } from "@/app/demo/actions";
 import { PRODUCT_NAME } from "@/lib/site-mode";
 
 /**
- * pocket-clerk.com: what PocketClerk is, and two ways into the demo.
- *
- * Shown only in demo mode; on a school's copy `/` goes straight to the cart.
- * The demo banner above it comes from the root layout. One primary button, as
- * everywhere: Try the cart. The admin entry is a form, so it works before the
- * page hydrates.
+ * The demo's landing page. The admin entry is a form so it works before
+ * hydration.
  */
 
 const REPO = "https://github.com/colinhendrickson/pocketclerk";

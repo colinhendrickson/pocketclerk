@@ -8,17 +8,10 @@ import { sendSignInLink, signInWithCode } from "../actions";
 export const dynamic = "force-dynamic";
 
 /**
- * Administrator sign-in.
- *
- * Two steps on one route: ask for an address, then take the code that was
- * mailed to it. A single route means the emailed link has one shape and there
- * is nothing for a mail client to get wrong.
- *
- * The code is the primary path, not a fallback. Signing in happens on the
- * cart's iPad as often as on a laptop, and that iPad is a shared, student-facing
- * device: opening a personal mailbox on it to read one link would leave the
- * mailbox signed in behind you. The mail goes to a phone; six digits make the
- * trip. The link is still there for a computer where mail is already open.
+ * Administrator sign-in, in two steps on one route: request a code by email,
+ * then enter it. The code is the primary path because the cart's iPad is a
+ * shared device where nobody should open a personal mailbox; the emailed link
+ * is for computers. See docs/adr/0007-self-hosted-sign-in-links.md.
  */
 export default async function AdminSignInPage({
   searchParams,
@@ -27,8 +20,6 @@ export default async function AdminSignInPage({
 }) {
   const params = await searchParams;
 
-  // An emailed link lands on /admin/verify, which shows a button rather than
-  // redeeming on arrival, so a mail scanner's visit cannot spend the token.
   if (await getAdmin()) redirect("/admin");
 
   const awaitingCode = Boolean(params.sent);
@@ -77,8 +68,7 @@ export default async function AdminSignInPage({
                 <input
                   id="admin-code"
                   name="code"
-                  // Brings up the numeric keypad on the iPad and lets the phone
-                  // offer the code it just saw in the mail.
+                  // Numeric keypad, and OS autofill of the code from mail.
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   autoFocus

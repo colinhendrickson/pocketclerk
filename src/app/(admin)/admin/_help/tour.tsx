@@ -12,7 +12,7 @@ interface LiveStep {
   element: HTMLElement;
 }
 
-/** The first element for a step that is actually on screen at this size. */
+/** First matching element for a step that is visible at this viewport size. */
 function findTarget(target: string): HTMLElement | null {
   const candidates = document.querySelectorAll<HTMLElement>(`[data-tour="${target}"]`);
   for (const element of candidates) {
@@ -23,17 +23,12 @@ function findTarget(target: string): HTMLElement | null {
 }
 
 /**
- * "Show me around": a walk through the page, one part at a time.
+ * "Show me around" page tour, using a native modal `<dialog>` for focus
+ * trapping, Escape, and screen reader semantics. It docks at the bottom without
+ * a backdrop so the outlined target stays visible, and only opens on request.
  *
- * Built on the native modal `<dialog>`, which traps focus, closes on Escape
- * and is announced as a dialog by screen readers without any of it being
- * rebuilt by hand. The dialog sits at the bottom of the screen with no dimming,
- * so the part being explained stays visible above it, outlined. It never opens
- * by itself: someone who knows the page should not have to dismiss it.
- *
- * Steps are declared in src/lib/help/tours.ts. A step whose target is not on
- * screen at this size is skipped, so the count never promises a step that
- * cannot be shown.
+ * Steps come from src/lib/help/tours.ts; steps whose target is not visible at
+ * this size are skipped.
  */
 export function TourButton() {
   const pathname = usePathname();
@@ -54,8 +49,7 @@ export function TourButton() {
     const { element } = current;
     element.setAttribute("data-tour-active", "");
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // To the top of the screen, not the middle: the tour card sits at the
-    // bottom, and on a phone a centered section disappears behind it.
+    // Align to the top so the target is not hidden behind the bottom card.
     element.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
     return () => element.removeAttribute("data-tour-active");
   }, [current]);
@@ -93,9 +87,7 @@ export function TourButton() {
         className="btn btn-ghost btn-sm shrink-0"
       >
         <Compass size={18} aria-hidden="true" />
-        {/* Short on a phone, where the full label squeezes the cart's name
-            out of the header. Only one is ever displayed, so the button's
-            name is always the words on it. */}
+        {/* Short label on phones to leave room for the cart name. */}
         <span className="sm:hidden">Tour</span>
         <span className="hidden sm:inline">Show me around</span>
       </button>
@@ -125,7 +117,7 @@ export function TourButton() {
                 <span className="sr-only">End the tour</span>
               </button>
             </div>
-            {/* Read out when it changes, since focus stays on Next. */}
+            {/* Announced on change, since focus stays on Next. */}
             <div aria-live="polite" className="flex flex-col gap-1">
               <h2 id={titleId} className="text-lg font-extrabold">
                 {current.step.title}

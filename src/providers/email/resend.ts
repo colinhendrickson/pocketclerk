@@ -7,16 +7,9 @@ import { formatFrom } from "./from";
 import type { EmailSender, SendResult, TextMessage } from "./index";
 
 /**
- * Sends receipts through Resend.
- *
- * `from` is an address on a domain this project controls, because a school has
- * no mail infrastructure to authenticate against and mail claiming to be from a
- * domain it cannot prove will land in spam. `replyTo` is the program
- * administrator, so a teacher replying to a receipt reaches a person rather
- * than a no-reply mailbox.
- *
- * The job id is passed as the idempotency key. Delivery is at-least-once, so a
- * retried job must not produce a second email.
+ * Sends email through Resend. `from` is on a domain this project can
+ * authenticate; `replyTo` reaches the program administrator. The receipt job id
+ * is the idempotency key, since delivery is at-least-once.
  */
 export class ResendSender implements EmailSender {
   readonly name = "resend";

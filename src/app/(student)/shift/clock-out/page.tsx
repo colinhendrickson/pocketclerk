@@ -10,11 +10,9 @@ import { requirePairedDevice } from "@/app/(student)/require-device";
 export const dynamic = "force-dynamic";
 
 /**
- * Two states behind one route.
- *
- * While the shift is open this is the end-of-shift checklist. Once it is closed
- * it is the summary of what the student earned, which survives a refresh
- * because it is read from the shift rather than held in component state.
+ * The end-of-shift checklist while the shift is open, then the earnings
+ * summary once closed. The summary is read from the shift so it survives a
+ * refresh.
  */
 export default async function ClockOutPage() {
   await requirePairedDevice();

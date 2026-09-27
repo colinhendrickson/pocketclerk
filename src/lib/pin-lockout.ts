@@ -4,18 +4,13 @@ import { db } from "@/db";
 import { LOCKOUT_MINUTES, MAX_FAILED_ATTEMPTS } from "@/lib/auth";
 
 /**
- * The PIN lockout, counted by the database.
+ * PIN lockout, counted by the database.
  *
- * The first version read `failed_attempts`, added one in JavaScript, and wrote
- * the result back. Twenty wrong guesses sent at once all read the same count
- * and all wrote the same count plus one, so the lockout never engaged: the
- * limit on guessing a four-digit PIN held only for someone polite enough to
- * guess one at a time. It is the same check-then-act race the schema's
- * constraints exist to prevent everywhere else, applied to a counter.
- *
- * Here the increment, the decision, and the lock happen in one UPDATE. Postgres
- * serializes concurrent updates to the same row and re-checks the WHERE clause
- * against the row each one finally sees, so no two guesses can count as one.
+ * Increment, threshold check, and lock happen in a single UPDATE rather than
+ * read-modify-write in JS, which would let concurrent guesses read the same
+ * count. Postgres serializes updates to the row and re-evaluates WHERE against
+ * the latest version, so every guess is counted.
+ * See docs/adr/0004-invariants-in-the-database.md.
  */
 
 export type FailedPinResult =
@@ -25,11 +20,10 @@ export type FailedPinResult =
 /**
  * Records one wrong PIN and reports whether the student is now locked out.
  *
- * Every SET expression reads the row as it was before this statement, which is
- * what lets one statement both reset the counter and set the lock when the
- * limit is reached. The WHERE clause refuses to count against a student who is
- * already locked, so guesses that arrive during a lockout neither extend it nor
- * leave a half-spent counter behind for when it lifts.
+ * SET expressions see the pre-update row, so one statement can both reset the
+ * counter and set the lock at the limit. The WHERE clause skips students
+ * already locked, so guesses during a lockout neither extend it nor leave a
+ * partial count behind.
  */
 export async function recordFailedPin(studentId: string): Promise<FailedPinResult> {
   const [row] = await db.execute<{ failed_attempts: number; locked_until: Date | string | null }>(sql`
@@ -68,13 +62,9 @@ export async function recordFailedPin(studentId: string): Promise<FailedPinResul
 }
 
 /**
- * Clears the counter after a correct PIN, but only if the student is not
- * locked out at this moment.
- *
- * A correct guess can be in flight while a burst of wrong ones locks the
- * student. Checking the lock once at the start of the request would let that
- * guess through anyway; checking it in the statement that accepts the PIN does
- * not. Returns false when the lock won.
+ * Clears the counter after a correct PIN unless the student is locked out.
+ * The lock is checked in the accepting statement itself, so a correct guess
+ * racing a lockout-triggering burst is refused. Returns false if locked.
  */
 export async function acceptCorrectPin(studentId: string): Promise<boolean> {
   const rows = await db.execute<{ id: string }>(sql`

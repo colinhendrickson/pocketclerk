@@ -1,10 +1,6 @@
 import { randomBytes, scrypt, timingSafeEqual, type ScryptOptions } from "node:crypto";
 
-/**
- * Hand-rolled rather than `promisify(scrypt)`: promisify resolves to the
- * three-argument overload and drops the options parameter, so passing `N` and
- * `maxmem` would not typecheck.
- */
+/** Hand-rolled because `promisify(scrypt)` types drop the options overload. */
 function scryptAsync(
   password: string,
   salt: Buffer,
@@ -20,30 +16,17 @@ function scryptAsync(
 }
 
 /**
- * PIN hashing and student sessions.
+ * Student PIN hashing and lockout checks.
  *
- * Students sign in by tapping their name and entering a four-digit PIN. There
- * are no accounts: emails, passwords and reset flows are friction this audience
- * cannot absorb, and the cart is a supervised classroom device, not the open
- * internet.
- *
- * The hash is not pretending to make a four-digit PIN brute-force resistant;
- * nothing can. It protects the *database dump* case, so that a leaked table
- * does not hand out every student's PIN in plaintext. Rate limiting, stored on
- * the student row, is what actually stops guessing.
- *
- * scrypt comes from Node's standard library, so there is no native module to
- * fail to install on a contributor's machine or in CI.
+ * Hashing a four-digit PIN cannot resist brute force; it only keeps a leaked
+ * table from exposing PINs in plaintext. The per-student lockout is what stops
+ * online guessing. scrypt is used because it ships with Node (no native deps).
  */
 
 const SCRYPT_KEYLEN = 64;
-/** Deliberately costly. A sign-in happens a handful of times per shift. */
+/** Costly on purpose; sign-ins are infrequent. */
 const SCRYPT_COST = 2 ** 15;
-/**
- * scrypt needs roughly `128 * N * r` bytes, which at this cost is just over
- * Node's 32 MB default and fails with ERR_CRYPTO_INVALID_SCRYPT_PARAMS unless
- * the ceiling is raised explicitly.
- */
+/** scrypt needs ~`128 * N * r` bytes, just over Node's 32 MB default at this cost. */
 const SCRYPT_MAXMEM = 64 * 1024 * 1024;
 
 export const MAX_FAILED_ATTEMPTS = 5;
@@ -60,10 +43,8 @@ export async function hashPin(pin: string): Promise<string> {
 }
 
 /**
- * Verifies a PIN against a stored hash in constant time.
- *
- * Returns false rather than throwing on a malformed hash: a corrupted row
- * should deny access, never crash the sign-in screen in front of a student.
+ * Verifies a PIN against a stored hash in constant time. A malformed hash
+ * returns false (deny) rather than throwing.
  */
 export async function verifyPin(storedHash: string, pin: string): Promise<boolean> {
   const [scheme, saltHex, keyHex] = storedHash.split("$");

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 export interface RememberedDetailsProps {
-  /** localStorage key; the choice is remembered per device, per page. */
+  /** localStorage key (per device, per page). */
   storageKey: string;
   summary: React.ReactNode;
   className?: string;
@@ -12,13 +12,8 @@ export interface RememberedDetailsProps {
 }
 
 /**
- * A native `<details>` that remembers whether it was left open.
- *
- * Native, because it is already a disclosure widget to every screen reader
- * and keyboard with no ARIA to get wrong. Open by default: someone arriving
- * cold should see the help, and someone who knows the page can close it once.
- * The choice lives on the device, not the account, since it is about the
- * screen in front of them.
+ * A native `<details>` (accessible without custom ARIA) that remembers its
+ * open state in localStorage. Open by default.
  */
 export function RememberedDetails({
   storageKey,

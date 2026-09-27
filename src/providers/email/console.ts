@@ -1,10 +1,7 @@
 import { renderReceiptText, type Receipt } from "../renderer/receipt";
 import type { EmailSender, SendResult, TextMessage } from "./index";
 
-/**
- * Logs the email instead of sending it. The default when no provider key is
- * configured, so the order flow is fully exercisable with no accounts.
- */
+/** Logs email instead of sending it. The default when no provider key is set. */
 export class ConsoleSender implements EmailSender {
   readonly name = "console";
 

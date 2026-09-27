@@ -19,12 +19,10 @@ export const metadata: Metadata = {
   ...(siteMode() === "instance" ? { robots: { index: false, follow: false } } : {}),
 };
 
-// Typed explicitly rather than with Next's generated `LayoutProps`, which only
-// exists after a build has written .next/types and therefore breaks `tsc` on a
-// clean checkout — including in CI, where typecheck runs before build.
+// Not typed with Next's generated `LayoutProps`, which only exists after a
+// build and would break `tsc` on a clean checkout.
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // The demo puts itself back on the first visit after the hour. Returns at
-  // once on a school's copy.
+  // No-op outside the demo.
   await maybeResetDemo();
   return (
     <html

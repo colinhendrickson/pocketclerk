@@ -1,14 +1,10 @@
-// Must come first: it populates process.env before ./index reads DATABASE_URL.
+// Must be first: populates process.env before ./index reads DATABASE_URL.
 import "./load-env";
 
 import { getClient } from "./index";
 import { DEMO_PIN, seedDatabase } from "./seed-data";
 
-/**
- * `pnpm seed` wipes the database and fills it with a made-up cart.
- * `pnpm seed --demo` does the same and marks it as the public demo's database.
- * The data itself lives in ./seed-data.ts, which the demo's reset also uses.
- */
+/** `pnpm seed [--demo]`: wipes and reseeds the database. Data lives in ./seed-data.ts. */
 
 async function main() {
   const demo = process.argv.includes("--demo");
@@ -20,8 +16,6 @@ async function main() {
     console.log(`  ${s.students} students`);
     console.log(`  ${s.teachers} teachers`);
     console.log(`  ${s.supplies} inventory items`);
-    // Without an email key the sign-in code is printed by the dev server, so
-    // this address is all a new contributor needs to reach the admin side.
     console.log(`\nAdministrator: sign in at /admin/sign-in as ${s.adminEmail}.`);
     console.log("With no RESEND_API_KEY, the code appears in the dev server's output.");
   });

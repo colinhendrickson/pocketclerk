@@ -11,11 +11,8 @@ import { requirePairedDevice } from "@/app/(student)/require-device";
 export const dynamic = "force-dynamic";
 
 /**
- * End-of-shift inventory.
- *
- * Opening the page creates the count rows if this shift has not counted yet,
- * snapshotting what each item started with. Visiting twice does not reset
- * anything, so a student who wanders off and comes back finds their work.
+ * End-of-shift inventory. The first visit creates count rows snapshotting each
+ * item's starting quantity; later visits keep existing counts.
  */
 export default async function InventoryPage() {
   await requirePairedDevice();

@@ -10,11 +10,8 @@ import { requirePairedDevice } from "@/app/(student)/require-device";
 export const dynamic = "force-dynamic";
 
 /**
- * Every order completed during this shift, plus the two totals.
- *
- * The client's specification calls this out as business-math practice, so the
- * count and the running sales are the point of the screen rather than a footer
- * detail.
+ * Orders completed this shift. The order count and running sales total are the
+ * focus of the screen, as business-math practice for students.
  */
 export default async function TodaysOrdersPage() {
   await requirePairedDevice();

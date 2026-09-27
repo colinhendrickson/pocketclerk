@@ -1,14 +1,6 @@
 /**
- * Configuration that must be present for the app to work at all.
- *
- * A missing secret currently surfaces as a blank 500 on whichever screen
- * happens to need it first, which tells an administrator standing in a school
- * office nothing at all. Worse, it fails late and unevenly: the sign-in page
- * renders, the form submission dies, and student clock-in dies too, all from one
- * absent variable.
- *
- * These helpers let a route say "this is a configuration problem, not a bug",
- * so the screen can say so and the logs can name the variable.
+ * Required configuration. `ConfigurationError` lets a route report a missing
+ * variable by name instead of failing with a generic 500.
  */
 
 export class ConfigurationError extends Error {
@@ -22,7 +14,7 @@ export function isConfigurationError(error: unknown): error is ConfigurationErro
   return error instanceof ConfigurationError;
 }
 
-/** The variables without which nothing works. Checked, not assumed. */
+/** Names of required variables that are missing or invalid. */
 export function missingRequiredConfig(): string[] {
   const missing: string[] = [];
 

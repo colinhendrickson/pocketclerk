@@ -5,34 +5,18 @@ import { renderReceiptText, type Receipt } from "../renderer/receipt";
 import type { PrintResult, ReceiptPrinter } from "./index";
 
 /**
- * Drives a cheap 58mm Bluetooth thermal printer straight from the browser.
- *
- * Why this exists in the browser at all: the printer is paired to the tablet,
- * not to a network, so no server can reach it. The receipt queue accounts for
- * that by letting the tablet claim its own print jobs.
- *
- * Why Bluetooth Low Energy specifically: iPadOS refuses classic Bluetooth to
- * anything that is not an MFi-certified accessory, and MFi printers start at
- * several hundred dollars. Low-energy printers are reachable from a web page,
- * which is the whole reason the hardware was chosen this way. Safari does not
- * implement Web Bluetooth, so on iPad the application runs inside a browser
- * that does; Chrome on Android works without that step.
- *
- * The printers in this price range are the same handful of boards sold under
- * many names, and they do not agree on which GATT service carries the print
- * characteristic. Rather than hard-code one vendor's UUIDs, this probes the
- * known candidates and uses the first writable characteristic it finds.
+ * Drives a 58mm BLE thermal printer from the tablet's browser, since no server
+ * can reach a printer paired to the tablet. Commodity boards disagree on which
+ * GATT service carries the print characteristic, so this probes known
+ * candidates and uses the first writable one.
+ * See docs/adr/0009-receipts-over-web-bluetooth.md.
  */
 
 /**
- * GATT services seen on commodity ESC/POS printers, most common first.
- *
- * The last two are for dual-mode (classic and low-energy) boards like the
- * PT-210 the first deployment uses: the service many cheap Chinese printer
- * boards expose over BLE, and the Microchip/ISSC "transparent UART" used by
- * dual-mode Bluetooth modules. Added from their published UUIDs, not yet
- * confirmed against a PT-210 in hand; the probe tries every candidate, so an
- * extra one costs nothing.
+ * GATT services seen on commodity ESC/POS printers, most common first. The last
+ * two cover dual-mode boards (a common vendor service and the Microchip/ISSC
+ * transparent UART); they come from published UUIDs and are not yet confirmed
+ * on hardware.
  */
 const CANDIDATE_SERVICES: BluetoothServiceUUID[] = [
   0xff00,
@@ -65,13 +49,7 @@ export class WebBluetoothPrinter implements ReceiptPrinter {
     return this.characteristic !== null && this.device?.gatt?.connected === true;
   }
 
-  /**
-   * Opens the browser's device chooser and connects.
-   *
-   * Must be called from a user gesture; the browser refuses otherwise, which is
-   * why the shift screen has an explicit "Connect printer" button rather than
-   * connecting on load. One tap per shift.
-   */
+  /** Opens the device chooser and connects. Must be called from a user gesture. */
   async connect(): Promise<void> {
     if (!WebBluetoothPrinter.isSupported()) {
       throw new Error(
@@ -95,8 +73,7 @@ export class WebBluetoothPrinter implements ReceiptPrinter {
     }
 
     this.device = device;
-    // A printer that is switched off mid-shift should surface as not-ready
-    // rather than as a write that hangs.
+    // Surface a powered-off printer as not ready instead of a hanging write.
     device.addEventListener("gattserverdisconnected", () => {
       this.characteristic = null;
     });
@@ -119,13 +96,8 @@ export class WebBluetoothPrinter implements ReceiptPrinter {
   }
 
   /**
-   * Writes in MTU-sized pieces, without a response.
-   *
-   * These printers have small buffers and drop bytes when a large payload
-   * arrives faster than the head can consume it, so each chunk is followed by a
-   * short pause. It is slower than it needs to be on good firmware and correct
-   * on bad firmware, which is the right trade for a receipt that takes a second
-   * either way.
+   * Writes in MTU-sized chunks with a short pause after each, because these
+   * printers have small buffers and drop bytes when fed too fast.
    */
   private async writeChunked(bytes: Uint8Array): Promise<void> {
     const characteristic = this.characteristic;
@@ -154,18 +126,15 @@ async function findWritableCharacteristic(
         if (write || writeWithoutResponse) return characteristic;
       }
     } catch {
-      // This printer does not expose that service. Try the next candidate.
+      // Service not present; try the next candidate.
     }
   }
   return null;
 }
 
 /**
- * Encodes the receipt as ESC/POS.
- *
- * Only four commands are used: initialize, set alignment, feed, and cut. Every
- * printer in this class implements them, and anything more elaborate is where
- * the cheap firmwares start to differ from each other.
+ * Encodes the receipt as ESC/POS using only initialize, align, feed and cut,
+ * the subset every printer in this class implements consistently.
  */
 export function encodeReceipt(receipt: Receipt): Uint8Array {
   const text = renderReceiptText(receipt);

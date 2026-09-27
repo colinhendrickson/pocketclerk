@@ -1,18 +1,11 @@
 /**
- * The PocketClerk mark: a "P" printed on a receipt with a torn edge, on a
- * rounded tile.
- *
- * The product's mark, not a school's: per the white-label rule it is the same
- * on every deployment, and a deployment's own logo, if it has one, arrives as
- * `NEXT_PUBLIC_LOGO_URL` for the sign-in email. Chosen from three candidates
- * for staying crisp at 16px in a browser tab.
- *
- * These shapes are the only drawing of it. The `Logo` component draws them
- * inline; `scripts/render-icons.ts` renders the favicon and home-screen icons
- * from `logoSvg`; tests/logo.test.ts fails if the committed icon files drift.
+ * The PocketClerk mark, identical on every deployment. These shapes are the
+ * single source: the `Logo` component draws them inline, and
+ * `scripts/render-icons.ts` renders the icon files from `logoSvg`
+ * (tests/logo.test.ts catches drift).
  */
 
-/** The tile, the receipt and the letter, in a 64-unit square. */
+/** Tile, receipt and letter paths in a 64-unit square. */
 export const LOGO_SHAPES = {
   tileRadius: 14,
   receipt: "M18 10h28v44l-4.7-4-4.6 4-4.7-4-4.7 4-4.6-4-4.7 4z",
@@ -21,17 +14,12 @@ export const LOGO_SHAPES = {
 } as const;
 
 /**
- * Colors for the icon files only: the PocketClerk theme's primary and cream.
- * A favicon is loaded outside the page and cannot read the theme, so it needs
- * literal values. Inside the app the mark uses the theme's semantic colors
- * instead, per the no-ad-hoc-hex rule, and so it takes on a deployment's skin.
+ * Literal colors for the icon files only, which load outside the page and
+ * cannot read the theme. In the app the mark uses semantic theme colors.
  */
 export const LOGO_COLORS = { tile: "#0b6e5f", paper: "#fffcf7" } as const;
 
-/**
- * The mark as standalone SVG markup, for the icon files.
- * `fullBleed` drops the rounded corners, for iOS, which rounds icons itself.
- */
+/** Standalone SVG for the icon files. `fullBleed` drops the corners (iOS rounds its own). */
 export function logoSvg({ fullBleed = false }: { fullBleed?: boolean } = {}): string {
   const { tile, paper } = LOGO_COLORS;
   const rx = fullBleed ? 0 : LOGO_SHAPES.tileRadius;

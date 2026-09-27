@@ -14,15 +14,8 @@ export interface PinFormProps {
 }
 
 /**
- * PIN entry.
- *
- * The keypad is local rather than the device keyboard: a software keyboard
- * covers half an iPad screen, offers autocorrect and emoji, and is a much
- * larger surface than four digits needs.
- *
- * Entry submits itself on the fourth digit. There is no confirm button, because
- * a second deliberate action after an already-deliberate four taps is a step
- * that only exists to be forgotten.
+ * PIN entry. Uses an on-screen keypad instead of the software keyboard, and
+ * submits automatically on the fourth digit.
  */
 export function PinForm({ studentId, studentName }: PinFormProps) {
   const router = useRouter();
@@ -78,10 +71,8 @@ export function PinForm({ studentId, studentName }: PinFormProps) {
       </div>
 
       {message ? (
-        // A stable id, because "the element with role=alert" is ambiguous: the
-        // framework renders its own live region for route announcements, and on
-        // this page that region reads "enter your PIN", which matches anything
-        // looking for the word.
+        // Stable id: Next.js renders its own route-announcer live region, so
+        // role=alert alone is ambiguous.
         <p
           id="pin-error"
           role="alert"

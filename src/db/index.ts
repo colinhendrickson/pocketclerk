@@ -7,19 +7,10 @@ import * as schema from "./schema";
 /**
  * Database client.
  *
- * `DATABASE_URL` is the pooled connection used at runtime: Supabase's pooler in
- * session mode (see `sessionPoolerUrl`). Serverless functions come and go, and
- * the pooler keeps them from exhausting Postgres' connection slots. Migrations
- * use `DIRECT_URL`, which drizzle-kit needs to be a session of its own.
- *
- * Connection is deferred until the first query rather than established at
- * import time. A build collects routes by importing their modules, so an eager
- * connection would make `next build` require a reachable database — which it
- * does not, and which would mean standing up Postgres just to produce static
- * assets in CI.
- *
- * In development the client is cached on `globalThis` so Next.js hot reloads do
- * not leak a new pool on every edit.
+ * `DATABASE_URL` is the pooled runtime connection; `DIRECT_URL` is for
+ * migrations only. The connection is opened lazily on first query so that
+ * `next build` does not need a reachable database. In development the client is
+ * cached on `globalThis` so hot reloads do not leak pools.
  */
 
 const globalForDb = globalThis as unknown as {
@@ -28,13 +19,8 @@ const globalForDb = globalThis as unknown as {
 };
 
 /**
- * The pooled runtime connection.
- *
- * `POSTGRES_URL` is the fallback because that is the name Vercel's Supabase
- * integration provisions, along with `POSTGRES_URL_NON_POOLING` for the direct
- * one. Reading both means the integration can be switched on and the app simply
- * works, and the credentials stay in sync when the database password is
- * rotated, instead of two variables quietly going stale.
+ * The pooled runtime connection. Falls back to `POSTGRES_URL`, the name
+ * Vercel's Supabase integration provisions.
  */
 export function runtimeConnectionString(): string | undefined {
   const url = process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
@@ -42,25 +28,10 @@ export function runtimeConnectionString(): string | undefined {
 }
 
 /**
- * Supabase's transaction pooler URL, moved to the same pooler's session port.
- *
- * Every admin page hung for 300 seconds in production. The database showed
- * why: the admin lookup sat "active", waiting on ClientRead, inside an open
- * transaction, with the start of the query and never the rest. With prepared
- * statements off, postgres.js runs any query with parameters in two round
- * trips (describe it, then bind and execute), and the transaction pooler
- * (port 6543) lost the second half. Queries without parameters never
- * hung, which is why the health check kept answering throughout. Neither
- * plain Postgres nor PgBouncer, tried locally as a stand-in, does this, so no
- * local test saw it. docs/adr/0008-session-pooler-and-idle-connections.md.
- *
- * In session mode (port 5432, same host and credentials) a client keeps one
- * database connection for as long as it is connected, so a query in two parts
- * cannot be split across two. That costs connections, which does not matter
- * here: an instance holds one and closes it after a few idle seconds.
- *
- * Done here, rather than by changing the deployment's variable, so that the
- * URL Supabase and Vercel hand out keeps working as given.
+ * Rewrites a Supabase transaction-pooler URL (port 6543) to the session pooler
+ * (port 5432) on the same host. The transaction pooler can split postgres.js's
+ * two-round-trip parameterized queries across backends and hang them. See
+ * docs/adr/0008-session-pooler-and-idle-connections.md.
  */
 export function sessionPoolerUrl(url: string): string {
   return url.replace(/(@[^/?#]*\.pooler\.supabase\.com):6543(?=[/?#]|$)/, "$1:5432");
@@ -70,13 +41,9 @@ export function sessionPoolerUrl(url: string): string {
 export const IDLE_TIMEOUT_SECONDS = 5;
 
 export function clientOptions(connectionString: string, production: boolean) {
-  // Prepared statements stay off on any Supabase pooler. In transaction mode
-  // each statement can reach a different backend, where a statement prepared on
-  // another does not exist. Session mode, which the app now uses, would allow
-  // them, but a pooler URL can still arrive in transaction mode (a variable set
-  // by hand, a script), and off is safe in both. Detected from the connection
-  // string rather than NODE_ENV, so a local process pointed at the pooler
-  // behaves the same way.
+  // Prepared statements are unsafe in transaction mode, and a pooler URL may
+  // still arrive in that mode (e.g. a hand-set variable), so disable them for
+  // any pooler connection.
   const pooled =
     connectionString.includes("pooler.supabase.com") ||
     connectionString.includes(":6543");
@@ -85,16 +52,12 @@ export function clientOptions(connectionString: string, production: boolean) {
     // One connection per function instance; the pooler handles concurrency.
     max: production ? 1 : 5,
     prepare: !pooled,
-    // The pooler, and any NAT on the way to it, drops quiet connections
-    // without telling either end, and postgres.js keeps idle connections
-    // forever by default. So quiet connections are closed here, and
-    // keepAwakeWhileUsed makes sure that closing gets to run on Vercel.
+    // The pooler silently drops idle connections; close them first.
+    // keepAwakeWhileUsed ensures this timer can fire on Vercel.
     idle_timeout: IDLE_TIMEOUT_SECONDS,
-    // Recycle even a busy connection, so nothing lives long enough to meet a
-    // drop window we did not anticipate.
+    // Recycle long-lived connections regardless of activity.
     max_lifetime: 60 * 5,
-    // Fail in ten seconds with an error that names the problem, instead of
-    // thirty seconds of nothing behind a proxy that gives up first.
+    // Fail before an upstream proxy timeout would mask the error.
     connect_timeout: 10,
   };
 }
@@ -109,24 +72,14 @@ let holdTimer: ReturnType<typeof setTimeout> | undefined;
 let releaseHold: (() => void) | undefined;
 
 /**
- * Wraps a database handle so that using it keeps the function instance awake
- * until its connection has gone idle and been closed.
+ * Wraps a database handle so each use keeps the Vercel instance awake until the
+ * connection's idle timeout has closed it.
  *
- * Vercel suspends an instance once its response and any `waitUntil` work are
- * done, and a suspended process runs no timers, so the idle timeout above
- * cannot close a connection between requests. The connection would sleep with
- * the instance while the pooler dropped it, and the next request would write to
- * a dead socket. Vercel documents this and ships `attachDatabasePool` for it,
- * which does not support postgres.js; this is the same mechanism.
- *
- * (It was first written as the fix for pages hanging for 300 seconds. That
- * turned out to be the transaction pooler, above; see ADR 0008. This stays
- * because the failure it prevents is real on its own.)
- *
- * Every use re-arms one hold, handed to `waitUntil`, that outlasts the idle
- * timeout, so the client closes the connection while the instance is still
- * running. Outside Vercel nothing suspends, so there is nothing to hold, and
- * scripts are not kept running by the timer.
+ * Vercel suspends an instance after the response and `waitUntil` work finish,
+ * and a suspended process runs no timers, so an idle connection would survive
+ * into the next request as a dead socket. Each use re-arms a single `waitUntil`
+ * hold that outlasts the idle timeout (the same approach as Vercel's
+ * `attachDatabasePool`, which does not support postgres.js). No-op off Vercel.
  */
 export function keepAwakeWhileUsed<T extends object>(getTarget: () => T, idleSeconds: number): T {
   return new Proxy({} as T, {
@@ -176,10 +129,7 @@ function instance() {
   return globalForDb.pocketclerkDb;
 }
 
-/**
- * Proxy so `db.select(...)` reads naturally at call sites while the underlying
- * connection is still created on first use.
- */
+/** Lazily connected client; the connection is created on first use. */
 export const db = keepAwakeWhileUsed(instance, IDLE_TIMEOUT_SECONDS);
 
 /** The raw postgres.js client, for scripts that need to close the pool. */

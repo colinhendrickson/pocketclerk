@@ -9,51 +9,28 @@ import { ConfigurationError } from "@/lib/config";
 import { newSignInCode, normalizeSignInCode } from "@/lib/sign-in-code";
 
 /**
- * Administrator sign-in, by emailed single-use link.
- *
- * There is no password. Administrators are a few members of staff who sign in
- * a few times a term, and a password they would have to remember or reset is
- * worse security and worse ergonomics than a code sent to the address that
- * already identifies them.
- *
- * Sign-in is handled here rather than delegated to a hosted auth provider for
- * two reasons: the email provider interface already exists, so a link costs one
- * function call; and it keeps the promise that the project runs end to end with
- * no cloud account. See docs/adr/0007-self-hosted-sign-in-links.md.
- *
- * The allowlist is the authorization model. Being able to receive mail at an
- * address proves who you are; having a row in `admin_users` is what makes you
- * an administrator. Anyone else who somehow obtains a link gets nothing.
+ * Administrator sign-in by emailed single-use link or code; no passwords.
+ * Email proves identity; a row in `admin_users` grants admin access.
+ * See docs/adr/0007-self-hosted-sign-in-links.md.
  */
 
 const COOKIE_NAME = "pocketclerk_admin";
-/**
- * Thirty days, so the administrator's own phone and laptop stay signed in.
- * Signing out ends it at once, which is what a shared device like the cart's
- * iPad calls for.
- */
+/** Long-lived for personal devices; sign-out ends it immediately on shared ones. */
 const SESSION_SECONDS = 60 * 60 * 24 * 30;
-/**
- * Long enough to walk to a laptop, short enough that a forwarded mail is stale.
- * Exported so the email states the same number the database enforces.
- */
+/** Token lifetime. Exported so the email states the same value the database enforces. */
 export const TOKEN_MINUTES = 15;
 /** Sign-in links requestable per address per hour, to stop mailbox flooding. */
 const MAX_LINKS_PER_HOUR = 5;
 /**
- * Wrong code entries allowed against one outstanding token.
- *
- * This, not the length of the code, is what makes a six-digit secret safe. Five
- * guesses at a million, against a code that belongs to one address and dies in
- * fifteen minutes, is not an attack worth mounting.
+ * Wrong code entries allowed per outstanding token. This cap, together with
+ * per-address scoping and the short expiry, is what makes a six-digit code safe.
  */
 const MAX_CODE_ATTEMPTS = 5;
 
 function secret(): string {
   const value = process.env.SESSION_SECRET;
   if (!value || value.length < 32) {
-    // Typed, so a caller can tell a missing deployment variable apart from a
-    // genuine fault and say something useful instead of returning a blank 500.
+    // Typed so callers can report a missing variable instead of a blank 500.
     throw new ConfigurationError(
       "SESSION_SECRET",
       "SESSION_SECRET must be at least 32 characters. See .env.example.",
@@ -63,17 +40,12 @@ function secret(): string {
 }
 
 /**
- * Tokens are hashed with HMAC rather than a slow password hash.
+ * Hashes tokens and codes with HMAC-SHA256 keyed by `SESSION_SECRET`.
  *
- * A password hash is deliberately slow to make guessing expensive, which
- * matters for a secret a human chose. This secret is 32 random bytes, so
- * guessing is already hopeless and the only job left is making a stolen
- * database useless. HMAC does that, and it is fast enough to look up by hash.
- *
- * It holds for the six-digit code too, whose keyspace a laptop could otherwise
- * exhaust instantly: HMAC's key is `SESSION_SECRET`, which lives in the
- * environment and not in the table, so a stolen dump has nothing to grind
- * against.
+ * A slow password hash is unnecessary: tokens are 32 random bytes, and the key
+ * lives in the environment rather than the database, so a stolen dump cannot be
+ * brute-forced even for the small six-digit code keyspace. HMAC is also
+ * deterministic, which allows lookup by hash.
  */
 function hashToken(token: string): string {
   return createHmac("sha256", secret()).update(token).digest("hex");
@@ -90,21 +62,12 @@ export type RequestLinkResult =
   | { ok: false; error: "not_allowed" | "rate_limited" };
 
 /**
- * Issues a sign-in link, and a short code that redeems the same row.
+ * Issues a sign-in link and a short code that redeem the same row; using either
+ * spends it. The code lets an admin sign in on a shared device without opening
+ * their mailbox there.
  *
- * Two ways in, one secret's worth of trust: whichever is used spends the row,
- * so a code cannot outlive the link it was mailed with.
- *
- * The code exists because the link assumes you can open your email on the
- * device you are signing in on, and on the cart's iPad that is precisely what
- * should not happen. It is a shared device a student uses; a personal mailbox
- * signed into it to read one link stays signed in afterwards. So the mail goes
- * to a phone and the code is typed on the iPad.
- *
- * Returns `not_allowed` for an address that is not an administrator. The caller
- * must not reveal which of the two happened: the sign-in page says the same
- * thing either way, so the form cannot be used to discover who the
- * administrators are.
+ * Callers must not distinguish `not_allowed` from success in the UI, so the
+ * form cannot be used to enumerate administrators.
  */
 export async function requestSignInLink(
   email: string,
@@ -150,11 +113,9 @@ export async function requestSignInLink(
 }
 
 /**
- * Redeems a link and starts a session.
- *
- * The token is marked used in the same statement that reads it, with `used_at
- * IS NULL` in the predicate. Two simultaneous clicks therefore race Postgres
- * rather than the application, and exactly one of them updates a row.
+ * Redeems a link and starts a session. The token is claimed atomically
+ * (`used_at IS NULL` in the UPDATE predicate), so concurrent clicks yield
+ * exactly one success.
  */
 export async function redeemSignInLink(token: string): Promise<AdminIdentity | null> {
   const [claimed] = await db.execute<{ person_id: string }>(sql`
@@ -177,18 +138,11 @@ export type RedeemCodeResult =
 /**
  * Redeems a typed code and starts a session.
  *
- * The code is scoped to the address it was sent to, so a guess has to be right
- * for a specific person's single outstanding token. The `attempts` ceiling is
- * enforced inside the statement that claims the row, so a burst of parallel
- * guesses cannot slip past a count that was read a moment earlier.
- *
- * Only the newest outstanding token is considered. Asking for a second code
- * retires the first, which matches what the person expects when they give up on
- * one mail and request another.
- *
- * `invalid` covers a wrong code, an unknown address, an expired row and a spent
- * one alike. Telling them apart would tell a stranger which addresses are
- * administrators and whether a code is still live.
+ * Only the address's newest outstanding token is considered, so requesting a
+ * new code retires the old one. The `attempts` cap is checked inside the
+ * claiming UPDATE, so parallel guesses cannot race past it. `invalid` covers
+ * wrong, unknown, expired, and spent alike to avoid leaking which addresses are
+ * administrators or whether a code is live.
  */
 export async function redeemSignInCode(
   email: string,
@@ -204,9 +158,7 @@ export async function redeemSignInCode(
     .where(sql`lower(${persons.email}) = ${normalizedEmail}`)
     .limit(1);
 
-  // A wrong code still costs an attempt on the outstanding token, so a
-  // malformed guess cannot be used as a free probe. An unknown address has no
-  // token to charge, and looks identical from outside.
+  // Any failed guess, including a malformed one, costs an attempt below.
   if (!row) return { ok: false, error: "invalid" };
 
   if (normalizedCode) {
@@ -255,10 +207,8 @@ export async function redeemSignInCode(
 }
 
 /**
- * Re-checks the allowlist and issues the session cookie.
- *
- * The check happens at redemption, not only at issue: access revoked in the
- * fifteen minutes since the mail was sent must actually be revoked.
+ * Re-checks the allowlist and issues the session cookie. Checking at
+ * redemption honors access revoked after the link was sent.
  */
 export async function startAdminSession(personId: string): Promise<AdminIdentity | null> {
   const [person] = await db
@@ -295,11 +245,9 @@ export async function clearAdminSession(): Promise<void> {
 }
 
 /**
- * The signed-in administrator, or null.
- *
- * Re-reads the allowlist on every call rather than trusting the cookie alone,
- * so removing someone takes effect on their next request instead of whenever
- * their session happens to expire.
+ * The signed-in administrator, or null. Verifies the cookie signature in
+ * constant time and re-reads the allowlist so revocation takes effect on the
+ * next request.
  */
 export async function getAdmin(): Promise<AdminIdentity | null> {
   const store = await cookies();

@@ -5,16 +5,9 @@ import { cookies } from "next/headers";
 import { ConfigurationError } from "@/lib/config";
 
 /**
- * Student session: a signed, httpOnly cookie holding the open shift id.
- *
- * No JWT library and no localStorage. A JWT would be ceremony for a single
- * opaque id, and localStorage is unreadable from server components and readable
- * by any injected script. An HMAC-signed cookie is the smallest thing that
- * actually works here.
- *
- * The cookie identifies a shift, not a student. Everything a student screen is
- * allowed to do is scoped to their own open shift, so the shift id is both the
- * session and the authorization scope.
+ * Student session: an HMAC-signed, httpOnly cookie holding the open shift id.
+ * The shift id is both the session and the authorization scope; every student
+ * action is limited to that shift.
  */
 
 const COOKIE_NAME = "pocketclerk_shift";

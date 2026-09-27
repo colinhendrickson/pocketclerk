@@ -5,30 +5,16 @@ import { cookies } from "next/headers";
 import { ConfigurationError } from "@/lib/config";
 
 /**
- * Device pairing for the student side.
+ * Device pairing for the student side, so the student roster is not readable
+ * by anyone who finds the URL. The setup link stores a signed cookie that every
+ * student screen requires. Admin routes are unaffected.
  *
- * The cart screens are a kiosk, not a website. They list the first names of
- * children and accept a four-digit PIN, and neither of those should be reachable
- * by anyone who happens to find the address. Rate limiting makes guessing a PIN
- * impractical, but it does nothing about the roster being readable, and a list
- * of pupils' names is the part that actually matters.
- *
- * So the cart is paired once to a device. Visiting the setup link stores a
- * signed cookie on that iPad; every student screen requires it. Without it the
- * site says only that the device is not set up, revealing no names, no menu and
- * no school detail beyond what the branding already shows.
- *
- * The administrator side is unaffected. It is gated by an emailed link to an
- * allowlisted address, which is a stronger check than this one and works from
- * any laptop.
- *
- * Pairing is optional by design: with no `DEVICE_CODE` set the cart is open,
- * which keeps local development and the public demo working unchanged. A real
- * deployment sets it.
+ * Optional: with no `DEVICE_CODE` set the cart is open (local dev, demo).
+ * See docs/adr/0010-device-pairing.md.
  */
 
 const COOKIE_NAME = "pocketclerk_device";
-/** A school year. Re-pairing every term would be worse than the risk it avoids. */
+/** One school year. */
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
 /** True when this deployment requires devices to be paired. */
@@ -55,10 +41,7 @@ function secret(): string {
   return value;
 }
 
-/**
- * The cookie holds a signature of the code rather than the code itself, so a
- * stolen cookie cannot be read back into the value someone would type.
- */
+/** The cookie holds an HMAC of the code, so a stolen cookie does not reveal it. */
 function token(): string {
   return createHmac("sha256", secret()).update(expectedCode()).digest("base64url");
 }
@@ -85,12 +68,7 @@ export async function pairDevice(): Promise<void> {
   });
 }
 
-/**
- * May this device use the cart?
- *
- * Always true when pairing is not configured, so nothing changes for local
- * development or the demo.
- */
+/** Whether this device may use the cart. Always true when pairing is not configured. */
 export async function isPaired(): Promise<boolean> {
   if (!pairingRequired()) return true;
 
@@ -98,16 +76,11 @@ export async function isPaired(): Promise<boolean> {
   const value = store.get(COOKIE_NAME)?.value;
   if (!value) return false;
 
-  // Rotating DEVICE_CODE invalidates every paired device, because the signature
-  // is over the code. That is the intended way to revoke a lost iPad.
+  // Rotating DEVICE_CODE revokes every paired device.
   return constantTimeEquals(value, token());
 }
 
-/**
- * The link that connects a device, for the setup checklist on Admin home, or
- * null where no pairing is required. Shown only to administrators, who are
- * exactly the people meant to connect the cart's iPad.
- */
+/** The device setup link shown to admins, or null when pairing is not required. */
 export function pairingUrl(appUrl: string): string | null {
   if (!pairingRequired()) return null;
   return `${appUrl.replace(/\/$/, "")}/setup?code=${encodeURIComponent(process.env.DEVICE_CODE ?? "")}`;

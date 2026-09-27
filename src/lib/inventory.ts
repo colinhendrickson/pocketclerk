@@ -4,8 +4,8 @@ import { db } from "@/db";
 import { inventoryCounts, inventoryItems, shifts } from "@/db/schema";
 import type { ChecklistKey, CountRow } from "@/lib/inventory-rules";
 
-// Re-exported so server modules have one import for inventory concerns; the
-// client imports the rules module directly, since this one reaches Postgres.
+// Server modules import everything from here; client code imports the rules
+// module directly.
 export {
   CHECKLIST,
   isChecklistKey,
@@ -17,23 +17,15 @@ export {
 } from "@/lib/inventory-rules";
 
 /**
- * End-of-shift inventory.
- *
- * The student counts what is left, the app works out what was used and what
- * needs restocking. Counting is the teaching goal, so the app never guesses the
- * remaining figure from sales: a cup dropped on the floor is a real difference
- * between what was sold and what is gone, and noticing that difference is part
- * of the job.
+ * End-of-shift inventory. The student counts what is left; the app derives
+ * usage and restock needs. Remaining is never inferred from sales, since
+ * counting is the teaching goal.
  */
 
 /**
- * Opens the count for a shift, creating a row per active item the first time
- * it is visited.
- *
- * The starting quantity is what the previous shift left after restocking, and
- * the par level when there is no previous shift to ask. It is written into the
- * row rather than looked up later, because it is a claim about what was on the
- * cart at that moment and must not change when the par level does.
+ * Opens the count for a shift, creating a row per active item on first visit.
+ * The starting quantity (previous shift's leftover, or par) is snapshotted
+ * onto the row so later par changes do not rewrite it.
  */
 export async function openCount(shiftId: string): Promise<CountRow[]> {
   const items = await db
@@ -88,8 +80,7 @@ async function startingFor(
     .limit(1);
 
   if (!previous || previous.remaining === null) return parLevel;
-  // A restocked item went back up to par; otherwise the cart still holds
-  // whatever the last shift left on it.
+  // Restocked items went back to par; otherwise carry over the last count.
   return previous.restocked ? parLevel : previous.remaining;
 }
 
@@ -142,7 +133,7 @@ export async function setRestocked(
     );
 }
 
-/** Adds or removes one completed checklist key, without disturbing the others. */
+/** Atomically adds or removes one completed checklist key. */
 export async function setChecklistItem(
   shiftId: string,
   key: ChecklistKey,

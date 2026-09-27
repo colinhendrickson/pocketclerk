@@ -1,22 +1,19 @@
 import { ChevronRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
-// From types directly: the help index also loads server-only rules, and this
-// component is used by the client-side guide search on Admin home.
+// Import from types directly: the help index pulls in server-only code, and
+// this component is also used client-side.
 import { PAGE_NAMES, type AdminRoute, type Guide } from "@/lib/help/types";
 
 export interface GuideViewProps {
   guide: Guide;
-  /** The page this is shown on, so a guide does not offer to go where you are. */
+  /** Current page, so the guide omits a link back to it. */
   currentRoute?: AdminRoute;
 }
 
 /**
- * One guide: its question as a disclosure, its numbered steps inside.
- *
- * Shared by the help panel on each page and the guide list on Admin home, so a
- * task reads the same wherever someone finds it. The `id` lets Admin home link
- * straight to a guide.
+ * One guide as a disclosure with numbered steps. Shared by the per-page help
+ * panel and the Admin home guide list; the `id` is a link target.
  */
 export function GuideView({ guide, currentRoute }: GuideViewProps) {
   return (
@@ -55,7 +52,7 @@ export function GuideView({ guide, currentRoute }: GuideViewProps) {
   );
 }
 
-/** A link out of the app, such as to the App Store, opening in a new tab. */
+/** External link that opens in a new tab. */
 export function OutsideLink({ label, href }: { label: string; href: string }) {
   return (
     <a

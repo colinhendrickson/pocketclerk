@@ -15,12 +15,9 @@ export interface ColorPickerProps {
 }
 
 /**
- * Choosing the main color.
- *
- * The preview repaints only itself, by setting the color variables on its own
- * box, so nothing else on the site changes until Save. The readability check
- * runs as the color changes and says, in words, whether it passes and what to
- * pick instead if not; the server runs the same check before saving.
+ * Main color picker. The preview scopes the color variables to its own box, so
+ * nothing else changes until Save. The contrast check runs live here and again
+ * on the server before saving.
  */
 export function ColorPicker({ saved }: ColorPickerProps) {
   const router = useRouter();

@@ -1,34 +1,17 @@
 /**
- * The cart's clock.
+ * The cart's clock. All displayed times and "today" boundaries use one
+ * configured zone, not the server's (UTC in production) or the viewer's.
  *
- * Every time and date the app shows, and every "today" it filters by, is in one
- * configured zone: the zone the cart physically operates in. Not the server's,
- * and not the viewer's.
- *
- * Without this, dates silently followed whatever machine rendered them. A
- * developer's laptop is in the cart's zone, so everything looked right; Vercel
- * and Supabase run on UTC, so in production an 8:15 order printed on its
- * receipt as 12:15, "today" on the dashboard rolled over at 8 PM, and a client
- * component rendered one time on the server and a different one on the iPad.
- * None of that is visible until it ships, which is why it is fixed here once
- * rather than at each call site.
- *
- * `NEXT_PUBLIC_` because client components format times too, and they must
- * agree with the server character for character or React reports a hydration
- * mismatch. A zone is not a secret.
- *
- * Pure: no database, no React, testable on its own.
+ * `NEXT_PUBLIC_` so server and client format identically and avoid hydration
+ * mismatches. Pure: no database or React imports.
  */
 
-/** Used when nothing is configured, or when what is configured is not a zone. */
+/** Used when the configured zone is missing or invalid. */
 export const DEFAULT_TIME_ZONE = "America/New_York";
 
 /**
- * Returns `value` if it names a real IANA zone, otherwise the default.
- *
- * A typo here would otherwise throw a RangeError from every formatter on every
- * page, which takes the whole app down over one setting. Falling back keeps
- * the cart running and the log says which value was refused.
+ * Returns `value` if it names a real IANA zone, otherwise the default. An
+ * invalid zone would make every formatter throw, so fall back and log instead.
  */
 export function resolveTimeZone(value: string | undefined): string {
   const candidate = value?.trim();
@@ -46,13 +29,7 @@ export function resolveTimeZone(value: string | undefined): string {
 
 export const TIME_ZONE = resolveTimeZone(process.env.NEXT_PUBLIC_TIME_ZONE);
 
-/**
- * A formatter pinned to the cart's zone.
- *
- * Call sites use this instead of `new Intl.DateTimeFormat` so that forgetting
- * the zone is not possible; that omission is the whole bug this module exists
- * to prevent.
- */
+/** A formatter pinned to the cart's zone. Use instead of `new Intl.DateTimeFormat`. */
 export function cartFormatter(
   options: Intl.DateTimeFormatOptions,
   timeZone: string = TIME_ZONE,
@@ -71,7 +48,7 @@ export function parseLocalDate(value: string | undefined): LocalDate | null {
   if (!match) return null;
   const [, y, m, d] = match.map(Number);
   const probe = new Date(Date.UTC(y, m - 1, d));
-  // Rejects 2026-02-30 and friends, which Date would quietly roll forward.
+  // Rejects dates like 2026-02-30, which Date would roll forward.
   return probe.getUTCFullYear() === y &&
     probe.getUTCMonth() === m - 1 &&
     probe.getUTCDate() === d
@@ -81,7 +58,7 @@ export function parseLocalDate(value: string | undefined): LocalDate | null {
 
 /** The calendar date an instant falls on, in the given zone. */
 export function localDate(instant: Date, timeZone: string = TIME_ZONE): LocalDate {
-  // en-CA formats as YYYY-MM-DD, which is exactly the shape wanted.
+  // en-CA formats as YYYY-MM-DD.
   return new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",
@@ -90,13 +67,7 @@ export function localDate(instant: Date, timeZone: string = TIME_ZONE): LocalDat
   }).format(instant);
 }
 
-/**
- * Calendar arithmetic, not clock arithmetic.
- *
- * Adding 86,400,000 ms to a midnight is wrong twice a year: the day daylight
- * saving starts is 23 hours long and the day it ends is 25. Stepping the
- * calendar date and converting afterwards is right every day.
- */
+/** Calendar arithmetic, not clock arithmetic, so DST days (23h/25h) are handled. */
 export function addDays(date: LocalDate, days: number): LocalDate {
   const [y, m, d] = date.split("-").map(Number);
   const next = new Date(Date.UTC(y, m - 1, d + days));
@@ -128,11 +99,9 @@ function offsetMs(instant: Date, timeZone: string): number {
 }
 
 /**
- * The instant local midnight begins on a calendar date, in the given zone.
- *
- * This is the boundary every "today" query needs. Computed by guessing the
- * offset, then correcting with the offset at the guess, which converges even
- * on a day whose offset changes.
+ * The instant local midnight begins on a calendar date in the given zone.
+ * Guesses the offset, then corrects with the offset at the guess, which
+ * converges even on DST transition days.
  */
 export function startOfLocalDay(date: LocalDate, timeZone: string = TIME_ZONE): Date {
   const [y, m, d] = date.split("-").map(Number);

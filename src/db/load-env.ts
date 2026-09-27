@@ -1,12 +1,8 @@
 import { config } from "dotenv";
 
 /**
- * Loads `.env.local` for scripts that run outside Next.js, such as the seed.
- *
- * This lives in its own module because ES module imports are hoisted and
- * evaluated before any statement in the importing file. Calling `dotenv` at the
- * top of `seed.ts` would still run *after* `import { db } from "./index"` had
- * already read `process.env` and thrown. Importing this module first works
- * because imports evaluate in source order.
+ * Loads `.env.local` for scripts run outside Next.js. A separate module because
+ * imports are hoisted: importing it first is the only way to populate
+ * `process.env` before `./index` reads it.
  */
 config({ path: [".env.local", ".env"] });

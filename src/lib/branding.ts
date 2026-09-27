@@ -1,15 +1,7 @@
 /**
- * White-label configuration.
- *
- * The public repository ships fictional defaults. A real deployment supplies its
- * own values through environment variables, so no school's name or reward
- * currency ever enters git. The main color is the one setting staff change
- * themselves, on the admin Colors page (stored in `site_settings`, see
- * src/lib/settings.ts). Names, color, logo and reward currency are data, and
- * nothing else is configurable.
- *
- * These are `NEXT_PUBLIC_` because the values are printed on screen and on
- * receipts; they are branding, not secrets.
+ * White-label configuration. The repository ships fictional defaults; a real
+ * deployment sets its own through `NEXT_PUBLIC_` variables (branding, not
+ * secrets). The main color is staff-editable instead (src/lib/settings.ts).
  */
 
 export interface Branding {

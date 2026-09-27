@@ -8,17 +8,10 @@ import { redeemLink } from "../actions";
 export const dynamic = "force-dynamic";
 
 /**
- * Where an emailed sign-in link lands. It does not sign anyone in.
- *
- * Mail security scanners, Microsoft's Safe Links in particular and most school
- * mail sits behind it, open every link in incoming mail to inspect it. When
- * visiting this address redeemed the token, the scanner's visit used it up, and
- * the person clicking a moment later was told their link had expired. Their
- * first sign-in would fail for a reason nobody could see.
- *
- * So arriving here only shows a button, and pressing it redeems the token.
- * Scanners fetch pages; they do not submit forms. Redeeming is also a change of
- * state, which a GET request should not make anyway.
+ * Landing page for an emailed sign-in link. It does not redeem the token on
+ * GET: mail security scanners (e.g. Safe Links) prefetch links and would spend
+ * it. Redemption happens only when the button POSTs the form. See
+ * docs/adr/0007-self-hosted-sign-in-links.md.
  */
 export default async function VerifyPage({
   searchParams,

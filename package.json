@@ -36,6 +36,7 @@
     "icons": "tsx scripts/render-icons.ts"
   },
   "dependencies": {
+    "@faker-js/faker": "^10.6.0",
     "@vercel/functions": "^3.9.9",
     "drizzle-orm": "^0.45.3",
     "lucide-react": "^1.47.0",
@@ -47,7 +48,6 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
-    "@faker-js/faker": "^10.6.0",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^26.6.2",

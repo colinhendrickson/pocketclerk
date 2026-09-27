@@ -14,16 +14,9 @@ export interface InventorySheetProps {
 }
 
 /**
- * Counting what is left, then restocking it.
- *
- * Counting is by plus and minus rather than typed entry, because the student is
- * counting physical objects and the number on screen should move the way the
- * pile does. Each tap is one unit; the starting figure caps it, so the count
- * can never claim more than the cart began with.
- *
- * "Used" is shown but never entered. It is the difference between the start and
- * the count, and seeing it appear is the point: a gap between what was sold and
- * what is gone is a real thing worth noticing.
+ * Counting what is left, then restocking. Counts use plus/minus steppers
+ * capped at the starting quantity. "Used" is derived (start minus count),
+ * never entered.
  */
 export function InventorySheet({ initialRows }: InventorySheetProps) {
   const router = useRouter();

@@ -13,12 +13,9 @@ const DEMO_PORT = 3100;
 /**
  * End-to-end configuration.
  *
- * There are two specs, and that is deliberate. End-to-end tests are slow and
- * the flakiest thing in any suite; correctness is carried by the unit tests and
- * by the database constraints. The shift spec proves the seams connect: that a
- * real browser can drive a real server against a real Postgres from sign-in to
- * clock-out. The responsive spec proves every screen fits every screen size,
- * which no other test can see.
+ * Correctness is carried by the unit tests and the database constraints; these
+ * specs cover what only a real browser can: a whole shift from sign-in to
+ * clock-out, every screen at five sizes with axe, keyboard use, and the demo.
  *
  * The default viewport is an iPad in landscape, the cart's own device. The
  * responsive spec sets its own sizes.

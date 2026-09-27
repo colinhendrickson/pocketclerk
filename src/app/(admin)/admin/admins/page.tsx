@@ -8,10 +8,8 @@ import { HelpPanel } from "../_help/help-panel";
 export const dynamic = "force-dynamic";
 
 /**
- * Who can use the admin side.
- *
- * Staff add and remove each other here. There is no password to hand out:
- * access is an email address on this list, and signing in sends a code to it.
+ * Admin allowlist. Access is an email address on this list; there are no
+ * passwords, and signing in emails a code.
  */
 export default async function AdminAdminsPage() {
   const me = await requireAdmin();

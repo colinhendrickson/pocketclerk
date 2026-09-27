@@ -19,11 +19,9 @@ export interface AdminAccessProps {
 }
 
 /**
- * The admin list and the form to add to it.
- *
- * Removing asks for confirmation in place, as a second button, rather than
- * with the browser's confirm box, which a screen reader handles poorly and
- * which some school browsers block.
+ * The admin list and add form. Removal confirms with an inline second button
+ * rather than `confirm()`, which screen readers handle poorly and some school
+ * browsers block.
  */
 export function AdminAccess({ admins, meId, signInUrl }: AdminAccessProps) {
   return (

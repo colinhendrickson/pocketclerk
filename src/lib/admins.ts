@@ -6,17 +6,11 @@ import { adminUsers, persons } from "@/db/schema";
 import { parseNewAdmin } from "@/lib/validate";
 
 /**
- * Who can use the admin side, and changing that from inside it.
+ * Managing the admin allowlist (`admin_users`; see admin-auth.ts).
  *
- * Access used to be granted only by a command-line script, which meant every
- * new member of staff was a request to the developer. The allowlist is still
- * the whole authorization model (see admin-auth.ts); this is the same table,
- * managed from a page instead.
- *
- * Removing access removes the `admin_users` row and nothing else. The person
- * stays, because they may also be a teacher with an order history. The admin
- * layout re-reads the allowlist on every request, so removal takes effect on
- * their next click rather than when their session expires.
+ * Removing access deletes only the `admin_users` row; the person remains, since
+ * they may also be a teacher with order history. Removal takes effect on the
+ * next request because the allowlist is re-read every time.
  */
 
 export interface AdminListing {
@@ -48,11 +42,8 @@ export type AddAdminResult =
   | { ok: false; error: "invalid" | "already" };
 
 /**
- * Gives someone access by their email address.
- *
- * Someone with that address already in the system, usually a teacher who buys
- * from the cart, is reused rather than duplicated: one person, one order
- * history, whatever roles they hold. `created` says which happened.
+ * Grants access by email. An existing person with that address is reused
+ * rather than duplicated; `created` reports whether a new person was inserted.
  */
 export async function addAdmin(input: unknown, addedBy: string | null): Promise<AddAdminResult> {
   const parsed = parseNewAdmin(input);
@@ -89,14 +80,10 @@ export type RemoveAdminResult =
   | { ok: false; error: "self" | "last" | "not_found" };
 
 /**
- * Takes away someone's access.
- *
- * Two refusals, both there so that a school can never lock itself out:
- * nobody removes themselves, and the last administrator is never removed.
- *
- * The count and the delete happen under a lock on every admin row. Without
- * it, two administrators removing each other at the same moment would each see
- * two administrators, each delete one, and leave none.
+ * Revokes access. Refuses self-removal and removal of the last admin, so the
+ * deployment cannot lock itself out. The count and delete run under
+ * `FOR UPDATE` on all admin rows so concurrent mutual removals cannot leave
+ * zero admins.
  */
 export async function removeAdmin(personId: string, by: string): Promise<RemoveAdminResult> {
   if (personId === by) return { ok: false, error: "self" };

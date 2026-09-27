@@ -5,15 +5,8 @@ import { codeMatches, pairDevice, pairingRequired } from "@/lib/device";
 export const dynamic = "force-dynamic";
 
 /**
- * Pairs this device with the cart.
- *
- * A route handler rather than a page, because pairing sets a cookie and Next.js
- * only permits that in an action or a route handler.
- *
- * The response is identical for a correct and an incorrect code, apart from
- * whether the cookie is set, so the endpoint cannot be used to test guesses by
- * watching what comes back. Guessing is impractical anyway against a code of
- * real length, and the code is typed once per device by an adult.
+ * Pairs this device with the cart. A route handler because it sets a cookie.
+ * See docs/adr/0010-device-pairing.md.
  */
 export async function GET(request: Request): Promise<NextResponse> {
   const url = new URL(request.url);

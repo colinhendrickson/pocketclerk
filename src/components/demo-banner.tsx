@@ -1,14 +1,8 @@
 /**
- * DemoBanner — tells every visitor to the public demo that it is one.
- *
- * On every page of the demo, the landing page included, so nobody mistakes the
- * shared, made-up cart for a real one or expects their changes to last. Start
- * over is a plain outline button, never `btn-primary`, so the screen's one
- * primary action stays the screen's own; it is 60px tall because the banner
- * also sits on student screens.
- *
- * A server component: the form posts to a server action, so it works before
- * the page has hydrated.
+ * DemoBanner: shown on every page of the public demo. "Start over" is an
+ * outline button so it never competes with the screen's `btn-primary`, and is
+ * 60px tall for student screens. A server-action form, so it works before
+ * hydration.
  */
 
 import { startOver } from "@/app/demo/actions";

@@ -1,13 +1,8 @@
 /**
- * Pictures staff can put beside a menu item or add-on, for students who cannot
- * read the words yet.
- *
- * A fixed set of line icons rather than emoji: emoji look different on every
- * device and clash with the rest of the screen, and a fixed set means the cart
- * never shows something unexpected. The order here is the order of the picker.
- *
- * The keys are also a CHECK constraint in drizzle/0012_menu_icons.sql. Adding a
- * picture means adding it there too, in a new migration; a test compares them.
+ * Fixed set of line icons for menu items and add-ons, for pre-readers. Array
+ * order is picker order. Keys are mirrored in a CHECK constraint
+ * (drizzle/0012_menu_icons.sql); adding one needs a new migration, and a test
+ * compares them. See docs/adr/0015-menu-pictures.md.
  */
 
 export const MENU_ICONS = [

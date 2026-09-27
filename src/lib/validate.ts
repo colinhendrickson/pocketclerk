@@ -1,10 +1,7 @@
 /**
- * Input validation for the trust boundary.
- *
- * Server actions receive whatever the browser chooses to send, so every field
- * is checked before it reaches a query. These few shapes did not justify a
- * validation library: hand-written guards keep the dependency list short and
- * make the exact accepted range of every field readable in one screen.
+ * Input validation for server action payloads, which are untrusted. Parsers
+ * return null on any invalid field. Hand-written guards rather than a library,
+ * given how few shapes there are.
  */
 
 import { isMenuIconKey, type MenuIconKey } from "@/lib/menu-icons";
@@ -20,7 +17,7 @@ export function isFourDigitPin(value: unknown): value is string {
   return typeof value === "string" && /^\d{4}$/.test(value);
 }
 
-/** A non-negative, finite integer — the shape every money field must have. */
+/** Non-negative safe integer, the required shape of every money field. */
 export function isCents(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
@@ -42,12 +39,8 @@ export interface CompleteOrderInput {
 }
 
 /**
- * Validates the payload for completing an order. Returns null rather than
- * throwing so the caller can map a bad request to a typed result instead of a
- * stack trace.
- *
- * The caps are generous but finite: a classroom order is a handful of drinks,
- * and an unbounded array here is an unbounded loop in the transaction below it.
+ * Validates an order completion payload. Array sizes are capped so a request
+ * cannot drive an unbounded loop inside the order transaction.
  */
 export function parseCompleteOrder(input: unknown): CompleteOrderInput | null {
   if (typeof input !== "object" || input === null) return null;
@@ -89,13 +82,7 @@ export function isBoolean(value: unknown): value is boolean {
   return typeof value === "boolean";
 }
 
-/**
- * Trims a human name and enforces the one length range used everywhere.
- *
- * Shared by the student, teacher and menu parsers so that "too short" means the
- * same thing on every screen. Returns null rather than a trimmed empty string,
- * because a name that is only whitespace is a missing name, not a short one.
- */
+/** Trims a name and enforces the shared length range; whitespace-only is invalid. */
 function parseName(value: unknown, max = 80): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
@@ -110,12 +97,9 @@ export interface NewTeacherInput {
 }
 
 /**
- * Validates a teacher added mid-shift.
- *
- * The email check is deliberately loose. A strict pattern rejects addresses
- * that are perfectly valid, and the cost of a typo here is one undelivered
- * receipt, which the job monitor already surfaces. Refusing to serve a teacher
- * because a regex disliked their address is the worse failure.
+ * Validates a teacher added mid-shift. The email check is intentionally loose:
+ * strict patterns reject valid addresses, and a typo only costs one failed
+ * receipt, which the job monitor surfaces.
  */
 export function parseNewTeacher(input: unknown): NewTeacherInput | null {
   if (typeof input !== "object" || input === null) return null;
@@ -184,12 +168,9 @@ export interface ActiveToggleInput {
 }
 
 /**
- * The payload behind every activate/deactivate button in the admin area.
- *
- * `active` is sent as the intended end state rather than flipped server-side.
- * A toggle that reads the current value and inverts it turns a double-click, or
- * a stale tab, into a silent reversal of what the administrator just did;
- * sending the end state makes the operation idempotent.
+ * Payload for admin activate/deactivate buttons. `active` is the desired end
+ * state rather than a server-side flip, so double-clicks and stale tabs are
+ * idempotent.
  */
 export function parseActiveToggle(input: unknown): ActiveToggleInput | null {
   if (typeof input !== "object" || input === null) return null;
@@ -206,12 +187,7 @@ export interface TeacherEditInput extends NewTeacherInput {
   teacherId: string;
 }
 
-/**
- * An edit is a new teacher's fields plus the id of the row to write them to, so
- * the field rules are reused wholesale. One definition of "a valid teacher"
- * means the admin form can never accept a value the student form would have
- * rejected, or the reverse.
- */
+/** A teacher edit: the new-teacher fields plus the row id, so both forms share one set of rules. */
 export function parseTeacherEdit(input: unknown): TeacherEditInput | null {
   if (typeof input !== "object" || input === null) return null;
   const { teacherId } = input as Record<string, unknown>;
@@ -228,13 +204,7 @@ export interface TeacherNoteInput {
   note: string;
 }
 
-/**
- * A customer note, e.g. "dairy issue, use non-dairy creamer".
- *
- * Capped at a length that still fits the banner the student sees above the
- * menu. A note long enough to scroll is a note that will not be read during a
- * two-minute classroom visit, which defeats its only purpose.
- */
+/** A customer note. Capped so it fits the banner shown above the menu without scrolling. */
 export function parseTeacherNote(input: unknown): TeacherNoteInput | null {
   if (typeof input !== "object" || input === null) return null;
   const { teacherId, note } = input as Record<string, unknown>;
@@ -252,10 +222,7 @@ export interface TeacherNoteRemovalInput {
   index: number;
 }
 
-/**
- * Notes are removed by position, not by text. Two notes can legitimately read
- * the same, and deleting "the one that matches this string" would take both.
- */
+/** Notes are removed by index, not text, since two notes may be identical. */
 export function parseTeacherNoteRemoval(
   input: unknown,
 ): TeacherNoteRemovalInput | null {
@@ -275,25 +242,15 @@ export function parseTeacherNoteRemoval(
 /* -------------------------------------------------------------------------- */
 
 /**
- * Converts a price the administrator typed in dollars into integer cents.
- *
- * This is the one boundary where dollars are allowed to exist, and it never
- * multiplies by 100. `parseFloat("8.20") * 100` is 819.9999999999999, and
- * rounding that is one representation change away from charging the wrong
- * price forever, because the result is snapshotted onto every future order.
- * Instead the string is split on the decimal point and the two halves are read
- * as separate integers, so the arithmetic is exact by construction.
- *
- * Accepts "3", "3.5", "3.50", "$3.50" and " 3.50 ". Rejects more than two
- * decimal places: a third digit means the typist meant something this system
- * cannot represent, and silently truncating it is how a price quietly becomes
- * wrong.
+ * Converts a typed dollar amount to integer cents without float math
+ * (`parseFloat("8.20") * 100` is 819.999...). The whole and fractional parts
+ * are parsed as separate integers. Accepts "3", "3.5", "3.50", "$3.50" and
+ * surrounding whitespace; rejects more than two decimal places rather than
+ * truncating. See docs/adr/0001-money-as-integer-cents.md.
  */
 export function dollarsToCents(input: unknown): number | null {
   if (typeof input === "number") {
-    // Only a whole number of dollars can arrive as a number without having
-    // already passed through the float representation this function exists to
-    // avoid. Anything fractional is rejected rather than rounded.
+    // Only whole dollars are safe as a number; fractional values are rejected.
     return Number.isSafeInteger(input) && input >= 0 && input <= 99_999
       ? input * 100
       : null;
@@ -308,7 +265,7 @@ export function dollarsToCents(input: unknown): number | null {
   if (whole === "" && fraction === undefined) return null;
 
   const dollars = whole === "" ? 0 : Number.parseInt(whole, 10);
-  // "3.5" means fifty cents, not five. Pad to two places before reading.
+  // "3.5" is fifty cents: pad to two digits.
   const cents =
     fraction === undefined ? 0 : Number.parseInt(fraction.padEnd(2, "0"), 10);
 
@@ -329,29 +286,19 @@ export interface NewMenuEntryInput {
   isSpecial: boolean;
 }
 
-/** The most a menu price can be: what the price box accepts, $99,999.99. */
+/** $99,999.99, the most the price input accepts. */
 const MAX_MENU_PRICE_CENTS = 9_999_999;
 
 /**
- * A menu price as the page sends it: integer cents, already converted from
- * the typed dollars by `dollarsToCents` in the browser.
- *
- * Named `priceCents`, and only that. The page once sent cents in a field
- * called `price`, which this side read as dollars and multiplied by 100 a
- * second time, so every price typed on the menu page was saved a hundred
- * times over. A payload with the old name is refused rather than guessed at.
+ * Menu prices arrive as integer cents in `priceCents`, converted client-side by
+ * `dollarsToCents`. Payloads using a legacy `price` field are rejected rather
+ * than guessed at, to avoid double conversion.
  */
 function isMenuPrice(value: unknown): value is number {
   return isCents(value) && value <= MAX_MENU_PRICE_CENTS;
 }
 
-/**
- * A new menu item or add-on.
- *
- * `isSpecial` is accepted for both kinds but only ever written for items;
- * add-ons have no such column. Parsing it uniformly keeps the form payload one
- * shape, and the action drops it where it does not apply.
- */
+/** A new menu item or add-on. `isSpecial` is parsed for both but only stored for items. */
 export function parseNewMenuEntry(input: unknown): NewMenuEntryInput | null {
   if (typeof input !== "object" || input === null) return null;
   const { kind, name, priceCents, isSpecial } = input as Record<string, unknown>;
@@ -414,11 +361,7 @@ export interface MenuIconInput {
   icon: MenuIconKey | null;
 }
 
-/**
- * Validates a picture chosen for a menu item or add-on. `icon` must be present:
- * null clears the picture, and a missing field is a malformed request rather
- * than a quiet "clear".
- */
+/** Validates a menu picture. `icon: null` clears it; a missing `icon` is rejected. */
 export function parseMenuIcon(input: unknown): MenuIconInput | null {
   if (typeof input !== "object" || input === null) return null;
   const { kind, id, icon } = input as Record<string, unknown>;
@@ -435,12 +378,8 @@ export interface NewAdminInput {
 }
 
 /**
- * Validates someone being given admin access.
- *
- * Unlike a teacher's, the email is required: it is how they sign in, by a
- * code sent to it. Stored lower-case, since the sign-in form lower-cases what
- * is typed there. The check is as loose as the teacher one, for the same
- * reason: a strict pattern rejects real addresses.
+ * Validates a new admin. Email is required (it is the sign-in channel) and
+ * lower-cased to match the sign-in form. Loosely checked, as for teachers.
  */
 export function parseNewAdmin(input: unknown): NewAdminInput | null {
   if (typeof input !== "object" || input === null) return null;

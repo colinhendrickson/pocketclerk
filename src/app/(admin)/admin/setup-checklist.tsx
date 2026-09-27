@@ -15,11 +15,8 @@ export interface SetupChecklistProps {
 }
 
 /**
- * "Get the cart ready": what is done, what is left, and how to do each.
- *
- * Open while anything required is left. Once it is all done it folds down to a
- * single line that can be reopened, so it stops taking up the page but is
- * still there for the next person who wonders how the cart was set up.
+ * "Get the cart ready" checklist. Expanded while any required step is left;
+ * collapses to a reopenable summary once setup is complete.
  */
 export function SetupChecklist({ steps, pairingUrl, adminEmail }: SetupChecklistProps) {
   const required = steps.filter((step) => !step.optional);
@@ -53,8 +50,7 @@ export function SetupChecklist({ steps, pairingUrl, adminEmail }: SetupChecklist
               {step.id === "ipad" ? (
                 pairingUrl ? (
                   step.done ? (
-                    // Still needed after the first iPad: a replacement iPad, or
-                    // a computer to try the cart on.
+                    // For a replacement iPad or a computer to try the cart on.
                     <details className="rounded-box bg-base-200 p-3">
                       <summary className="cursor-pointer text-sm font-bold">
                         Connect another device, such as a computer to try the cart on

@@ -1,14 +1,7 @@
 /**
- * Every money value in this application is an integer number of cents.
- *
- * Binary floating point cannot represent a tenth exactly, so `0.1 + 0.2` is not
- * `0.3`. Totals built from dollar floats drift, and a cart that teaches a student
- * to hand back the wrong change is the one unforgivable bug in this codebase.
- * Cents in, cents through, formatted only at the display edge.
- *
- * Nothing here imports the database or React. These are pure functions so they
- * can be tested exhaustively with no mocks, which is exactly what
- * `tests/money.test.ts` does.
+ * Money math. Every value is an integer number of cents, formatted only at the
+ * display edge; floats would drift. Pure functions with no database or React
+ * imports. See docs/adr/0001-money-as-integer-cents.md.
  */
 
 /** Thrown when a cash payment does not cover the amount owed. */
@@ -41,12 +34,7 @@ export function orderTotalCents(lines: readonly PricedLine[]): number {
   }, 0);
 }
 
-/**
- * Change owed on a cash sale.
- *
- * Throws rather than returning a negative number. Underpayment is a state the
- * UI must refuse to advance from, not a value to carry forward and format.
- */
+/** Change owed on a cash sale. Throws on underpayment rather than returning a negative. */
 export function changeCents(totalCents: number, receivedCents: number): number {
   if (receivedCents < totalCents) {
     throw new InsufficientPayment(totalCents, receivedCents);
@@ -76,11 +64,8 @@ const US_DENOMINATIONS: ReadonlyArray<Omit<Denomination, "count">> = [
 ];
 
 /**
- * Greedy breakdown of an amount into US bills and coins, largest first.
- *
- * This drives the hint under the change amount ("3 one-dollar bills"). The hint
- * is the teaching surface: it turns an abstract number into the physical act of
- * counting money out of the drawer.
+ * Greedy breakdown of an amount into US bills and coins, largest first. Drives
+ * the hint under the change amount.
  */
 export function denominationBreakdown(cents: number): Denomination[] {
   if (cents < 0) throw new RangeError("Cannot break down a negative amount");
@@ -116,22 +101,13 @@ export function hoursHundredthsBetween(clockIn: Date, clockOut: Date): number {
   return Math.round(ms / 36_000);
 }
 
-/**
- * Reward tickets earned for a shift: one per whole hour worked.
- *
- * Flooring is a product decision, not a rounding convenience. A partial hour
- * earns nothing, which is the rule the program uses, so it is written down here
- * rather than buried in a query.
- */
+/** Reward tickets for a shift: one per whole hour. Partial hours earn nothing (a product rule). */
 export function rewardTickets(hoursHundredths: number): number {
   if (hoursHundredths < 0) throw new RangeError("Negative hours");
   return Math.floor(hoursHundredths / 100);
 }
 
-/**
- * The display edge, and the only place cents become a string. Called from
- * components; never from server actions or anything in `src/db`.
- */
+/** Formats cents as dollars. Call only from components, never server code. */
 export function formatUSD(cents: number): string {
   const sign = cents < 0 ? "-" : "";
   const abs = Math.abs(cents);

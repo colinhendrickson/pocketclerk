@@ -15,22 +15,15 @@ import { getEmailSender } from "@/providers/email";
 import { renderSignInEmail } from "@/providers/renderer/sign-in";
 
 /**
- * Administrator sign-in actions.
- *
- * The response is identical whether or not the address belongs to an
- * administrator. A form that says "no such administrator" is a form that tells
- * a stranger who the administrators are.
+ * Runs `fn`, turning a configuration error (a missing or invalid deployment
+ * variable) into a logged message and a redirect to the sign-in page's config
+ * error. Everything else, including Next.js redirect/notFound signals, is
+ * rethrown unchanged.
  */
-export async function sendSignInLink(formData: FormData): Promise<void> {
-  const email = String(formData.get("email") ?? "");
-
-  let result: Awaited<ReturnType<typeof requestSignInLink>>;
+async function redirectOnConfigError<T>(fn: () => Promise<T>): Promise<T> {
   try {
-    result = await requestSignInLink(email);
+    return await fn();
   } catch (error) {
-    // A missing deployment variable is not a bug to hide behind a blank 500.
-    // Name it in the logs and tell the person at the keyboard that the problem
-    // is configuration rather than something they did.
     if (isConfigurationError(error)) {
       console.error(
         `[config] ${error.variable} is missing or invalid. Set it in the deployment environment and redeploy.`,
@@ -39,25 +32,34 @@ export async function sendSignInLink(formData: FormData): Promise<void> {
     }
     throw error;
   }
+}
+
+/**
+ * Emails a sign-in code and link to an administrator.
+ *
+ * The response is identical whether or not the address belongs to an
+ * administrator, so the form cannot be used to enumerate administrators. Send
+ * failures and skipped sends are only logged, never shown, for the same reason.
+ */
+export async function sendSignInLink(formData: FormData): Promise<void> {
+  const email = String(formData.get("email") ?? "");
+
+  const result = await redirectOnConfigError(() => requestSignInLink(email));
 
   if (result.ok) {
     const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const link = `${base}/admin/verify?token=${result.token}`;
     const sender = getEmailSender();
 
-    // Both ways in, in one mail. The code is for the cart's iPad, where the
-    // point is that a personal mailbox never gets opened on a shared device:
-    // the mail lands on a phone and only the six digits make the trip. The
-    // link is for a laptop where mail is already open.
+    // The code is for shared devices, where a personal mailbox should not be
+    // opened; the link is for a computer where mail is already open.
     const message = renderSignInEmail({
       name: result.identity.name,
       code: result.code,
       link,
       cartName: branding.cartName,
       programName: branding.programName,
-      // A mail client has no page to resolve a relative path against, so a
-      // logo configured as "/logo.png" would arrive as a broken image. With
-      // no logo configured, the PocketClerk mark is used.
+      // Mail clients cannot resolve relative URLs, so make the logo absolute.
       logoUrl: new URL(branding.logoUrl ?? "/icon-192.png", base).toString(),
       expiresMinutes: TOKEN_MINUTES,
     });
@@ -69,14 +71,8 @@ export async function sendSignInLink(formData: FormData): Promise<void> {
       html: message.html,
     });
 
-    // A rejected send used to vanish here. The provider returns a result rather
-    // than throwing, so ignoring it meant a deployment with a bad key or an
-    // unverified sender domain told the user a code was on its way, logged
-    // nothing, and left no trace anywhere except the provider's own dashboard.
-    //
-    // It stays a log line rather than a message on the page: the send is only
-    // attempted for an address that IS an administrator, so "we could not send
-    // that" on screen would answer the one question the form refuses to answer.
+    // The provider returns a result rather than throwing, so log failures
+    // explicitly.
     if (sent.ok) {
       console.info(`[sign-in] code sent via ${sender.name}`);
     } else {
@@ -85,14 +81,8 @@ export async function sendSignInLink(formData: FormData): Promise<void> {
       );
     }
   } else {
-    // The page is identical on these paths, deliberately, so the log is the
-    // only place the difference can show. Before this, a rate-limited request
-    // produced a friendly "code on its way", no mail, and a completely empty
-    // log: from the outside indistinguishable from a broken email provider,
-    // and it cost a real deployment an evening to tell the two apart.
-    //
-    // The address is left out. The log is private to whoever deployed this,
-    // but there is no reason to collect strangers' addresses in it either.
+    // The page is identical on every path, so the log is the only place to
+    // tell these apart. The address is intentionally not logged.
     console.warn(
       result.error === "rate_limited"
         ? "[sign-in] no code sent: rate limited, 5 per address per hour"
@@ -100,36 +90,20 @@ export async function sendSignInLink(formData: FormData): Promise<void> {
     );
   }
 
-  // The address comes back with the redirect so the code form knows whose code
-  // it is checking. It is the address they just typed, not a secret, and the
-  // page says the same thing whether or not it belongs to an administrator.
+  // The code form needs the address it is checking; it is not a secret.
   const query = new URLSearchParams({ sent: "1", email: email.trim() });
   redirect(`/admin/sign-in?${query}`);
 }
 
 /**
- * Signs in with the code from the email.
- *
- * A server action rather than a route handler, because the code arrives by POST
- * and never belongs in a URL: an address bar on a shared iPad is the one place
- * a still-live secret should not be left sitting.
+ * Signs in with the code from the email. A POST-only server action so the
+ * code never appears in a URL on a shared device.
  */
 export async function signInWithCode(formData: FormData): Promise<void> {
   const email = String(formData.get("email") ?? "");
   const code = String(formData.get("code") ?? "");
 
-  let result: Awaited<ReturnType<typeof redeemSignInCode>>;
-  try {
-    result = await redeemSignInCode(email, code);
-  } catch (error) {
-    if (isConfigurationError(error)) {
-      console.error(
-        `[config] ${error.variable} is missing or invalid. Set it in the deployment environment and redeploy.`,
-      );
-      redirect("/admin/sign-in?error=config");
-    }
-    throw error;
-  }
+  const result = await redirectOnConfigError(() => redeemSignInCode(email, code));
 
   if (result.ok) redirect("/admin");
 
@@ -142,32 +116,21 @@ export async function signInWithCode(formData: FormData): Promise<void> {
 }
 
 /**
- * Redeems an emailed link, from the button on /admin/verify.
- *
- * A POST, never the GET that opening the link makes: mail scanners open links
- * to inspect them, and a GET that spent the token let the scanner sign in
- * instead of the person. See the verify page.
+ * Redeems an emailed link from the button on /admin/verify. Redemption is a
+ * POST, not the link's GET, so mail scanners that prefetch links cannot spend
+ * the token. See docs/adr/0007-self-hosted-sign-in-links.md.
  */
 export async function redeemLink(formData: FormData): Promise<void> {
   const token = String(formData.get("token") ?? "");
 
-  let identity: Awaited<ReturnType<typeof redeemSignInLink>> = null;
-  try {
-    identity = token ? await redeemSignInLink(token) : null;
-  } catch (error) {
-    if (isConfigurationError(error)) {
-      console.error(
-        `[config] ${error.variable} is missing or invalid. Set it in the deployment environment and redeploy.`,
-      );
-      redirect("/admin/sign-in?error=config");
-    }
-    throw error;
-  }
+  const identity = token
+    ? await redirectOnConfigError(() => redeemSignInLink(token))
+    : null;
 
   redirect(identity ? "/admin" : "/admin/sign-in?error=1");
 }
 
-
+/** Clears the administrator session and returns to the sign-in page. */
 export async function signOut(): Promise<void> {
   await clearAdminSession();
   redirect("/admin/sign-in");
