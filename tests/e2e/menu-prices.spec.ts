@@ -1,7 +1,6 @@
-import { createHmac } from "node:crypto";
-
 import { expect, test } from "@playwright/test";
-import postgres from "postgres";
+
+import { database, signInAsAdmin } from "./helpers";
 
 /**
  * A price typed on the menu page is the price saved, when adding and when
@@ -15,26 +14,8 @@ import postgres from "postgres";
 
 const name = `E2E Price Check ${Date.now()}`;
 
-function database() {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL must be set.");
-  return postgres(url, { max: 1 });
-}
-
 test.beforeEach(async ({ page }) => {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret) throw new Error("SESSION_SECRET must be set.");
-  const sql = database();
-  const [admin] = await sql<{ person_id: string }[]>`SELECT person_id FROM admin_users LIMIT 1`;
-  await sql.end();
-  const signature = createHmac("sha256", secret).update(admin.person_id).digest("base64url");
-  await page.context().addCookies([
-    {
-      name: "pocketclerk_admin",
-      value: `${admin.person_id}.${signature}`,
-      url: test.info().project.use.baseURL ?? "http://localhost:3000",
-    },
-  ]);
+  await signInAsAdmin(page);
 });
 
 test.afterAll(async () => {

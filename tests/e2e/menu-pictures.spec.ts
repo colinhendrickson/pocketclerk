@@ -1,19 +1,12 @@
-import { createHmac } from "node:crypto";
-
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import postgres from "postgres";
+
+import { database, signInAsAdmin } from "./helpers";
 
 /**
  * Staff put a picture beside a name from the menu page, and can take it away.
  * What the student then sees is checked in shift.spec.ts.
  */
-
-function database() {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL must be set.");
-  return postgres(url, { max: 1 });
-}
 
 async function iconOf(name: string) {
   const sql = database();
@@ -23,19 +16,7 @@ async function iconOf(name: string) {
 }
 
 test.beforeEach(async ({ page }) => {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret) throw new Error("SESSION_SECRET must be set.");
-  const sql = database();
-  const [admin] = await sql<{ person_id: string }[]>`SELECT person_id FROM admin_users LIMIT 1`;
-  await sql.end();
-  const signature = createHmac("sha256", secret).update(admin.person_id).digest("base64url");
-  await page.context().addCookies([
-    {
-      name: "pocketclerk_admin",
-      value: `${admin.person_id}.${signature}`,
-      url: test.info().project.use.baseURL ?? "http://localhost:3000",
-    },
-  ]);
+  await signInAsAdmin(page);
 });
 
 test.afterAll(async () => {

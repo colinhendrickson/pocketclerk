@@ -1,8 +1,7 @@
-import { createHmac } from "node:crypto";
-
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import postgres from "postgres";
+
+import { pairDevice, signInAsAdmin } from "./helpers";
 
 /**
  * Every screen, at every size the app has to work on.
@@ -52,26 +51,6 @@ async function checkScreen(page: Page, screen: string, problems: string[]) {
   }
 }
 
-/**
- * Signs the admin cookie the way the app does, so the admin pages can be
- * checked without an email round trip. The key is the test environment's own.
- */
-async function signInAsAdmin(page: Page) {
-  const url = process.env.DATABASE_URL;
-  const secret = process.env.SESSION_SECRET;
-  if (!url || !secret) throw new Error("DATABASE_URL and SESSION_SECRET must be set.");
-
-  const sql = postgres(url, { max: 1 });
-  const [admin] = await sql<{ person_id: string }[]>`SELECT person_id FROM admin_users LIMIT 1`;
-  await sql.end();
-
-  const signature = createHmac("sha256", secret).update(admin.person_id).digest("base64url");
-  const base = test.info().project.use.baseURL ?? "http://localhost:3000";
-  await page.context().addCookies([
-    { name: "pocketclerk_admin", value: `${admin.person_id}.${signature}`, url: base },
-  ]);
-}
-
 for (const size of SIZES) {
   test(`every screen fits a ${size.name} (${size.width}px)`, async ({ page }) => {
     await page.setViewportSize({ width: size.width, height: size.height });
@@ -110,8 +89,7 @@ for (const size of SIZES) {
     });
 
     await test.step("student sign-in", async () => {
-      const code = process.env.DEVICE_CODE;
-      if (code) await page.goto(`/setup?code=${encodeURIComponent(code)}`);
+      await pairDevice(page);
       await page.goto("/cart");
       await checkScreen(page, "student list", problems);
 

@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { pairDevice } from "./helpers";
+
 /**
  * One shift, end to end.
  *
@@ -16,19 +18,6 @@ import { expect, test } from "@playwright/test";
  */
 
 const PIN = ["1", "2", "3", "4"];
-
-/**
- * Pair the browser with the cart, the way an adult sets up the iPad once.
- *
- * Skipped when the deployment under test has no DEVICE_CODE, which is the case
- * for the public demo, so the same spec covers both shapes.
- */
-async function pairDevice(page: import("@playwright/test").Page) {
-  const code = process.env.DEVICE_CODE;
-  if (!code) return;
-  await page.goto(`/setup?code=${encodeURIComponent(code)}`);
-  await expect(page).toHaveURL(/\/cart$/);
-}
 
 test("a student works a whole shift", async ({ page }) => {
   await test.step("sign in and clock in", async () => {

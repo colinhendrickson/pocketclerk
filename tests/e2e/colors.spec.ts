@@ -1,8 +1,7 @@
-import { createHmac } from "node:crypto";
-
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import postgres from "postgres";
+
+import { database, signInAsAdmin } from "./helpers";
 
 /**
  * Staff change the main color, and the cart changes with it.
@@ -11,28 +10,6 @@ import postgres from "postgres";
  * layouts apply it on the student side too, and the site still passes axe in
  * the new color. It puts the original back afterwards.
  */
-
-function database() {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL must be set.");
-  return postgres(url, { max: 1 });
-}
-
-async function signIn(page: Page) {
-  const secret = process.env.SESSION_SECRET;
-  if (!secret) throw new Error("SESSION_SECRET must be set.");
-  const sql = database();
-  const [admin] = await sql<{ person_id: string }[]>`SELECT person_id FROM admin_users LIMIT 1`;
-  await sql.end();
-  const signature = createHmac("sha256", secret).update(admin.person_id).digest("base64url");
-  await page.context().addCookies([
-    {
-      name: "pocketclerk_admin",
-      value: `${admin.person_id}.${signature}`,
-      url: test.info().project.use.baseURL ?? "http://localhost:3000",
-    },
-  ]);
-}
 
 function primaryOf(page: Page) {
   return page.evaluate(() =>
@@ -47,7 +24,7 @@ test.afterAll(async () => {
 });
 
 test("a blue chosen on Colors is used on the cart, and reads well", async ({ page }) => {
-  await signIn(page);
+  await signInAsAdmin(page);
   await page.goto("/admin/colors");
   await page.waitForLoadState("networkidle");
 
@@ -77,7 +54,7 @@ test("a blue chosen on Colors is used on the cart, and reads well", async ({ pag
 });
 
 test("a color too light to read cannot be saved, and a darker shade is offered", async ({ page }) => {
-  await signIn(page);
+  await signInAsAdmin(page);
   await page.goto("/admin/colors");
   await page.waitForLoadState("networkidle");
 

@@ -1,7 +1,6 @@
-import { createHmac } from "node:crypto";
+import { expect, test, type Page } from "@playwright/test";
 
-import { expect, test } from "@playwright/test";
-import postgres from "postgres";
+import { signInAsAdmin } from "./helpers";
 
 /**
  * The admin side, by keyboard alone, at phone width.
@@ -19,26 +18,13 @@ test.use({ viewport: { width: 390, height: 844 } });
  * JavaScript has loaded has no handler yet; on a cold development server that
  * window is seconds long, and a keypress in it proves nothing either way.
  */
-async function open(page: import("@playwright/test").Page, path: string) {
+async function open(page: Page, path: string) {
   await page.goto(path);
   await page.waitForLoadState("networkidle");
 }
 
 test.beforeEach(async ({ page }) => {
-  const url = process.env.DATABASE_URL;
-  const secret = process.env.SESSION_SECRET;
-  if (!url || !secret) throw new Error("DATABASE_URL and SESSION_SECRET must be set.");
-  const sql = postgres(url, { max: 1 });
-  const [admin] = await sql<{ person_id: string }[]>`SELECT person_id FROM admin_users LIMIT 1`;
-  await sql.end();
-  const signature = createHmac("sha256", secret).update(admin.person_id).digest("base64url");
-  await page.context().addCookies([
-    {
-      name: "pocketclerk_admin",
-      value: `${admin.person_id}.${signature}`,
-      url: test.info().project.use.baseURL ?? "http://localhost:3000",
-    },
-  ]);
+  await signInAsAdmin(page);
 });
 
 test("the first Tab offers a way past the navigation", async ({ page }) => {

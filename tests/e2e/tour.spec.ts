@@ -1,11 +1,9 @@
-import { createHmac } from "node:crypto";
-
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
-import postgres from "postgres";
+import { expect, test } from "@playwright/test";
 
 import { TOURS } from "../../src/lib/help/tours";
 import { ADMIN_ROUTES } from "../../src/lib/help/types";
+import { signInAsAdmin } from "./helpers";
 
 /**
  * "Show me around" on every admin page, by keyboard alone, at phone and desktop
@@ -16,30 +14,13 @@ import { ADMIN_ROUTES } from "../../src/lib/help/types";
  * one thing, and ending the tour must put focus back where it started.
  */
 
-async function signIn(page: Page) {
-  const url = process.env.DATABASE_URL;
-  const secret = process.env.SESSION_SECRET;
-  if (!url || !secret) throw new Error("DATABASE_URL and SESSION_SECRET must be set.");
-  const sql = postgres(url, { max: 1 });
-  const [admin] = await sql<{ person_id: string }[]>`SELECT person_id FROM admin_users LIMIT 1`;
-  await sql.end();
-  const signature = createHmac("sha256", secret).update(admin.person_id).digest("base64url");
-  await page.context().addCookies([
-    {
-      name: "pocketclerk_admin",
-      value: `${admin.person_id}.${signature}`,
-      url: test.info().project.use.baseURL ?? "http://localhost:3000",
-    },
-  ]);
-}
-
 for (const size of [
   { name: "phone", width: 390, height: 844 },
   { name: "desktop", width: 1440, height: 900 },
 ]) {
   test(`every page's tour, start to finish, on a ${size.name}`, async ({ page }) => {
     await page.setViewportSize({ width: size.width, height: size.height });
-    await signIn(page);
+    await signInAsAdmin(page);
 
     for (const route of ADMIN_ROUTES) {
       await page.goto(route);
@@ -71,7 +52,7 @@ for (const size of [
 
 test("Escape ends the tour, and the open tour passes axe", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await signIn(page);
+  await signInAsAdmin(page);
   await page.goto("/admin/students");
   await page.waitForLoadState("networkidle");
 
