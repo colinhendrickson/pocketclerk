@@ -4,23 +4,19 @@ import {
   buildReceipt,
   claimJobsForShift,
   markFailed,
-  markSent,
+  recordPrintResult,
 } from "@/lib/receipt-jobs";
 import { assertPairedDevice } from "@/app/(student)/require-device";
 import { getActiveShift } from "@/lib/queries";
 import { getShiftSession } from "@/lib/session";
+import { isUuid } from "@/lib/validate";
 import type { Receipt } from "@/providers/renderer/receipt";
 
 /**
- * The tablet's half of the receipt queue.
- *
- * The printer is paired to this device over Bluetooth, so no server can reach
- * it. The tablet therefore claims its own print jobs, sends them to the
- * printer, and reports the outcome back.
- *
- * Every claim is scoped to the shift in the signed session cookie, so a tablet
- * can only ever print receipts for sales it made. Students have no database
- * identity, which is exactly why that check lives here rather than in a policy.
+ * The tablet's side of the receipt queue. The printer is paired over Bluetooth,
+ * so the tablet claims its own print jobs and reports results. Claims are
+ * scoped to the shift in the signed session cookie. See
+ * docs/adr/0009-receipts-over-web-bluetooth.md.
  */
 
 export interface PendingPrint {
@@ -28,12 +24,13 @@ export interface PendingPrint {
   receipt: Receipt;
 }
 
+/** How many print jobs a tablet takes at once. */
+const PRINT_BATCH = 5;
+
 /**
- * Claims up to five queued print jobs for the current shift.
- *
- * Claiming marks them `processing` and increments their attempt count, so a
- * tablet that crashes mid-print leaves a job that is retried rather than one
- * that is silently lost.
+ * Claims up to `PRINT_BATCH` queued print jobs for the current shift, marking
+ * them `processing` and incrementing attempts so a crash mid-print retries
+ * rather than loses the job.
  */
 export async function claimPrintJobs(): Promise<PendingPrint[]> {
   await assertPairedDevice();
@@ -43,7 +40,7 @@ export async function claimPrintJobs(): Promise<PendingPrint[]> {
   const shift = await getActiveShift(shiftId);
   if (!shift) return [];
 
-  const jobs = await claimJobsForShift(shift.id, "print", 5);
+  const jobs = await claimJobsForShift(shift.id, "print", PRINT_BATCH);
   const out: PendingPrint[] = [];
 
   for (const job of jobs) {
@@ -59,10 +56,7 @@ export async function claimPrintJobs(): Promise<PendingPrint[]> {
 }
 
 /**
- * Reports what the printer did.
- *
- * A failure returns the job to the queue until it runs out of attempts, so a
- * printer that was out of paper prints the backlog once it is reloaded.
+ * Records a print outcome. Failures requeue the job until attempts run out.
  */
 export async function reportPrintResult(
   jobId: string,
@@ -70,12 +64,17 @@ export async function reportPrintResult(
   error?: string,
 ): Promise<void> {
   await assertPairedDevice();
+  if (!isUuid(jobId) || typeof ok !== "boolean") return;
+
   const shiftId = await getShiftSession();
   if (!shiftId) return;
+  const shift = await getActiveShift(shiftId);
+  if (!shift) return;
 
-  if (ok) {
-    await markSent(jobId);
-  } else {
-    await markFailed(jobId, error ?? "Print failed.");
-  }
+  // Scoped to jobs this shift claimed; anything else is ignored.
+  await recordPrintResult(
+    jobId,
+    shift.id,
+    ok ? { ok: true } : { ok: false, error: typeof error === "string" ? error : "Print failed." },
+  );
 }

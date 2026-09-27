@@ -17,15 +17,16 @@ import type { Receipt, ReceiptLine } from "@/providers/renderer/receipt";
 /**
  * Claiming and completing receipt jobs.
  *
- * A job is claimed with a single `UPDATE ... RETURNING` guarded on its current
- * status. That is what makes concurrent consumers safe: two overlapping runs
- * both issue the update, Postgres serializes them, and only one sees a row
- * returned. The scaled-up form of this is `FOR UPDATE SKIP LOCKED`; at this
- * volume the guarded update is the same guarantee with less machinery.
+ * Jobs are claimed with a single status-guarded `UPDATE ... RETURNING`, so
+ * concurrent consumers are serialized by Postgres and each job is returned to
+ * at most one of them. See docs/adr/0002-receipt-job-queue.md.
  */
 
 /** How many times a job is retried before it is left for a human. */
 export const MAX_ATTEMPTS = 5;
+
+/** Truncation limit for stored error messages. */
+const MAX_ERROR_LENGTH = 500;
 
 /** Drizzle's `execute` generic requires an index signature on the row type. */
 export interface ClaimedJob extends Record<string, unknown> {
@@ -35,23 +36,15 @@ export interface ClaimedJob extends Record<string, unknown> {
 }
 
 /**
- * How long a job may sit in `processing` before it is presumed abandoned.
- *
- * A consumer can die holding a job: a serverless function hits its time limit,
- * the instance is recycled, or, as happened here, an error escapes the loop.
- * Before this, a job left in `processing` was never claimed again, never sent
- * and never marked failed, so it appeared nowhere, not even on the admin
- * receipts page. Ten minutes is far longer than any real delivery takes, so a
- * live consumer is never robbed of a job it is still working on. Re-sending is
- * safe because the job id is the provider's idempotency key.
+ * How long a job may sit in `processing` before it is presumed abandoned (its
+ * consumer died) and becomes claimable again. Far longer than any real
+ * delivery; re-sending is safe because the job id is the idempotency key.
  */
 const STALE_PROCESSING = sql`interval '10 minutes'`;
 
 /**
- * Atomically moves up to `limit` claimable jobs on this channel to
- * `processing` and returns them. Claimable means queued, or stuck in
- * processing long enough that its consumer is gone. A job another live
- * consumer holds is not returned, because neither predicate matches it.
+ * Atomically moves up to `limit` claimable jobs (queued, or stale in
+ * `processing`) on this channel to `processing` and returns them.
  */
 export async function claimJobs(
   channel: "print" | "email",
@@ -107,28 +100,51 @@ export async function markSent(jobId: string): Promise<void> {
 }
 
 /**
- * Returns a job to the queue, or gives up once it has used its attempts.
- *
- * A job that has exhausted its retries stays `failed` with its last error
- * intact, which is what the admin monitor reads. Silent loss is the one outcome
- * this design refuses.
+ * Requeues a job, or marks it `failed` (keeping its last error for the admin
+ * monitor) once its attempts are exhausted.
  */
 export async function markFailed(jobId: string, error: string): Promise<void> {
-  // The casts are required. A CASE of string literals is typed text, and
-  // Postgres will not assign text to an enum column, so without them this
-  // statement failed every single time it ran. Every undeliverable receipt then
-  // crashed the code meant to record it, which abandoned the rest of its batch
-  // in `processing`, where nothing reclaimed it. See STALE_PROCESSING above.
+  // Casts required: a CASE of string literals is text, not the enum type.
   await db.execute(sql`
     UPDATE receipt_jobs
     SET status = CASE
           WHEN attempts >= ${MAX_ATTEMPTS} THEN 'failed'::receipt_status
           ELSE 'queued'::receipt_status
         END,
-        last_error = ${error.slice(0, 500)},
+        last_error = ${error.slice(0, MAX_ERROR_LENGTH)},
         updated_at = now()
     WHERE id = ${jobId}
   `);
+}
+
+export type PrintOutcome = { ok: true } | { ok: false; error: string };
+
+/**
+ * Settles a print job reported by the tablet. Only a `processing` print job
+ * belonging to this shift can be settled; returns false otherwise.
+ */
+export async function recordPrintResult(
+  jobId: string,
+  shiftId: string,
+  outcome: PrintOutcome,
+): Promise<boolean> {
+  const error = outcome.ok ? null : outcome.error.slice(0, MAX_ERROR_LENGTH);
+  const rows = await db.execute(sql`
+    UPDATE receipt_jobs
+    SET status = CASE
+          WHEN ${outcome.ok} THEN 'sent'::receipt_status
+          WHEN attempts >= ${MAX_ATTEMPTS} THEN 'failed'::receipt_status
+          ELSE 'queued'::receipt_status
+        END,
+        last_error = ${error},
+        updated_at = now()
+    WHERE id = ${jobId}
+      AND channel = 'print'
+      AND status = 'processing'
+      AND order_id IN (SELECT id FROM orders WHERE shift_id = ${shiftId})
+    RETURNING id
+  `);
+  return rows.length > 0;
 }
 
 /** Rebuilds the receipt for an order from its snapshotted rows. */
@@ -180,8 +196,7 @@ export async function buildReceipt(orderId: string): Promise<Receipt | null> {
       ),
     );
 
-  // Names and prices come from the snapshot columns, not from the live menu, so
-  // a receipt reprinted next term still says what was actually charged.
+  // Use snapshot columns so reprints show what was actually charged.
   const lines: ReceiptLine[] = [];
   for (const item of items) {
     lines.push({

@@ -13,14 +13,12 @@ import {
 import { assertPairedDevice } from "@/app/(student)/require-device";
 import { getActiveShift } from "@/lib/queries";
 import { getShiftSession } from "@/lib/session";
+import { isUuid } from "@/lib/validate";
 
 /**
- * Inventory and checklist actions.
- *
- * Every one resolves the session cookie to an open shift first. A student can
- * only ever count their own shift's inventory, which is the same scoping rule
- * the order actions use and for the same reason: students have no database
- * identity, so this layer is where it is enforced.
+ * Inventory and checklist actions. Each resolves the session cookie to an open
+ * shift first, scoping students to their own shift's inventory (students have
+ * no database identity, so this layer enforces it).
  */
 
 async function currentShiftId(): Promise<string | null> {
@@ -35,11 +33,9 @@ export type CountResult =
   | { ok: false; error: "no_shift" | "invalid" };
 
 /**
- * Records how many of an item are left.
- *
- * The upper bound is the starting quantity: a shift cannot end with more on the
- * cart than it began with, and the database refuses it anyway. Catching it here
- * turns a constraint violation into a sentence a student can act on.
+ * Records how many of an item are left. The count cannot exceed the starting
+ * quantity; the database enforces this too, but checking here gives the
+ * student a readable error.
  */
 export async function countItem(
   itemId: string,
@@ -68,6 +64,7 @@ export async function markRestocked(
   await assertPairedDevice();
   const shiftId = await currentShiftId();
   if (!shiftId) return { ok: false, error: "no_shift" };
+  if (!isUuid(itemId) || typeof restocked !== "boolean") return { ok: false, error: "invalid" };
 
   await setRestocked(shiftId, itemId, restocked);
   revalidatePath("/shift/inventory");
