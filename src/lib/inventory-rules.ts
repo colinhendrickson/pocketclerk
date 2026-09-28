@@ -33,9 +33,32 @@ export function isChecklistKey(value: unknown): value is ChecklistKey {
   return typeof value === "string" && CHECKLIST.some((e) => e.key === value);
 }
 
-/** Units used this shift (starting minus remaining). Derived, never stored. */
+/** Upper bound on a count, matching the largest par level staff can set. */
+export const MAX_COUNT = 9_999;
+
+/** A count arrives from the browser, so it must be a whole number in range. */
+export function isValidCount(value: unknown): value is number {
+  return (
+    typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && value <= MAX_COUNT
+  );
+}
+
+/** Keeps the stepper in range. Counts above the start are allowed (restocked since). */
+export function clampCount(next: number): number {
+  return Math.max(0, Math.min(MAX_COUNT, next));
+}
+
+/**
+ * Units used this shift. Derived, never stored. Floored at zero because a count
+ * above the start means stock was added, not negative usage.
+ */
 export function usedCount(row: CountRow): number | null {
-  return row.remaining === null ? null : row.starting - row.remaining;
+  return row.remaining === null ? null : Math.max(0, row.starting - row.remaining);
+}
+
+/** Units added since the last count, e.g. a teacher refilled cups between shifts. */
+export function addedCount(row: CountRow): number | null {
+  return row.remaining === null ? null : Math.max(0, row.remaining - row.starting);
 }
 
 /** Units needed to bring an item back to par. Zero when it is already full. */

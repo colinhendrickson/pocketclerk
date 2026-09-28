@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { BigButton } from "@/components";
-import { restockNeeded, usedCount, type CountRow } from "@/lib/inventory-rules";
+import {
+  addedCount,
+  clampCount,
+  restockNeeded,
+  usedCount,
+  type CountRow,
+} from "@/lib/inventory-rules";
 
 import { countItem, markRestocked } from "../../inventory-actions";
 
@@ -14,9 +20,9 @@ export interface InventorySheetProps {
 }
 
 /**
- * Counting what is left, then restocking. Counts use plus/minus steppers
- * capped at the starting quantity. "Used" is derived (start minus count),
- * never entered.
+ * Counting what is left, then restocking. Counts use plus/minus steppers. A
+ * count above the start is allowed (stock added since the last count) and shown
+ * as "added", not as negative usage. Neither figure is ever entered.
  */
 export function InventorySheet({ initialRows }: InventorySheetProps) {
   const router = useRouter();
@@ -29,7 +35,7 @@ export function InventorySheet({ initialRows }: InventorySheetProps) {
   const restockDone = toRestock.every((r) => r.restocked);
 
   function setRemaining(row: CountRow, next: number) {
-    const clamped = Math.max(0, Math.min(row.starting, next));
+    const clamped = clampCount(next);
     setRows((current) =>
       current.map((r) => (r.itemId === row.itemId ? { ...r, remaining: clamped } : r)),
     );
@@ -60,6 +66,7 @@ export function InventorySheet({ initialRows }: InventorySheetProps) {
       <ul className="flex flex-col gap-3">
         {rows.map((row) => {
           const used = usedCount(row);
+          const added = addedCount(row) ?? 0;
           return (
             <li
               key={row.itemId}
@@ -70,7 +77,13 @@ export function InventorySheet({ initialRows }: InventorySheetProps) {
                 <p className="text-[18px] font-bold opacity-70">
                   Started with <span className="tabular">{row.starting}</span>{" "}
                   {row.unit}
-                  {used !== null ? (
+                  {added > 0 ? (
+                    <>
+                      {" · added "}
+                      <span className="tabular">{added}</span>
+                      {" since last count"}
+                    </>
+                  ) : used !== null ? (
                     <>
                       {" · used "}
                       <span className="tabular">{used}</span>

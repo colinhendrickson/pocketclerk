@@ -271,7 +271,8 @@ export const inventoryItems = pgTable(
 
 /**
  * One count per item per shift. `starting` is snapshotted when the count opens.
- * Usage (`starting - remaining`) is derived, never stored.
+ * Usage (`max(0, starting - remaining)`) is derived, never stored; a count above
+ * starting means stock was added since the last count.
  */
 export const inventoryCounts = pgTable(
   "inventory_counts",

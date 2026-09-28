@@ -8,7 +8,11 @@ import type { ChecklistKey, CountRow } from "@/lib/inventory-rules";
 // module directly.
 export {
   CHECKLIST,
+  MAX_COUNT,
+  addedCount,
+  clampCount,
   isChecklistKey,
+  isValidCount,
   restockNeeded,
   usedCount,
   allCounted,
@@ -45,13 +49,18 @@ export async function openCount(shiftId: string): Promise<CountRow[]> {
     const starts = await Promise.all(
       missing.map((item) => startingFor(shiftId, item.id, item.parLevel)),
     );
-    await db.insert(inventoryCounts).values(
-      missing.map((item, i) => ({
-        shiftId,
-        itemId: item.id,
-        starting: starts[i],
-      })),
-    );
+    // Two first visits can race here; the unique index settles it, and the
+    // loser's rows are skipped rather than raising a duplicate-key error.
+    await db
+      .insert(inventoryCounts)
+      .values(
+        missing.map((item, i) => ({
+          shiftId,
+          itemId: item.id,
+          starting: starts[i],
+        })),
+      )
+      .onConflictDoNothing({ target: [inventoryCounts.shiftId, inventoryCounts.itemId] });
   }
 
   return listCount(shiftId);

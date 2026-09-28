@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   CHECKLIST,
+  MAX_COUNT,
+  addedCount,
   allCounted,
+  clampCount,
+  isValidCount,
   isChecklistKey,
   restockNeeded,
   usedCount,
@@ -32,6 +36,47 @@ describe("usedCount", () => {
   it("is zero when nothing was used", () => {
     expect(usedCount(row({ starting: 50, remaining: 50 }))).toBe(0);
   });
+
+  it("is zero, not negative, when stock was added since the last count", () => {
+    expect(usedCount(row({ starting: 20, remaining: 30 }))).toBe(0);
+  });
+});
+
+describe("addedCount", () => {
+  it("is unknown until the item is counted", () => {
+    expect(addedCount(row())).toBeNull();
+  });
+
+  it("is zero when the count is at or below the start", () => {
+    expect(addedCount(row({ starting: 50, remaining: 38 }))).toBe(0);
+    expect(addedCount(row({ starting: 50, remaining: 50 }))).toBe(0);
+  });
+
+  it("is how far the count is above the start, e.g. a teacher refilled cups", () => {
+    expect(addedCount(row({ starting: 20, remaining: 30 }))).toBe(10);
+  });
+});
+
+describe("counts", () => {
+  it("accepts any whole number from zero up to the maximum, including above the start", () => {
+    expect(isValidCount(0)).toBe(true);
+    expect(isValidCount(75)).toBe(true);
+    expect(isValidCount(MAX_COUNT)).toBe(true);
+  });
+
+  it("refuses negatives, fractions, non-numbers and absurd counts", () => {
+    expect(isValidCount(-1)).toBe(false);
+    expect(isValidCount(2.5)).toBe(false);
+    expect(isValidCount("5")).toBe(false);
+    expect(isValidCount(Number.NaN)).toBe(false);
+    expect(isValidCount(MAX_COUNT + 1)).toBe(false);
+  });
+
+  it("clamps the stepper at zero and the maximum, not at the start", () => {
+    expect(clampCount(-1)).toBe(0);
+    expect(clampCount(61)).toBe(61);
+    expect(clampCount(MAX_COUNT + 1)).toBe(MAX_COUNT);
+  });
 });
 
 describe("restockNeeded", () => {
@@ -50,6 +95,11 @@ describe("restockNeeded", () => {
   it("never goes negative when a cart is over-stocked", () => {
     // Par can be lowered by an admin after a cart was already filled.
     expect(restockNeeded(row({ parLevel: 40, starting: 60, remaining: 55 }))).toBe(0);
+  });
+
+  it("measures from the count, not the start, when stock was added mid-week", () => {
+    expect(restockNeeded(row({ parLevel: 50, starting: 20, remaining: 30 }))).toBe(20);
+    expect(restockNeeded(row({ parLevel: 50, starting: 20, remaining: 60 }))).toBe(0);
   });
 });
 

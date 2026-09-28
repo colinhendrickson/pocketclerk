@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import {
   isChecklistKey,
+  isValidCount,
   recordRemaining,
   setChecklistItem,
   setRestocked,
@@ -33,9 +34,8 @@ export type CountResult =
   | { ok: false; error: "no_shift" | "invalid" };
 
 /**
- * Records how many of an item are left. The count cannot exceed the starting
- * quantity; the database enforces this too, but checking here gives the
- * student a readable error.
+ * Records how many of an item are left. A count above the starting quantity is
+ * valid: it means stock was added since the last count, and carries forward.
  */
 export async function countItem(
   itemId: string,
@@ -44,13 +44,10 @@ export async function countItem(
   await assertPairedDevice();
   const shiftId = await currentShiftId();
   if (!shiftId) return { ok: false, error: "no_shift" };
-  if (!Number.isSafeInteger(remaining) || remaining < 0) {
-    return { ok: false, error: "invalid" };
-  }
+  if (!isUuid(itemId) || !isValidCount(remaining)) return { ok: false, error: "invalid" };
 
   const rows = await listCount(shiftId);
-  const row = rows.find((r) => r.itemId === itemId);
-  if (!row || remaining > row.starting) return { ok: false, error: "invalid" };
+  if (!rows.some((r) => r.itemId === itemId)) return { ok: false, error: "invalid" };
 
   await recordRemaining(shiftId, itemId, remaining);
   revalidatePath("/shift/inventory");
