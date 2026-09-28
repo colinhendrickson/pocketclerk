@@ -66,6 +66,11 @@ export const adminUsers = pgTable("admin_users", {
     .references(() => persons.id, { onDelete: "restrict" }),
   addedBy: uuid("added_by").references(() => persons.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  /**
+   * The one admin who gives and removes access, and who cannot be removed.
+   * A partial unique index (migration 0015) allows at most one.
+   */
+  isOwner: boolean("is_owner").notNull().default(false),
 });
 
 /**

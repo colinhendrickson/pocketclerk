@@ -115,12 +115,12 @@ export const TOURS: Record<AdminRoute, TourStep[]> = {
     {
       target: "give-access",
       title: "Giving someone access",
-      body: "Their name and school email. They sign in with a code sent to that email; there is no password to pass on.",
+      body: "Only the owner can. Enter their name and school email; they sign in with a code sent to that email, so there is no password to pass on.",
     },
     {
       target: "admin-list",
       title: "Who has access",
-      body: "Everyone who can use the admin side. You cannot remove yourself, and the last admin cannot be removed, so the school is never locked out.",
+      body: "Everyone who can use the admin side. The owner is marked, and nobody can remove the owner, so the school is never locked out.",
     },
     MENU_STEP,
   ],

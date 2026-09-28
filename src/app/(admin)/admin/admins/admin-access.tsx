@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 
-import { giveAccess, removeAccess } from "./actions";
+import { giveAccess, makeOwner, removeAccess } from "./actions";
 
 export interface AdminView {
   personId: string;
@@ -10,11 +10,15 @@ export interface AdminView {
   email: string | null;
   addedByName: string | null;
   since: string;
+  isOwner: boolean;
 }
 
 export interface AdminAccessProps {
   admins: AdminView[];
   meId: string;
+  /** The owner, or anyone when there is no owner. */
+  canManage: boolean;
+  ownerName: string | null;
   signInUrl: string;
 }
 
@@ -23,10 +27,20 @@ export interface AdminAccessProps {
  * rather than `confirm()`, which screen readers handle poorly and some school
  * browsers block.
  */
-export function AdminAccess({ admins, meId, signInUrl }: AdminAccessProps) {
+export function AdminAccess({ admins, meId, canManage, ownerName, signInUrl }: AdminAccessProps) {
+  const iAmOwner = admins.some((admin) => admin.isOwner && admin.personId === meId);
   return (
     <>
-      <GiveAccessForm signInUrl={signInUrl} />
+      {canManage ? (
+        <GiveAccessForm signInUrl={signInUrl} />
+      ) : (
+        <section data-tour="give-access" className="card card-border bg-base-100 p-5">
+          <p className="font-bold">
+            Only the owner{ownerName ? `, ${ownerName},` : ""} can give or remove access.
+          </p>
+          <p className="text-sm opacity-70">Ask them if someone new needs to sign in here.</p>
+        </section>
+      )}
 
       <section data-tour="admin-list" aria-labelledby="admins-heading" className="flex flex-col gap-3">
         <h2 id="admins-heading" className="text-lg font-extrabold">
@@ -39,6 +53,8 @@ export function AdminAccess({ admins, meId, signInUrl }: AdminAccessProps) {
               admin={admin}
               isMe={admin.personId === meId}
               isLast={admins.length === 1}
+              canManage={canManage}
+              iAmOwner={iAmOwner}
             />
           ))}
         </ul>
@@ -132,8 +148,16 @@ function GiveAccessForm({ signInUrl }: { signInUrl: string }) {
   );
 }
 
-function AdminRow({ admin, isMe, isLast }: { admin: AdminView; isMe: boolean; isLast: boolean }) {
-  const [confirming, setConfirming] = useState(false);
+interface AdminRowProps {
+  admin: AdminView;
+  isMe: boolean;
+  isLast: boolean;
+  canManage: boolean;
+  iAmOwner: boolean;
+}
+
+function AdminRow({ admin, isMe, isLast, canManage, iAmOwner }: AdminRowProps) {
+  const [confirming, setConfirming] = useState<"remove" | "owner" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -142,22 +166,45 @@ function AdminRow({ admin, isMe, isLast }: { admin: AdminView; isMe: boolean; is
     startTransition(async () => {
       const result = await removeAccess(admin.personId);
       if (result.ok) return;
-      setConfirming(false);
+      setConfirming(null);
       setError(
         result.error === "last"
           ? "This is the only admin left, so their access stays. Add someone else first."
           : result.error === "self"
             ? "You cannot remove your own access. Ask another admin to do it."
-            : "That person no longer has access.",
+            : result.error === "not_owner"
+              ? "Only the owner can remove access."
+              : "That person no longer has access.",
       );
     });
   }
 
-  const reason = isMe
-    ? "This is you. Another admin can remove your access."
-    : isLast
-      ? "The only admin cannot be removed."
-      : null;
+  function handOver() {
+    setError(null);
+    startTransition(async () => {
+      const result = await makeOwner(admin.personId);
+      setConfirming(null);
+      if (result.ok) return;
+      setError(
+        result.error === "not_owner"
+          ? "Only the owner can hand on the owner role."
+          : "That person no longer has access.",
+      );
+    });
+  }
+
+  let reason: string | null = null;
+  if (admin.isOwner) {
+    reason = isMe
+      ? "You are the owner. Hand the role to another admin before you leave."
+      : "The owner cannot be removed.";
+  } else if (isMe) {
+    reason = canManage
+      ? "This is you. Another admin can remove your access."
+      : "This is you. The owner can remove your access.";
+  } else if (isLast) {
+    reason = "The only admin cannot be removed.";
+  }
 
   return (
     <li className="card card-border bg-base-100 p-4">
@@ -165,6 +212,9 @@ function AdminRow({ admin, isMe, isLast }: { admin: AdminView; isMe: boolean; is
         <div className="min-w-0 flex-1">
           <p className="font-extrabold">
             {admin.name}
+            {admin.isOwner ? (
+              <span className="badge badge-primary ml-2 whitespace-nowrap">Owner</span>
+            ) : null}
             {isMe ? <span className="badge badge-ghost ml-2 whitespace-nowrap">You</span> : null}
           </p>
           <p className="break-all text-sm opacity-70">{admin.email ?? "No email"}</p>
@@ -176,7 +226,7 @@ function AdminRow({ admin, isMe, isLast }: { admin: AdminView; isMe: boolean; is
 
         {reason ? (
           <p className="text-sm opacity-70">{reason}</p>
-        ) : confirming ? (
+        ) : !canManage ? null : confirming === "remove" ? (
           <div
             className="flex flex-wrap items-center gap-2"
             role="group"
@@ -186,14 +236,37 @@ function AdminRow({ admin, isMe, isLast }: { admin: AdminView; isMe: boolean; is
             <button type="button" onClick={remove} disabled={pending} className="btn btn-error btn-sm">
               {pending ? "Removing…" : "Yes, remove"}
             </button>
-            <button type="button" onClick={() => setConfirming(false)} className="btn btn-ghost btn-sm">
+            <button type="button" onClick={() => setConfirming(null)} className="btn btn-ghost btn-sm">
+              Cancel
+            </button>
+          </div>
+        ) : confirming === "owner" ? (
+          <div
+            className="flex flex-wrap items-center gap-2"
+            role="group"
+            aria-label={`Make ${admin.name} the owner?`}
+          >
+            <span className="text-sm font-bold">
+              Make {admin.name} the owner? You will no longer give or remove access.
+            </span>
+            <button type="button" onClick={handOver} disabled={pending} className="btn btn-warning btn-sm">
+              {pending ? "Handing over…" : "Yes, make owner"}
+            </button>
+            <button type="button" onClick={() => setConfirming(null)} className="btn btn-ghost btn-sm">
               Cancel
             </button>
           </div>
         ) : (
-          <button type="button" onClick={() => setConfirming(true)} className="btn btn-outline btn-sm">
-            Remove access
-          </button>
+          <div className="flex flex-wrap gap-2">
+            {iAmOwner ? (
+              <button type="button" onClick={() => setConfirming("owner")} className="btn btn-ghost btn-sm">
+                Make owner
+              </button>
+            ) : null}
+            <button type="button" onClick={() => setConfirming("remove")} className="btn btn-outline btn-sm">
+              Remove access
+            </button>
+          </div>
         )}
       </div>
       {error ? (

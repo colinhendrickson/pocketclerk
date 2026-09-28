@@ -39,9 +39,11 @@ test("an admin gives someone access, then takes it away", async ({ page }) => {
   await expect(page.getByRole("listitem").filter({ hasText: email })).toHaveCount(0);
 });
 
-test("your own row cannot be removed", async ({ page }) => {
+test("the owner's own row cannot be removed", async ({ page }) => {
+  // The seeded admin is the owner.
   await page.goto("/admin/admins");
   const mine = page.getByRole("listitem").filter({ hasText: "You" });
-  await expect(mine).toContainText("Another admin can remove your access");
+  await expect(mine).toContainText("Owner");
+  await expect(mine).toContainText("You are the owner");
   await expect(mine.getByRole("button", { name: "Remove access" })).toHaveCount(0);
 });

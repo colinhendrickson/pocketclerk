@@ -171,6 +171,7 @@ Built after the first deployment met real staff and students. Each came from som
 | 4.15 | Inventory page for staff | The first program found the student inventory count empty: supplies only came from the seed. Staff now add, edit and take off supplies and set how many a full cart holds; a setup checklist step and three guides | Done |
 | 4.16 | Shifts and sales that survive real use | A pre-launch review found a forgotten clock-out would resume days later and credit days of hours, and a lost response could count a sale twice. Stale shifts now close with no hours and are flagged for staff; orders carry a client id; error screens for both sides | Done |
 | 4.17 | Keeping it running | Free Supabase projects pause when idle and their backups cannot be downloaded: a keep-alive health check every six hours, Export everything for staff, pairing that renews itself; receipts print from every screen (4.8) | Done |
+| 4.18 | An owner for each cart | Any admin could remove any other, including the teacher responsible for the cart. One admin is now the owner: only the owner gives and removes access, nobody can remove the owner, and the role can be handed on | Done |
 
 ---
 

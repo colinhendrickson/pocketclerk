@@ -151,7 +151,7 @@ export async function seedDatabase(
     // --- Administrator ----------------------------------------------------
     // The first teacher is also the admin, exercising one person with two roles.
     const [adminPerson] = seededPersons;
-    await tx.insert(adminUsers).values({ personId: adminPerson.id });
+    await tx.insert(adminUsers).values({ personId: adminPerson.id, isOwner: true });
 
     // --- Settings ---------------------------------------------------------
     await tx.insert(siteSettings).values({

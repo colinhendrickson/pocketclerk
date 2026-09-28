@@ -22,7 +22,11 @@ export default async function AdminAdminsPage() {
     email: admin.email,
     addedByName: admin.addedByName,
     since: formatter.format(admin.since),
+    isOwner: admin.isOwner,
   }));
+  const owner = admins.find((admin) => admin.isOwner) ?? null;
+  // With no owner (a deployment from before owners), any admin manages access.
+  const canManage = owner === null || owner.personId === me.personId;
 
   const signInUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/admin/sign-in`;
 
@@ -32,13 +36,20 @@ export default async function AdminAdminsPage() {
         <h1 className="text-2xl font-extrabold">Admins</h1>
         <p className="max-w-prose opacity-70">
           Everyone here can sign in to this admin side. There are no passwords:
-          they sign in with a code emailed to the address below.
+          they sign in with a code emailed to the address below. The owner gives
+          and removes access.
         </p>
       </header>
 
       <HelpPanel route="/admin/admins" />
 
-      <AdminAccess admins={views} meId={me.personId} signInUrl={signInUrl} />
+      <AdminAccess
+        admins={views}
+        meId={me.personId}
+        canManage={canManage}
+        ownerName={owner?.name ?? null}
+        signInUrl={signInUrl}
+      />
     </main>
   );
 }

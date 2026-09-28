@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { afterAll, afterEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { db, getClient } from "@/db";
 import { addAdmin, listAdmins, removeAdmin } from "@/lib/admins";
@@ -29,7 +29,27 @@ async function isAdmin(personId: string) {
   return rows.length === 1;
 }
 
+// Only the owner manages access, so each test makes its acting admin the owner
+// and the seeded owner is put back afterwards.
+let originalOwner: string | null = null;
+
+beforeEach(async () => {
+  const [row] = await db.execute<{ person_id: string }>(
+    sql`SELECT person_id FROM admin_users WHERE is_owner`,
+  );
+  originalOwner = row?.person_id ?? null;
+});
+
+async function makeOwner(personId: string) {
+  await db.execute(sql`UPDATE admin_users SET is_owner = false WHERE is_owner`);
+  await db.execute(sql`UPDATE admin_users SET is_owner = true WHERE person_id = ${personId}`);
+}
+
 afterEach(async () => {
+  await db.execute(sql`UPDATE admin_users SET is_owner = false WHERE is_owner`);
+  if (originalOwner) {
+    await db.execute(sql`UPDATE admin_users SET is_owner = true WHERE person_id = ${originalOwner}`);
+  }
   for (const id of created.splice(0)) {
     await db.execute(sql`DELETE FROM admin_login_tokens WHERE person_id = ${id}`);
     await db.execute(sql`DELETE FROM admin_users WHERE person_id = ${id}`);
@@ -45,6 +65,7 @@ describe("addAdmin", () => {
   it("adds a new person and lists them with who added them", async () => {
     const by = await person("Test Admin One", `one-${Date.now()}@example.edu`);
     await db.execute(sql`INSERT INTO admin_users (person_id) VALUES (${by})`);
+    await makeOwner(by);
 
     const email = `new-${Date.now()}@example.edu`;
     const result = await addAdmin({ name: "Test New Admin", email: email.toUpperCase() }, by);
@@ -93,6 +114,7 @@ describe("removeAdmin", () => {
 
   it("removes another administrator", async () => {
     const { a, b } = await twoAdmins();
+    await makeOwner(a);
     expect(await removeAdmin(b, a)).toEqual({ ok: true });
     expect(await isAdmin(b)).toBe(false);
     // The person stays: they may be a teacher with orders.
@@ -102,6 +124,7 @@ describe("removeAdmin", () => {
 
   it("will not let anyone remove themselves", async () => {
     const { a } = await twoAdmins();
+    await makeOwner(a);
     expect(await removeAdmin(a, a)).toEqual({ ok: false, error: "self" });
     expect(await isAdmin(a)).toBe(true);
   });
@@ -109,8 +132,10 @@ describe("removeAdmin", () => {
   it("never removes the last administrator, even when two remove each other at once", async () => {
     // Only these two may be administrators for this to test the last one, so
     // everyone else is set aside for the duration and put back after.
-    const others = await db.execute<{ person_id: string; added_by: string | null }>(
-      sql`DELETE FROM admin_users RETURNING person_id, added_by`,
+    // With no owner, as on a deployment from before owners existed, any admin
+    // may manage access, which is what makes the race possible.
+    const others = await db.execute<{ person_id: string; added_by: string | null; is_owner: boolean }>(
+      sql`DELETE FROM admin_users RETURNING person_id, added_by, is_owner`,
     );
     try {
       const { a, b } = await twoAdmins();
@@ -136,7 +161,8 @@ describe("removeAdmin", () => {
       await db.execute(sql`DELETE FROM admin_users`);
       for (const row of others) {
         await db.execute(
-          sql`INSERT INTO admin_users (person_id, added_by) VALUES (${row.person_id}, ${row.added_by})`,
+          sql`INSERT INTO admin_users (person_id, added_by, is_owner)
+              VALUES (${row.person_id}, ${row.added_by}, ${row.is_owner})`,
         );
       }
     }

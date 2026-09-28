@@ -425,11 +425,11 @@ export const GUIDES: Guide[] = [
     topic: "Access and signing in",
     title: "Giving another member of staff access",
     steps: [
-      "Open Admins.",
+      "Open Admins. Only the owner sees the Give access form.",
       "Type their name and school email, then press Give access.",
       "Tell them to go to the sign-in page and enter that email. A code will be emailed to them.",
     ],
-    note: "They get the same access you have. If they already have a teacher entry with that email, it is the same person: their orders stay together.",
+    note: "They can do everything on the admin side except give or remove access, which only the owner does. If they already have a teacher entry with that email, it is the same person: their orders stay together.",
     page: "/admin/admins",
   },
   {
@@ -437,10 +437,23 @@ export const GUIDES: Guide[] = [
     topic: "Access and signing in",
     title: "Removing someone's access",
     steps: [
-      "Open Admins and find them.",
+      "Open Admins and find them. Only the owner sees Remove access.",
       "Press Remove access, then Yes, remove.",
     ],
-    note: "It takes effect on their next click. You cannot remove your own access, and the last admin cannot be removed, so the school can never be locked out.",
+    note: "It takes effect on their next click. Nobody can remove the owner, so the school can never be locked out.",
+    page: "/admin/admins",
+  },
+
+  {
+    id: "hand-over-owner",
+    topic: "Access and signing in",
+    title: "Handing the owner role to someone else",
+    steps: [
+      "The owner opens Admins. The owner's row is marked Owner.",
+      "Find the admin who should take over, and press Make owner.",
+      "Press Yes, make owner. They now give and remove access, and you are a regular admin.",
+    ],
+    note: "Do this before the owner leaves the school. There is always exactly one owner, and nobody can remove them.",
     page: "/admin/admins",
   },
 
@@ -504,8 +517,8 @@ export const PAGE_HELP: Record<AdminRoute, PageHelp> = {
     tasks: ["missing-receipt", "receipt-statuses", "retry-receipts"],
   },
   "/admin/admins": {
-    purpose: "Which staff can use this admin side. Give access to a colleague, or remove it.",
-    tasks: ["give-access", "remove-access", "sign-in", "shared-device"],
+    purpose: "Which staff can use this admin side. The owner gives access to a colleague, removes it, or hands the owner role on.",
+    tasks: ["give-access", "remove-access", "hand-over-owner", "sign-in", "shared-device"],
   },
   "/admin/colors": {
     purpose:

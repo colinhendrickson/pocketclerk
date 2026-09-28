@@ -130,3 +130,9 @@ so a new member of staff is not a request to the developer. Nobody can remove
 themselves, and the last administrator can never be removed; the count and the
 delete run under a lock on every admin row, so two administrators removing each
 other at once cannot leave none. `pnpm admin:add` remains for the very first.
+
+**An owner.** One admin is the owner (`admin_users.is_owner`, at most one by a
+partial unique index). Only the owner gives and removes access, and nobody can
+remove the owner, so staff cannot lock out the person responsible for the cart.
+The owner can hand the role to another admin. A deployment's first admin is its
+owner; where no owner exists, any admin may manage access as before.
