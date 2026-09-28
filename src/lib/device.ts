@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 
 import { ConfigurationError } from "@/lib/config";
+import { DEVICE_COOKIE } from "@/lib/device-cookie";
 
 /**
  * Device pairing for the student side, so the student roster is not readable
@@ -13,9 +14,7 @@ import { ConfigurationError } from "@/lib/config";
  * See docs/adr/0010-device-pairing.md.
  */
 
-const COOKIE_NAME = "pocketclerk_device";
-/** One school year. */
-const MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
+const COOKIE_NAME = DEVICE_COOKIE.name;
 
 /** True when this deployment requires devices to be paired. */
 export function pairingRequired(): boolean {
@@ -59,13 +58,7 @@ export function codeMatches(candidate: string): boolean {
 
 export async function pairDevice(): Promise<void> {
   const store = await cookies();
-  store.set(COOKIE_NAME, token(), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: MAX_AGE_SECONDS,
-  });
+  store.set(COOKIE_NAME, token(), DEVICE_COOKIE.options);
 }
 
 /** Whether this device may use the cart. Always true when pairing is not configured. */

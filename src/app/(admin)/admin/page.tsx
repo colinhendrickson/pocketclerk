@@ -6,13 +6,18 @@ import { pairingUrl } from "@/lib/device";
 import { GLOSSARY, GUIDES, TOPICS } from "@/lib/help";
 import { formatUSD } from "@/lib/money";
 import { getSetupCounts, setupChecklist } from "@/lib/setup";
-import { startOfLocalDay, today } from "@/lib/time";
+import { listAutoClosedShifts, listOpenShifts } from "@/lib/shifts";
+import { addDays, startOfLocalDay, today } from "@/lib/time";
 
 import { GuideSearch } from "./_help/guide-search";
 import { requireAdmin } from "./require-admin";
 import { SetupChecklist } from "./setup-checklist";
+import { ShiftFollowUp } from "./shift-follow-up";
 
 export const dynamic = "force-dynamic";
+
+/** How far back the home page lists shifts the cart closed with no hours. */
+const AUTO_CLOSED_LOOKBACK_DAYS = 14;
 
 /**
  * Admin landing page: setup checklist, anything needing attention, today's
@@ -25,7 +30,12 @@ export default async function AdminHomePage() {
   // the evening.
   const since = startOfLocalDay(today());
 
-  const [stats, counts] = await Promise.all([getDashboardStats(since), getSetupCounts()]);
+  const [stats, counts, openShifts, autoClosed] = await Promise.all([
+    getDashboardStats(since),
+    getSetupCounts(),
+    listOpenShifts(),
+    listAutoClosedShifts(startOfLocalDay(addDays(today(), -AUTO_CLOSED_LOOKBACK_DAYS))),
+  ]);
   const steps = setupChecklist(counts);
 
   const cards = [
@@ -91,6 +101,13 @@ export default async function AdminHomePage() {
         </div>
       </section>
 
+      <ShiftFollowUp
+        openShifts={openShifts}
+        autoClosed={autoClosed}
+        startOfToday={since}
+        lookbackDays={AUTO_CLOSED_LOOKBACK_DAYS}
+      />
+
       <nav aria-labelledby="pages-heading" className="flex flex-col gap-2">
         <h2 id="pages-heading" className="text-xl font-extrabold">
           Pages
@@ -109,6 +126,19 @@ export default async function AdminHomePage() {
           ))}
         </ul>
       </nav>
+
+      <section aria-labelledby="backup-heading" className="flex flex-col gap-2">
+        <h2 id="backup-heading" className="text-xl font-extrabold">
+          Keep a copy
+        </h2>
+        <p className="max-w-prose opacity-75">
+          Download everything the cart holds, without PINs, as one file. Keep it on the school&apos;s
+          shared drive, at least once a term.
+        </p>
+        <a href="/admin/export" download className="btn btn-outline self-start">
+          Export everything
+        </a>
+      </section>
 
       <section id="guides" data-tour="guides" aria-labelledby="guides-heading" className="flex flex-col gap-3">
         <h2 id="guides-heading" className="text-xl font-extrabold">

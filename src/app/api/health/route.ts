@@ -53,9 +53,9 @@ export async function GET(request: Request): Promise<NextResponse> {
         : "RESEND_API_KEY set but EMAIL_FROM missing"
       : "not configured, receipts will be logged instead of sent",
     // Refused outside the demo when unset, so failed receipts are never retried.
-    receiptRetry: process.env.CRON_SECRET
-      ? "scheduled sweep protected by CRON_SECRET"
-      : "CRON_SECRET not set: the nightly retry of failed receipts is refused",
+    receiptSweep: process.env.CRON_SECRET
+      ? "daily delivery of queued email receipts, protected by CRON_SECRET"
+      : "CRON_SECRET not set: the daily delivery of queued email receipts is refused",
     // Not `?? fallback`, which would report an empty string as configured.
     appUrl:
       (process.env.NEXT_PUBLIC_APP_URL ?? "").length > 0

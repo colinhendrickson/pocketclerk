@@ -1,0 +1,43 @@
+name: Keep alive
+
+# Checks every deployment's /api/health every six hours. The health check
+# queries the database, which keeps Supabase free-tier projects from pausing
+# for inactivity over school breaks, and a failed run emails the maintainer.
+# The addresses are the repository variable HEALTH_URLS, one per line, so a
+# school's address is not written into the code.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check every deployment
+        env:
+          HEALTH_URLS: ${{ vars.HEALTH_URLS }}
+        run: |
+          if [ -z "$HEALTH_URLS" ]; then
+            echo "HEALTH_URLS is not set; nothing to check."
+            exit 0
+          fi
+          # Logs name deployments by number: on a public repo, logs are public.
+          status=0
+          n=0
+          while IFS= read -r url; do
+            [ -z "$url" ] && continue
+            n=$((n + 1))
+            echo "::add-mask::$url"
+            if curl -fsS --max-time 30 --retry 2 --retry-delay 10 "$url/api/health" | grep -q '"ready":true'; then
+              echo "ok: deployment $n"
+            else
+              echo "::error::deployment $n is not ready"
+              status=1
+            fi
+          done <<< "$HEALTH_URLS"
+          exit $status

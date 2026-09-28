@@ -302,6 +302,22 @@ DIRECT_URL="<each database in turn>" pnpm db:migrate
 Then load `/api/health` on every copy: `migrations` should show the same
 `applied` and `expected` count everywhere.
 
+## Keeping it running
+
+**Free Supabase projects pause** after a week with too little database
+activity, which would take a cart down over a school break. The **Keep alive**
+workflow (`.github/workflows/keepalive.yml`) loads `/api/health` on every copy
+every six hours, which counts as activity and emails you if a copy is not
+ready. List every copy's address, one per line, in the repository variable
+`HEALTH_URLS` (Settings → Secrets and variables → Actions → Variables). GitHub
+turns scheduled workflows off after 60 days without a commit; if it does,
+re-enable it from the Actions tab.
+
+**Backups.** Free Supabase backups cannot be downloaded. Staff can download
+everything the cart holds from Admin home → **Export everything**: one dated
+file, without PINs or sign-in secrets. Do it at least once a term, and before
+any big change.
+
 ## Things that can go wrong
 
 **"DATABASE_URL is not set"** on Vercel means the variable was added to only one

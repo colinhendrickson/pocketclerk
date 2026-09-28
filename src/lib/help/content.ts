@@ -97,10 +97,37 @@ export const GUIDES: Guide[] = [
       "Make sure the cart is open in Bluefy on the iPad, not Safari. See “Connecting the cart's iPad”.",
       "You do not need to pair the printer in the iPad's Bluetooth settings. The cart connects to it itself.",
       "Have a student sign in. On their shift screen, press Connect printer, then choose the printer from the list. It is usually named after its model, such as PT-210.",
-      "Receipts now print by themselves after each sale. If the printer is switched off or goes to sleep, press Connect printer again.",
+      "Receipts now print by themselves after each sale, on every screen, and the printer stays connected from one student's shift to the next. If the printer is switched off, the cart reconnects when it is back on. If it does not, press Connect printer on the shift screen again.",
     ],
-    note: "A sale never waits for the printer. Receipts are saved with the order and print once the printer is connected, so none are lost while it is off. Only printers that use Bluetooth Low Energy work from an iPad; small 58mm thermal printers such as the PT-210 do.",
+    note: "A sale never waits for the printer. Receipts are saved with the order and print once the printer is connected, so none are lost while it is off. Receipts from more than a week ago are not printed automatically. Only printers that use Bluetooth Low Energy work from an iPad; small 58mm thermal printers such as the PT-210 do.",
     link: BLUEFY,
+  },
+
+  {
+    id: "export-data",
+    topic: "Getting started",
+    title: "Keeping a copy of the cart's data",
+    steps: [
+      "Open Admin home and press Export everything, under Keep a copy.",
+      "Your browser downloads one file, named with today's date.",
+      "Keep it somewhere safe, such as the school's shared drive.",
+    ],
+    note: "The file has every student, teacher, sale, shift and inventory count, without PINs. Do it at least once a term, and before any big change.",
+    page: "/admin",
+  },
+  {
+    id: "close-forgotten-shift",
+    topic: "Students",
+    title: "A student forgot to clock out",
+    steps: [
+      "On Admin home, look under Shifts to check.",
+      "Open now lists every shift still running. A shift marked From an earlier day was never clocked out.",
+      "Choose Close shift, then Close shift again to confirm. No hours are counted for a shift you close here.",
+      "Closed with no hours lists shifts the cart closed by itself: if a student signs in on a later day without having clocked out, the old shift is closed with no hours and a new one starts.",
+      "Check with the student how long they worked.",
+    ],
+    note: "The cart never counts hours for a shift left open overnight, so a forgotten clock-out cannot add days of hours.",
+    page: "/admin",
   },
 
   /* Students ------------------------------------------------------------- */
@@ -300,9 +327,9 @@ export const GUIDES: Guide[] = [
     steps: [
       "On the shift screen, the student presses Inventory.",
       "For each supply they count what is left, using the plus and minus buttons.",
-      "The cart shows what was used and what to restock, and the student ticks each one off as they refill it.",
+      "The cart shows what was used and what to restock, and the student ticks each one off as they refill it. If they count more than they started with, the cart shows how many were added since the last count.",
     ],
-    note: "Sales do not subtract supplies automatically. Counting at the end is part of the job training.",
+    note: "Sales do not subtract supplies automatically. Counting at the end is part of the job training. Supplies added between shifts are fine: the student counts what is there, and that count becomes the next shift's starting amount.",
     page: "/admin/inventory",
   },
   {
@@ -445,7 +472,7 @@ export const PAGE_HELP: Record<AdminRoute, PageHelp> = {
   "/admin": {
     purpose:
       "The starting point. It shows what the cart still needs, anything that needs your attention, today's sales, and every guide.",
-    tasks: ["first-setup", "what-is-this", "pair-ipad", "set-up-printer"],
+    tasks: ["first-setup", "what-is-this", "pair-ipad", "set-up-printer", "close-forgotten-shift", "export-data"],
   },
   "/admin/students": {
     purpose:

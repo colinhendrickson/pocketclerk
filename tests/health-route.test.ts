@@ -34,7 +34,7 @@ describe("/api/health", () => {
     const body = await health();
     expect(body).toHaveProperty("ready");
     expect(body).toHaveProperty("database");
-    expect(JSON.stringify(body)).not.toMatch(/devicePairing|email|receiptRetry/);
+    expect(JSON.stringify(body)).not.toMatch(/devicePairing|email|receiptSweep/);
     expect(JSON.stringify(await health("Bearer a-guess"))).not.toMatch(/devicePairing/);
   });
 
