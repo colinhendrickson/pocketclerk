@@ -3,7 +3,7 @@ name: Keep alive
 # Checks every deployment's /api/health every six hours. The health check
 # queries the database, which keeps Supabase free-tier projects from pausing
 # for inactivity over school breaks, and a failed run emails the maintainer.
-# The addresses are the repository variable HEALTH_URLS, one per line, so a
+# The addresses are the repository secret HEALTH_URLS, one per line, so a
 # school's address is not written into the code.
 
 on:
@@ -20,7 +20,7 @@ jobs:
     steps:
       - name: Check every deployment
         env:
-          HEALTH_URLS: ${{ vars.HEALTH_URLS }}
+          HEALTH_URLS: ${{ secrets.HEALTH_URLS }}
         run: |
           if [ -z "$HEALTH_URLS" ]; then
             echo "HEALTH_URLS is not set; nothing to check."

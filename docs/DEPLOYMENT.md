@@ -308,8 +308,9 @@ Then load `/api/health` on every copy: `migrations` should show the same
 activity, which would take a cart down over a school break. The **Keep alive**
 workflow (`.github/workflows/keepalive.yml`) loads `/api/health` on every copy
 every six hours, which counts as activity and emails you if a copy is not
-ready. List every copy's address, one per line, in the repository variable
-`HEALTH_URLS` (Settings → Secrets and variables → Actions → Variables). GitHub
+ready. List every copy's address, one per line, in the repository secret
+`HEALTH_URLS` (Settings → Secrets and variables → Actions), so the addresses
+stay out of the public logs. GitHub
 turns scheduled workflows off after 60 days without a commit; if it does,
 re-enable it from the Actions tab.
 
