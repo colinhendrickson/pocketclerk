@@ -77,7 +77,9 @@ test("a teacher pays with a staff card, and no change is made", async ({ page })
     const { violations } = await new AxeBuilder({ page }).withTags(WCAG).analyze();
     expect(violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
 
-    await page.getByRole("button", { name: "Card checked, done" }).click();
+    await page.getByRole("button", { name: "Scan card" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Reading card" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Approved" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Paid by staff card" })).toBeVisible({
       timeout: 20_000,
     });

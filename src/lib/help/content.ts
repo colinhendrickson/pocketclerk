@@ -324,7 +324,7 @@ export const GUIDES: Guide[] = [
     steps: [
       "Open Menu and scroll to How teachers pay.",
       "Switch on Let teachers pay with a staff card. It saves straight away.",
-      "At the cart, students now ask how the teacher is paying. For a staff card, they ask for the teacher's ID card, check it, and press Card checked, done.",
+      "At the cart, students now ask how the teacher is paying. For a staff card, they ask for the teacher's ID card and tap Scan card. The cart beeps, shows Approved, and finishes the sale. No real card is read.",
       "To stop, switch it off.",
     ],
     note: "Cash always works. No money changes hands for a card sale; on Orders, card sales are totaled apart from cash, so the cash total is what should be in the cash box.",

@@ -146,7 +146,7 @@ Every commit names its ticket: `feat(4.8): ...`. Work that is not on this list g
 | 3.4 | Scheduled backup → JSON dump emailed to admin | Open |
 | 3.5 | Real printer integration behind ReceiptPrinter | Done as 4.8 |
 | 3.6 | Public demo at pocket-clerk.com: landing page, demo banner, admin entry without email, console-only email, hourly reset in one transaction (ADR 14) | Done |
-| 3.7 | Staff card payment, asked for by the program's teacher: some teachers will not use pretend cash. "How is [teacher] paying?" with Cash and Staff card; the student checks the ID card and taps Card checked, done. Off until staff turn it on (Menu page); teachers can be marked as usually paying by card; card sales are totaled apart from cash | Done |
+| 3.7 | Staff card payment, asked for by the program's teacher: some teachers will not use pretend cash. "How is [teacher] paying?" with Cash and Staff card; the student asks for the ID card and taps Scan card, which beeps and shows Approved (simulated, no reader). Off until staff turn it on (Menu page); teachers can be marked as usually paying by card; card sales are totaled apart from cash | Done |
 
 ### V4 — Go-live hardening
 

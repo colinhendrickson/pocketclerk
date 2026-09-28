@@ -51,7 +51,8 @@ requirements that somebody has to maintain.
 
 After launch the program's teacher asked for it: some teachers will not use
 pretend cash. A teacher can now pay with their staff ID card, which the student
-checks before pressing Card checked, done; no money changes hands and no change
+asks for before tapping Scan card, which plays a short simulated read, a beep
+and Approved; no money changes hands and no change
 is given. It uses the column and constraint this ADR left in place, so the
 migration only added the on/off switch and a per-teacher preference. It is off
 until staff turn it on, and cash is always offered, so making change stays the
