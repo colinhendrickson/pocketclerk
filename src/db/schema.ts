@@ -132,6 +132,11 @@ export const shifts = pgTable(
     clockOut: timestamp("clock_out", { withTimezone: true }),
     /** 3.25 hours is stored as 325. */
     hoursHundredths: integer("hours_hundredths"),
+    /**
+     * Closed by the system because the student never clocked out, with no
+     * hours credited. Shown to staff so they can follow up.
+     */
+    autoClosed: boolean("auto_closed").notNull().default(false),
     /** Generic name; the display label is white-label config. */
     rewardTickets: integer("reward_tickets"),
     /**
