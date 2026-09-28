@@ -1,6 +1,8 @@
 import { cartFormatter } from "@/lib/time";
 import { formatUSD } from "@/lib/money";
 
+import { toPrintableAscii } from "./ascii";
+
 /**
  * Printer-independent receipt document. Providers turn it into bytes for their
  * hardware, so layout and delivery change independently.
@@ -48,10 +50,25 @@ function center(text: string, width = RECEIPT_WIDTH): string {
 }
 
 /**
- * Renders the receipt as plain monospaced text, which every thermal printer
- * handles and which the console printer logs verbatim.
+ * Renders the receipt as plain monospaced text for the plain-text email and
+ * the console.
  */
 export function renderReceiptText(receipt: Receipt): string {
+  return layoutReceipt(receipt, (text) => text);
+}
+
+/**
+ * The same layout reduced to printable ASCII for a thermal printer. Fields
+ * are converted before padding so columns line up on paper.
+ */
+export function renderPrintableReceiptText(receipt: Receipt): string {
+  return layoutReceipt(receipt, toPrintableAscii);
+}
+
+function layoutReceipt(receipt: Receipt, clean: (text: string) => string): string {
+  const row = (left: string, right: string) => padRow(clean(left), clean(right));
+  const title = (text: string) => center(clean(text));
+
   const date = cartFormatter({
     month: "numeric",
     day: "numeric",
@@ -64,18 +81,18 @@ export function renderReceiptText(receipt: Receipt): string {
 
   const rule = "-".repeat(RECEIPT_WIDTH);
   const out: string[] = [
-    center(receipt.programName.toUpperCase()),
-    center(receipt.cartName.toUpperCase()),
+    title(receipt.programName.toUpperCase()),
+    title(receipt.cartName.toUpperCase()),
     "",
     rule,
-    padRow("Teacher", receipt.teacherName),
+    row("Teacher", receipt.teacherName),
   ];
 
-  if (receipt.room) out.push(padRow("Room", receipt.room));
+  if (receipt.room) out.push(row("Room", receipt.room));
   out.push(
-    padRow("Date", date),
-    padRow("Time", time),
-    padRow("Served by", receipt.studentName),
+    row("Date", date),
+    row("Time", time),
+    row("Served by", receipt.studentName),
     rule,
     "",
   );
@@ -84,18 +101,18 @@ export function renderReceiptText(receipt: Receipt): string {
     const label = line.isAddon
       ? `  ${line.name}`
       : `${line.qty} x ${line.name}`;
-    out.push(padRow(label, formatUSD(line.amountCents)));
+    out.push(row(label, formatUSD(line.amountCents)));
   }
 
   out.push(
     "",
     rule,
-    padRow("TOTAL", formatUSD(receipt.totalCents)),
-    padRow("Paid", formatUSD(receipt.receivedCents)),
-    padRow("Change", formatUSD(receipt.changeCents)),
+    row("TOTAL", formatUSD(receipt.totalCents)),
+    row("Paid", formatUSD(receipt.receivedCents)),
+    row("Change", formatUSD(receipt.changeCents)),
     rule,
     "",
-    center("Thank you!"),
+    title("Thank you!"),
     "",
   );
 

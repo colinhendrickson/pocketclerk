@@ -1,8 +1,9 @@
 // TypeScript 6 no longer loads @types packages on its own; name this one.
 /// <reference types="web-bluetooth" />
 
-import { renderReceiptText, type Receipt } from "../renderer/receipt";
+import { renderPrintableReceiptText, type Receipt } from "../renderer/receipt";
 import type { PrintResult, ReceiptPrinter } from "./index";
+import { PrinterSetupError } from "./messages";
 
 /**
  * Drives a 58mm BLE thermal printer from the tablet's browser, since no server
@@ -52,7 +53,7 @@ export class WebBluetoothPrinter implements ReceiptPrinter {
   /** Opens the device chooser and connects. Must be called from a user gesture. */
   async connect(): Promise<void> {
     if (!WebBluetoothPrinter.isSupported()) {
-      throw new Error(
+      throw new PrinterSetupError(
         "This browser cannot reach Bluetooth printers. On an iPad, open the cart in the Bluefy browser instead of Safari.",
       );
     }
@@ -67,8 +68,8 @@ export class WebBluetoothPrinter implements ReceiptPrinter {
 
     this.characteristic = await findWritableCharacteristic(server);
     if (!this.characteristic) {
-      throw new Error(
-        "Connected, but this printer does not expose a service the app can write to.",
+      throw new PrinterSetupError(
+        "This printer is not supported. Use a small Bluetooth receipt printer, such as the PT-210.",
       );
     }
 
@@ -77,6 +78,21 @@ export class WebBluetoothPrinter implements ReceiptPrinter {
     device.addEventListener("gattserverdisconnected", () => {
       this.characteristic = null;
     });
+  }
+
+  /**
+   * Reconnects to the printer already chosen, e.g. after it was switched off
+   * and on. Needs no user gesture because the device is already permitted.
+   */
+  async reconnect(): Promise<boolean> {
+    const gatt = this.device?.gatt;
+    if (!gatt) return false;
+    try {
+      this.characteristic = await findWritableCharacteristic(await gatt.connect());
+      return this.characteristic !== null;
+    } catch {
+      return false;
+    }
   }
 
   async print(receipt: Receipt): Promise<PrintResult> {
@@ -137,7 +153,7 @@ async function findWritableCharacteristic(
  * the subset every printer in this class implements consistently.
  */
 export function encodeReceipt(receipt: Receipt): Uint8Array {
-  const text = renderReceiptText(receipt);
+  const text = renderPrintableReceiptText(receipt);
   const body = new TextEncoder().encode(`${text}\n`);
 
   const prefix = Uint8Array.from([

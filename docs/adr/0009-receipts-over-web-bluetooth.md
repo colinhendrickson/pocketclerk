@@ -33,8 +33,15 @@ links to Bluefy on the App Store, and warns that each browser keeps its own devi
 pairing, so the pairing link has to be opened inside Bluefy.
 
 Printing stays asynchronous ([ADR 2](0002-receipt-job-queue.md)): the iPad claims
-its own print jobs from the queue, because no server can reach a printer paired
-to a tablet. A sale never waits for the printer.
+print jobs from the queue, because no server can reach a printer paired to a
+tablet. A sale never waits for the printer. There is one cart iPad per school, so
+any paired device with an open shift prints every shift's receipts from the last
+seven days, including ones queued while the printer was off. The printer
+connection lives in the student layout, so it survives moving between screens
+and from one shift to the next.
+
+Receipt text is reduced to printable ASCII before layout, because these printers
+start in code page 437 and would print UTF-8 names such as "José" as garbage.
 
 ## Consequences
 

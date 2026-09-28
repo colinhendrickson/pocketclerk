@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { encodeReceipt } from "@/providers/printer/web-bluetooth";
+import { toPrintableAscii } from "@/providers/renderer/ascii";
 import {
   RECEIPT_WIDTH,
+  renderPrintableReceiptText,
   renderReceiptText,
   type Receipt,
 } from "@/providers/renderer/receipt";
@@ -94,5 +96,53 @@ describe("encodeReceipt", () => {
     const decoded = new TextDecoder().decode(bytes);
     expect(decoded).toContain("Mrs. Smith");
     expect(decoded).toContain("$3.00");
+  });
+});
+
+describe("toPrintableAscii", () => {
+  // ESC/POS printers default to code page 437, so UTF-8 bytes print as garbage.
+  it("straightens the iPhone's curly apostrophe", () => {
+    expect(toPrintableAscii("O’Brien")).toBe("O'Brien");
+  });
+
+  it("drops accents", () => {
+    expect(toPrintableAscii("José")).toBe("Jose");
+  });
+
+  it("maps dashes, quotes, ellipses and non-breaking spaces", () => {
+    expect(toPrintableAscii("Café — to go")).toBe("Cafe - to go");
+    expect(toPrintableAscii("“Hi” there…")).toBe('"Hi" there...');
+  });
+
+  it("replaces anything else with one question mark", () => {
+    expect(toPrintableAscii("Latte \u{1F600}")).toBe("Latte ?");
+    expect(toPrintableAscii("a\tb")).toBe("a?b");
+  });
+});
+
+describe("printable receipt text with non-ASCII names", () => {
+  const text = renderPrintableReceiptText({
+    ...receipt,
+    teacherName: "Ms. O’Brien-José",
+    studentName: "Zoë \u{1F600}",
+    lines: [{ name: "Café au lait — large", qty: 1, amountCents: 250 }],
+  });
+  const lines = text.split("\n");
+
+  it("prints only printable ASCII", () => {
+    expect(text).toMatch(/^[\x20-\x7e\n]*$/);
+  });
+
+  it("keeps padded rows exactly the paper width", () => {
+    expect(lines).toContain("Teacher         Ms. O'Brien-Jose");
+    expect(lines).toContain("Served by                  Zoe ?");
+    const item = lines.find((l) => l.includes("Cafe au lait - large"));
+    expect(item?.length).toBe(RECEIPT_WIDTH);
+  });
+
+  it("encodes one byte per character", () => {
+    const bytes = encodeReceipt({ ...receipt, teacherName: "José O’Brien" });
+    expect(Array.from(bytes).every((b) => b < 0x80)).toBe(true);
+    expect(new TextDecoder().decode(bytes)).toContain("Jose O'Brien");
   });
 });

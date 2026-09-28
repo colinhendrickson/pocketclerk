@@ -1,4 +1,4 @@
-import { renderReceiptText, type Receipt } from "../renderer/receipt";
+import { renderPrintableReceiptText, type Receipt } from "../renderer/receipt";
 import type { PrintResult, ReceiptPrinter } from "./index";
 
 /** Prints receipts to the console; the fallback when no printer is attached. */
@@ -11,7 +11,7 @@ export class ConsolePrinter implements ReceiptPrinter {
   }
 
   async print(receipt: Receipt): Promise<PrintResult> {
-    console.log(`\n${renderReceiptText(receipt)}\n`);
+    console.log(`\n${renderPrintableReceiptText(receipt)}\n`);
     return { ok: true };
   }
 }

@@ -1,79 +1,16 @@
 "use client";
 
 import { Printer, PrinterCheck, TriangleAlert } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
 
-import { WebBluetoothPrinter } from "@/providers/printer/web-bluetooth";
-
-import { claimPrintJobs, reportPrintResult } from "../print-actions";
-
-type Status = "unsupported" | "disconnected" | "connected" | "printing" | "error";
-
-/** How often the tablet looks for receipts waiting to be printed. */
-const POLL_MS = 8000;
+import { usePrinter } from "../printer-provider";
 
 /**
- * Connects the printer and drains the print queue. Connecting requires a tap
- * because the browser's device chooser needs a user gesture; after that,
- * queued receipts print automatically. Without a printer, jobs wait in the
- * queue and sales are unaffected.
+ * The dashboard's printer controls. Connecting requires a tap because the
+ * browser's device chooser needs a user gesture; after that, the printer
+ * provider prints queued receipts on every student screen.
  */
 export function PrinterBar() {
-  const printerRef = useRef<WebBluetoothPrinter | null>(null);
-  const drainingRef = useRef(false);
-  const [status, setStatus] = useState<Status>("disconnected");
-  const [message, setMessage] = useState<string | null>(null);
-  const [printed, setPrinted] = useState(0);
-
-  useEffect(() => {
-    if (!WebBluetoothPrinter.isSupported()) setStatus("unsupported");
-  }, []);
-
-  const drain = useCallback(async () => {
-    const printer = printerRef.current;
-    if (!printer || drainingRef.current) return;
-    if (!(await printer.isReady())) {
-      setStatus("disconnected");
-      return;
-    }
-
-    drainingRef.current = true;
-    try {
-      const jobs = await claimPrintJobs();
-      if (jobs.length === 0) return;
-
-      setStatus("printing");
-      for (const job of jobs) {
-        const result = await printer.print(job.receipt);
-        await reportPrintResult(job.jobId, result.ok, result.error);
-        if (result.ok) setPrinted((n) => n + 1);
-        else setMessage(result.error ?? "A receipt did not print.");
-      }
-      setStatus("connected");
-    } finally {
-      drainingRef.current = false;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (status !== "connected" && status !== "printing") return;
-    const id = setInterval(() => void drain(), POLL_MS);
-    return () => clearInterval(id);
-  }, [status, drain]);
-
-  async function connect() {
-    setMessage(null);
-    const printer = printerRef.current ?? new WebBluetoothPrinter();
-    printerRef.current = printer;
-    try {
-      await printer.connect();
-      setStatus("connected");
-      void drain();
-    } catch (error) {
-      setStatus("error");
-      setMessage(error instanceof Error ? error.message : "Could not connect.");
-    }
-  }
+  const { status, message, printed, connect } = usePrinter();
 
   if (status === "unsupported") {
     return (
@@ -89,9 +26,11 @@ export function PrinterBar() {
     );
   }
 
+  const ready = status === "connected" || status === "printing";
+
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-box border border-base-300 bg-base-100 p-4">
-      {status === "connected" || status === "printing" ? (
+      {ready ? (
         <PrinterCheck size={34} aria-hidden="true" className="text-success" />
       ) : (
         <Printer size={34} aria-hidden="true" className="opacity-75" />
@@ -105,10 +44,10 @@ export function PrinterBar() {
             : "Printer not connected"}
       </span>
 
-      {status === "connected" || status === "printing" ? null : (
+      {ready ? null : (
         <button
           type="button"
-          onClick={connect}
+          onClick={() => void connect()}
           className="btn btn-outline btn-secondary min-h-[60px] w-full text-[20px] font-extrabold sm:ml-auto sm:w-auto"
         >
           Connect printer

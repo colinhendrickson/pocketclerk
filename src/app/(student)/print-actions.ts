@@ -2,7 +2,7 @@
 
 import {
   buildReceipt,
-  claimJobsForShift,
+  claimCartPrintJobs,
   markFailed,
   recordPrintResult,
 } from "@/lib/receipt-jobs";
@@ -14,9 +14,9 @@ import type { Receipt } from "@/providers/renderer/receipt";
 
 /**
  * The tablet's side of the receipt queue. The printer is paired over Bluetooth,
- * so the tablet claims its own print jobs and reports results. Claims are
- * scoped to the shift in the signed session cookie. See
- * docs/adr/0009-receipts-over-web-bluetooth.md.
+ * so the tablet claims print jobs and reports results. There is one cart iPad
+ * per school, so a paired device with an open shift prints every shift's
+ * recent receipts. See docs/adr/0009-receipts-over-web-bluetooth.md.
  */
 
 export interface PendingPrint {
@@ -27,20 +27,22 @@ export interface PendingPrint {
 /** How many print jobs a tablet takes at once. */
 const PRINT_BATCH = 5;
 
-/**
- * Claims up to `PRINT_BATCH` queued print jobs for the current shift, marking
- * them `processing` and incrementing attempts so a crash mid-print retries
- * rather than loses the job.
- */
-export async function claimPrintJobs(): Promise<PendingPrint[]> {
+/** A paired device with an open shift in its session may print. */
+async function canPrint(): Promise<boolean> {
   await assertPairedDevice();
   const shiftId = await getShiftSession();
-  if (!shiftId) return [];
+  return shiftId !== null && (await getActiveShift(shiftId)) !== null;
+}
 
-  const shift = await getActiveShift(shiftId);
-  if (!shift) return [];
+/**
+ * Claims up to `PRINT_BATCH` of the cart's queued print jobs, marking them
+ * `processing` and incrementing attempts so a crash mid-print retries rather
+ * than loses the job.
+ */
+export async function claimPrintJobs(): Promise<PendingPrint[]> {
+  if (!(await canPrint())) return [];
 
-  const jobs = await claimJobsForShift(shift.id, "print", PRINT_BATCH);
+  const jobs = await claimCartPrintJobs(PRINT_BATCH);
   const out: PendingPrint[] = [];
 
   for (const job of jobs) {
@@ -57,6 +59,8 @@ export async function claimPrintJobs(): Promise<PendingPrint[]> {
 
 /**
  * Records a print outcome. Failures requeue the job until attempts run out.
+ * Needs only a paired device, so a print that finishes just after clock-out
+ * is still recorded rather than reprinted.
  */
 export async function reportPrintResult(
   jobId: string,
@@ -66,15 +70,9 @@ export async function reportPrintResult(
   await assertPairedDevice();
   if (!isUuid(jobId) || typeof ok !== "boolean") return;
 
-  const shiftId = await getShiftSession();
-  if (!shiftId) return;
-  const shift = await getActiveShift(shiftId);
-  if (!shift) return;
-
-  // Scoped to jobs this shift claimed; anything else is ignored.
+  // Only a claimed print job can be settled; anything else is ignored.
   await recordPrintResult(
     jobId,
-    shift.id,
     ok ? { ok: true } : { ok: false, error: typeof error === "string" ? error : "Print failed." },
   );
 }
