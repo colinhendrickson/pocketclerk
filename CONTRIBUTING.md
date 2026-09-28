@@ -55,6 +55,18 @@ variables and the admin Colors page; seed data is fake.
 **Tests prove something.** A test for a bug should fail on the old code. The
 commit history has examples of saying so.
 
+## Dependency overrides
+
+`package.json` pins two transitive packages under `pnpm.overrides`:
+
+- `eslint-plugin-react-hooks` stays on v5: v7 loads `@babel/core` without
+  declaring it, which crashes ESLint before it reads a file.
+- `drizzle-kit`'s bundled `@esbuild-kit/core-utils` gets esbuild 0.25 or newer,
+  which fixes a development-server advisory. drizzle-kit only uses it to compile
+  config and schema files.
+
+Remove an override once the package that needed it no longer does.
+
 ## Reporting a security problem
 
 Privately, please: see [SECURITY.md](SECURITY.md).

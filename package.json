@@ -67,7 +67,8 @@
   "packageManager": "pnpm@9.4.0",
   "pnpm": {
     "overrides": {
-      "eslint-plugin-react-hooks": "^5.2.0"
+      "eslint-plugin-react-hooks": "^5.2.0",
+      "@esbuild-kit/core-utils>esbuild": "^0.25.0"
     }
   }
 }
