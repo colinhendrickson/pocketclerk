@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   dollarsToCents,
+  MAX_RECEIVED_CENTS,
   parseCompleteOrder,
   parseMenuEdit,
   parseNewMenuEntry,
@@ -64,6 +65,7 @@ describe("parseNewTeacher", () => {
 describe("parseCompleteOrder", () => {
   const uuid = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
   const valid = {
+    orderId: "0b6d4c1e-3a7f-4f5e-9a2b-8c1d2e3f4a5b",
     teacherId: uuid,
     receivedCents: 500,
     lines: [{ menuItemId: uuid, qty: 2, addonIds: [] }],
@@ -85,6 +87,19 @@ describe("parseCompleteOrder", () => {
 
   it("rejects an empty order", () => {
     expect(parseCompleteOrder({ ...valid, lines: [] })).toBeNull();
+  });
+
+  it("requires a uuid order id, so a retried order is recognized", () => {
+    const withoutId: Record<string, unknown> = { ...valid };
+    delete withoutId.orderId;
+    expect(parseCompleteOrder(withoutId)).toBeNull();
+    expect(parseCompleteOrder({ ...valid, orderId: "order-1" })).toBeNull();
+  });
+
+  it("caps money received, so a huge amount is refused instead of overflowing the column", () => {
+    expect(parseCompleteOrder({ ...valid, receivedCents: MAX_RECEIVED_CENTS })).not.toBeNull();
+    expect(parseCompleteOrder({ ...valid, receivedCents: MAX_RECEIVED_CENTS + 1 })).toBeNull();
+    expect(parseCompleteOrder({ ...valid, receivedCents: 2 ** 31 })).toBeNull();
   });
 
   it("caps the number of lines, so the transaction loop is bounded", () => {

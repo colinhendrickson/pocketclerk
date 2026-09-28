@@ -7,12 +7,14 @@ import { db } from "@/db";
 import { students } from "@/db/schema";
 import { hashPin } from "@/lib/auth";
 import {
+  isUuid,
   parseActiveToggle,
   parseNewStudent,
   parseResetPin,
 } from "@/lib/validate";
 
 import { isUniqueViolation } from "@/lib/pg-errors";
+import { closeShiftByStaff } from "@/lib/shifts";
 
 import { requireAdmin } from "../require-admin";
 
@@ -90,6 +92,27 @@ export async function resetStudentPin(
 export type SetStudentActiveResult =
   | { ok: true }
   | { ok: false; error: "invalid" | "not_found" };
+
+export type CloseShiftResult =
+  | { ok: true }
+  | { ok: false; error: "invalid" | "already_closed" };
+
+/**
+ * Closes a shift a student never clocked out of, with no hours credited. Used
+ * from the admin home page.
+ */
+export async function closeShift(input: unknown): Promise<CloseShiftResult> {
+  await requireAdmin();
+
+  const shiftId = (input as { shiftId?: unknown } | null)?.shiftId;
+  if (!isUuid(shiftId)) return { ok: false, error: "invalid" };
+
+  if (!(await closeShiftByStaff(shiftId))) return { ok: false, error: "already_closed" };
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/students");
+  return { ok: true };
+}
 
 /**
  * Soft-deletes or restores a student. Students are never hard-deleted: their

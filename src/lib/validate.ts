@@ -33,10 +33,15 @@ export interface OrderLineInput {
 }
 
 export interface CompleteOrderInput {
+  /** Chosen by the cart once per order, so a retry after a lost response is recognized. */
+  orderId: string;
   teacherId: string;
   receivedCents: number;
   lines: OrderLineInput[];
 }
+
+/** $1,000: more than any real payment, and far below the int4 column limit. */
+export const MAX_RECEIVED_CENTS = 100_000;
 
 /**
  * Validates an order completion payload. Array sizes are capped so a request
@@ -44,10 +49,10 @@ export interface CompleteOrderInput {
  */
 export function parseCompleteOrder(input: unknown): CompleteOrderInput | null {
   if (typeof input !== "object" || input === null) return null;
-  const { teacherId, receivedCents, lines } = input as Record<string, unknown>;
+  const { orderId, teacherId, receivedCents, lines } = input as Record<string, unknown>;
 
-  if (!isUuid(teacherId)) return null;
-  if (!isCents(receivedCents)) return null;
+  if (!isUuid(orderId) || !isUuid(teacherId)) return null;
+  if (!isCents(receivedCents) || receivedCents > MAX_RECEIVED_CENTS) return null;
   if (!Array.isArray(lines) || lines.length === 0 || lines.length > 20) return null;
 
   const parsed: OrderLineInput[] = [];
@@ -63,7 +68,7 @@ export function parseCompleteOrder(input: unknown): CompleteOrderInput | null {
     parsed.push({ menuItemId, qty, addonIds: addonIds as string[] });
   }
 
-  return { teacherId, receivedCents, lines: parsed };
+  return { orderId, teacherId, receivedCents, lines: parsed };
 }
 
 export interface ClockInInput {

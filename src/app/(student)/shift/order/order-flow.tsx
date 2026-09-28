@@ -18,6 +18,7 @@ import type { Addon, MenuItem } from "@/db/schema";
 import { isMenuIconKey } from "@/lib/menu-icons";
 import { formatUSD, orderTotalCents } from "@/lib/money";
 import type { TeacherSummary } from "@/lib/queries";
+import { MAX_RECEIVED_CENTS } from "@/lib/validate";
 
 import { completeOrder } from "../../actions";
 import { TeacherPicker } from "./teacher-picker";
@@ -59,6 +60,8 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
   const [selectedBill, setSelectedBill] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [completed, setCompleted] = useState<Completed | null>(null);
+  // One id per order, reused on retry so a lost response cannot record the sale twice.
+  const [orderId, setOrderId] = useState(() => crypto.randomUUID());
   const [pending, startTransition] = useTransition();
 
   const menuById = useMemo(() => new Map(menu.map((m) => [m.id, m])), [menu]);
@@ -123,11 +126,19 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
     if (!teacher) return;
     setError(null);
     startTransition(async () => {
-      const result = await completeOrder({
-        teacherId: teacher.id,
-        receivedCents,
-        lines,
-      });
+      let result: Awaited<ReturnType<typeof completeOrder>>;
+      try {
+        result = await completeOrder({
+          orderId,
+          teacherId: teacher.id,
+          receivedCents,
+          lines,
+        });
+      } catch {
+        // The sale may have saved before the connection dropped; the order stays on screen.
+        setError("Something went wrong. Check Today's orders before trying again.");
+        return;
+      }
       if (result.ok) {
         setCompleted({ totalCents: result.totalCents, changeCents: result.changeCents });
         setStage("done");
@@ -148,6 +159,7 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
     setSelectedBill(null);
     setCompleted(null);
     setError(null);
+    setOrderId(crypto.randomUUID());
     setStage("teacher");
   }
 
@@ -456,9 +468,9 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
 
 /**
  * Appends a keypad digit to a cents entry, terminal-style (5, 0, 0 is $5.00).
- * Drops leading zeroes and caps the entry at six digits.
+ * Drops leading zeroes and ignores a digit that would pass the server's limit.
  */
 function appendDigit(current: string, digit: string): string {
   const next = (current + digit).replace(/^0+(?=\d)/, "");
-  return next.length > 6 ? current : next;
+  return Number.parseInt(next, 10) > MAX_RECEIVED_CENTS ? current : next;
 }

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNotNull, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -10,6 +10,7 @@ import {
   students,
   teacherProfiles,
 } from "@/db/schema";
+import { TIME_ZONE, localDate, startOfLocalDay } from "@/lib/time";
 
 /** Read helpers for the student side. */
 
@@ -36,7 +37,17 @@ export interface ActiveShift {
  * The open shift for a session's shift id, or null if unknown or closed (so a
  * stale cookie leads back to sign-in).
  */
-export async function getActiveShift(shiftId: string): Promise<ActiveShift | null> {
+/**
+ * The session's shift, if it is open and started today in the cart's time zone.
+ * A shift left open from an earlier day is not active: the student signs in
+ * again, which closes it with no hours (src/lib/shifts.ts).
+ */
+export async function getActiveShift(
+  shiftId: string,
+  now: Date = new Date(),
+  timeZone: string = TIME_ZONE,
+): Promise<ActiveShift | null> {
+  const startOfToday = startOfLocalDay(localDate(now, timeZone), timeZone);
   const row = await db
     .select({
       id: shifts.id,
@@ -46,7 +57,7 @@ export async function getActiveShift(shiftId: string): Promise<ActiveShift | nul
     })
     .from(shifts)
     .innerJoin(students, eq(students.id, shifts.studentId))
-    .where(and(eq(shifts.id, shiftId), isNull(shifts.clockOut)))
+    .where(and(eq(shifts.id, shiftId), isNull(shifts.clockOut), gte(shifts.clockIn, startOfToday)))
     .limit(1);
 
   return row[0] ?? null;

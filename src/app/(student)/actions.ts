@@ -1,25 +1,18 @@
 "use server";
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 
 import { assertPairedDevice } from "@/app/(student)/require-device";
 import { db } from "@/db";
-import {
-  orderItemAddons,
-  orderItems,
-  orders,
-  receiptJobs,
-  shifts,
-  students,
-} from "@/db/schema";
+import { students } from "@/db/schema";
 import { isLockedOut, lockoutMinutesRemaining, verifyPin } from "@/lib/auth";
-import { changeCents, hoursHundredthsBetween, orderTotalCents, rewardTickets } from "@/lib/money";
 import { deliverQueuedEmails } from "@/lib/deliver-receipts";
-import { isUniqueViolation } from "@/lib/pg-errors";
+import { placeOrder } from "@/lib/orders";
 import { acceptCorrectPin, recordFailedPin } from "@/lib/pin-lockout";
 import { getActiveShift } from "@/lib/queries";
+import { clockOutShift, startShift } from "@/lib/shifts";
 import { parseClockIn, parseCompleteOrder, parseNewTeacher } from "@/lib/validate";
 import { clearShiftSession, getShiftSession, setShiftSession } from "@/lib/session";
 import { insertTeacher } from "@/lib/teachers";
@@ -87,27 +80,11 @@ export async function clockIn(input: unknown): Promise<ClockInResult> {
     };
   }
 
-  try {
-    const [shift] = await db
-      .insert(shifts)
-      .values({ studentId: student.id })
-      .returning();
-    await setShiftSession(shift.id);
-    return { ok: true, resumed: false };
-  } catch (error) {
-    // The one-open-shift partial unique index refused the insert (double tap or
-    // lost cookie). Resume the existing open shift.
-    if (isUniqueViolation(error)) {
-      const open = await db.query.shifts.findFirst({
-        where: and(eq(shifts.studentId, student.id), isNull(shifts.clockOut)),
-      });
-      if (open) {
-        await setShiftSession(open.id);
-        return { ok: true, resumed: true };
-      }
-    }
-    throw error;
-  }
+  // Resumes today's open shift (double tap or lost cookie); a forgotten shift
+  // from an earlier day is closed with no hours. See src/lib/shifts.ts.
+  const shift = await startShift(student.id);
+  await setShiftSession(shift.shiftId);
+  return { ok: true, resumed: shift.resumed };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -119,9 +96,8 @@ export type CompleteOrderResult =
   | { ok: false; error: "no_shift" | "invalid" | "insufficient" | "unknown_item" };
 
 /**
- * Writes the order, lines, add-ons, and receipt jobs in one transaction.
- * Prices come from the database and the total and change are recomputed here;
- * client-supplied arithmetic is never trusted.
+ * Records a sale. Pricing, idempotency and receipt jobs live in
+ * src/lib/orders.ts; a retried order id returns the recorded result.
  */
 export async function completeOrder(input: unknown): Promise<CompleteOrderResult> {
   await assertPairedDevice();
@@ -134,93 +110,10 @@ export async function completeOrder(input: unknown): Promise<CompleteOrderResult
   const parsed = parseCompleteOrder(input);
   if (!parsed) return { ok: false, error: "invalid" };
 
-  const { teacherId, receivedCents, lines } = parsed;
-
-  const menu = await db.query.menuItems.findMany();
-  const extras = await db.query.addons.findMany();
-  const menuById = new Map(menu.map((m) => [m.id, m]));
-  const addonById = new Map(extras.map((a) => [a.id, a]));
-
-  const priced = lines.map((line) => {
-    const item = menuById.get(line.menuItemId);
-    if (!item) throw new UnknownItem();
-    const chosen = line.addonIds.map((id) => {
-      const addon = addonById.get(id);
-      if (!addon) throw new UnknownItem();
-      return addon;
-    });
-    return { item, qty: line.qty, addons: chosen };
-  });
-
-  let totalCents: number;
-  let change: number;
-  try {
-    totalCents = orderTotalCents(
-      priced.map((p) => ({
-        unitPriceCents: p.item.priceCents,
-        qty: p.qty,
-        addonPriceCents: p.addons.map((a) => a.priceCents),
-      })),
-    );
-    change = changeCents(totalCents, receivedCents);
-  } catch (error) {
-    if (error instanceof UnknownItem) return { ok: false, error: "unknown_item" };
-    return { ok: false, error: "insufficient" };
-  }
-
-  const orderId = await db.transaction(async (tx) => {
-    const [order] = await tx
-      .insert(orders)
-      .values({
-        shiftId: shift.id,
-        teacherId,
-        totalCents,
-        paymentMethod: "cash",
-        receivedCents,
-        changeCents: change,
-      })
-      .returning({ id: orders.id });
-
-    for (const line of priced) {
-      const [row] = await tx
-        .insert(orderItems)
-        .values({
-          orderId: order.id,
-          menuItemId: line.item.id,
-          nameSnapshot: line.item.name,
-          qty: line.qty,
-          unitPriceCents: line.item.priceCents,
-        })
-        .returning({ id: orderItems.id });
-
-      if (line.addons.length > 0) {
-        await tx.insert(orderItemAddons).values(
-          line.addons.map((addon) => ({
-            orderItemId: row.id,
-            addonId: addon.id,
-            nameSnapshot: addon.name,
-            priceCents: addon.priceCents,
-          })),
-        );
-      }
-    }
-
-    // Receipts are queued with the sale and delivered asynchronously, so a
-    // printer or network failure never blocks an order. See
-    // docs/adr/0002-receipt-job-queue.md.
-    await tx.insert(receiptJobs).values({ orderId: order.id, channel: "print" });
-
-    // No email job for a teacher without an email address.
-    const teacher = await tx.query.persons.findFirst({
-      where: (p, { eq: equals }) => equals(p.id, teacherId),
-      columns: { email: true },
-    });
-    if (teacher?.email) {
-      await tx.insert(receiptJobs).values({ orderId: order.id, channel: "email" });
-    }
-
-    return order.id;
-  });
+  const result = await placeOrder(shift.id, parsed);
+  if (!result.ok) return result;
+  const { orderId, totalCents, changeCents } = result;
+  if (!result.created) return { ok: true, orderId, totalCents, changeCents };
 
   // Send email receipts after the response so a slow provider never delays the
   // cart. Failures leave jobs queued for the daily cron sweep, which on the free
@@ -238,10 +131,8 @@ export async function completeOrder(input: unknown): Promise<CompleteOrderResult
   });
 
   revalidatePath("/shift");
-  return { ok: true, orderId, totalCents, changeCents: change };
+  return { ok: true, orderId, totalCents, changeCents };
 }
-
-class UnknownItem extends Error {}
 
 /* -------------------------------------------------------------------------- */
 /* Clock out                                                                  */
@@ -252,28 +143,19 @@ export type ClockOutResult =
   | { ok: false; error: "no_shift" };
 
 /**
- * Closes the shift and snapshots hours and tickets. Hours are computed from
- * server timestamps, never the device clock.
+ * Closes the shift and snapshots hours and tickets from server time. A shift
+ * left open from an earlier day closes with no hours. See src/lib/shifts.ts.
  */
 export async function clockOut(): Promise<ClockOutResult> {
   await assertPairedDevice();
   const shiftId = await getShiftSession();
   if (!shiftId) return { ok: false, error: "no_shift" };
 
-  const shift = await getActiveShift(shiftId);
-  if (!shift) return { ok: false, error: "no_shift" };
-
-  const now = new Date();
-  const hoursHundredths = hoursHundredthsBetween(shift.clockIn, now);
-  const tickets = rewardTickets(hoursHundredths);
-
-  await db
-    .update(shifts)
-    .set({ clockOut: now, hoursHundredths, rewardTickets: tickets })
-    .where(eq(shifts.id, shift.id));
+  const closed = await clockOutShift(shiftId);
+  if (!closed) return { ok: false, error: "no_shift" };
 
   // Keep the session cookie so the summary can render; `finishShift` clears it.
-  return { ok: true, hoursHundredths, tickets };
+  return { ok: true, hoursHundredths: closed.hoursHundredths, tickets: closed.tickets };
 }
 
 /** Ends the session once the student has seen their shift summary. */
