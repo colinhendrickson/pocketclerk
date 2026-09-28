@@ -221,6 +221,17 @@ export const GUIDES: Guide[] = [
     page: "/admin/teachers",
   },
   {
+    id: "mark-teacher-pays-by-card",
+    topic: "Teachers",
+    title: "Marking a teacher who pays by card",
+    steps: [
+      "Open Teachers and press Details on the teacher.",
+      "Switch on Usually pays with a staff card. It saves straight away.",
+    ],
+    note: "A Pays by card badge appears in the list, and students see Usually pays by card when they take that teacher's order. It is only a reminder: the teacher can still pay cash, and card works only while staff card payments are on (Menu page).",
+    page: "/admin/teachers",
+  },
+  {
     id: "teacher-leaves",
     topic: "Teachers",
     title: "A teacher has left the school",
@@ -303,6 +314,20 @@ export const GUIDES: Guide[] = [
       "Press Put back to offer it again.",
     ],
     note: "Nothing is deleted, so past orders that included it are unaffected.",
+    page: "/admin/menu",
+  },
+
+  {
+    id: "turn-on-staff-card",
+    topic: "Menu",
+    title: "Letting teachers pay with a staff card",
+    steps: [
+      "Open Menu and scroll to How teachers pay.",
+      "Switch on Let teachers pay with a staff card. It saves straight away.",
+      "At the cart, students now ask how the teacher is paying. For a staff card, they ask for the teacher's ID card, check it, and press Card checked, done.",
+      "To stop, switch it off.",
+    ],
+    note: "Cash always works. No money changes hands for a card sale; on Orders, card sales are totaled apart from cash, so the cash total is what should be in the cash box.",
     page: "/admin/menu",
   },
 
@@ -495,12 +520,12 @@ export const PAGE_HELP: Record<AdminRoute, PageHelp> = {
   "/admin/teachers": {
     purpose:
       "The cart's customers. Keep emails right so receipts arrive, and add notes students should see when they serve that teacher.",
-    tasks: ["add-teacher", "teacher-email", "teacher-note", "teacher-leaves"],
+    tasks: ["add-teacher", "teacher-email", "teacher-note", "mark-teacher-pays-by-card", "teacher-leaves"],
   },
   "/admin/menu": {
     purpose:
       "What students can sell and what it costs. Changes appear at the cart straight away and never alter past orders.",
-    tasks: ["add-menu-item", "change-price", "set-special", "add-ons", "menu-pictures", "take-off-menu"],
+    tasks: ["add-menu-item", "change-price", "set-special", "add-ons", "menu-pictures", "turn-on-staff-card", "take-off-menu"],
   },
   "/admin/inventory": {
     purpose:
@@ -528,6 +553,10 @@ export const PAGE_HELP: Record<AdminRoute, PageHelp> = {
 };
 
 export const GLOSSARY: GlossaryEntry[] = [
+  {
+    term: "Staff card",
+    meaning: "A teacher's staff ID card, checked by the student in place of cash when staff card payments are on. No money changes hands.",
+  },
   {
     term: "Shift",
     meaning: "The time from when a student clocks in with their PIN to when they clock out.",

@@ -26,8 +26,10 @@ export interface Receipt {
   placedAt: Date;
   lines: ReceiptLine[];
   totalCents: number;
-  receivedCents: number;
-  changeCents: number;
+  paymentMethod: "cash" | "card";
+  /** Null for a staff card, which takes no money and gives no change. */
+  receivedCents: number | null;
+  changeCents: number | null;
 }
 
 /** Characters across a 58mm roll at the default font: 32. */
@@ -104,12 +106,17 @@ function layoutReceipt(receipt: Receipt, clean: (text: string) => string): strin
     out.push(row(label, formatUSD(line.amountCents)));
   }
 
+  out.push("", rule, row("TOTAL", formatUSD(receipt.totalCents)));
+  if (receipt.paymentMethod === "card") {
+    out.push(clean("Paid by staff card"));
+  } else {
+    // orders_payment_fields_check guarantees both for cash; the fallbacks only satisfy the type.
+    out.push(
+      row("Paid", formatUSD(receipt.receivedCents ?? receipt.totalCents)),
+      row("Change", formatUSD(receipt.changeCents ?? 0)),
+    );
+  }
   out.push(
-    "",
-    rule,
-    row("TOTAL", formatUSD(receipt.totalCents)),
-    row("Paid", formatUSD(receipt.receivedCents)),
-    row("Change", formatUSD(receipt.changeCents)),
     rule,
     "",
     title("Thank you!"),

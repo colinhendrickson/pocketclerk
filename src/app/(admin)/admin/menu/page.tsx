@@ -1,6 +1,8 @@
 import { listAddonsForAdmin, listMenuForAdmin } from "@/lib/admin-queries";
+import { cardPaymentsEnabled } from "@/lib/settings";
 
 import { requireAdmin } from "../require-admin";
+import { CardPaymentsSetting } from "./card-payments-setting";
 import { MenuSection, type MenuEntryView } from "./menu-section";
 import { HelpPanel } from "../_help/help-panel";
 
@@ -13,9 +15,10 @@ export const dynamic = "force-dynamic";
 export default async function AdminMenuPage() {
   await requireAdmin();
 
-  const [items, extras] = await Promise.all([
+  const [items, extras, cardPayments] = await Promise.all([
     listMenuForAdmin(),
     listAddonsForAdmin(),
+    cardPaymentsEnabled(),
   ]);
 
   const itemViews: MenuEntryView[] = items.map((item) => ({
@@ -65,6 +68,8 @@ export default async function AdminMenuPage() {
         addLabel="Add add-on"
         rows={addonViews}
       />
+
+      <CardPaymentsSetting enabled={cardPayments} />
     </main>
   );
 }

@@ -58,6 +58,7 @@ export default async function TodaysOrdersPage() {
                   <span className="text-[18px] font-bold opacity-70">
                     {row.room ? `Room ${row.room} · ` : ""}
                     <span className="tabular">{time.format(row.createdAt)}</span>
+                    {row.paymentMethod === "card" ? " · Paid by staff card" : ""}
                   </span>
                 </span>
                 <span className="text-[26px] font-extrabold tabular">

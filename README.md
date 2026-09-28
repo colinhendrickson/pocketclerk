@@ -152,7 +152,7 @@ fixes built on reasoning alone had missed.
 
 ## Testing
 
-317 Vitest cases across 39 files, and 35 Playwright tests across 11 specs.
+337 Vitest cases across 41 files, and 36 Playwright tests across 12 specs.
 
 The coverage is deliberately uneven. `src/lib/money.ts` has the most tests
 because a bug there teaches a student the wrong answer in front of a customer.
@@ -278,7 +278,7 @@ Visit `/themes` to see the same components under both committed themes.
 ## Status
 
 The student side is complete: sign in, clock in, take classroom orders, count
-change, print or email the receipt, view today's orders, count the inventory,
+change or check a teacher's staff card, print or email the receipt, view today's orders, count the inventory,
 restock, work the closing checklist, clock out.
 
 The staff side has sign-in, a dashboard with the setup checklist and every guide,

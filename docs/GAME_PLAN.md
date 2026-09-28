@@ -146,7 +146,7 @@ Every commit names its ticket: `feat(4.8): ...`. Work that is not on this list g
 | 3.4 | Scheduled backup → JSON dump emailed to admin | Open |
 | 3.5 | Real printer integration behind ReceiptPrinter | Done as 4.8 |
 | 3.6 | Public demo at pocket-clerk.com: landing page, demo banner, admin entry without email, console-only email, hourly reset in one transaction (ADR 14) | Done |
-| 3.7 | Card/badge payment (deferred from V1, client to opt in): "How is [teacher] paying?" screen, badge confirmation modal, admin toggle for enabled methods | Open |
+| 3.7 | Staff card payment, asked for by the program's teacher: some teachers will not use pretend cash. "How is [teacher] paying?" with Cash and Staff card; the student checks the ID card and taps Card checked, done. Off until staff turn it on (Menu page); teachers can be marked as usually paying by card; card sales are totaled apart from cash | Done |
 
 ### V4 — Go-live hardening
 
@@ -185,7 +185,7 @@ Full spec: `docs/DESIGN.md`.
 | Font | Manrope 600/700/800 (distinct 1/I/l and 0/O, tabular figures). Nunito considered and rejected |
 | Themes | `pocketclerk` (default) + `sample` (proof) committed; a deployment's main color is set by staff (4.7), stored in the database, never committed |
 | Type scale | One scale, all themes; change amount 184-192px is the only text at that size in the app, shrinking only to fit a narrow card |
-| Primitives | BigButton, MoneyDisplay, NoteBanner, StepHeader, ChangeCard, Keypad/BillButtons, ShiftStats, TeacherCard, Logo, Admin shell, HelpPanel, TourButton. PaymentChoice and BadgeModal wait for 3.7 |
+| Primitives | BigButton, MoneyDisplay, NoteBanner, StepHeader, ChangeCard, Keypad/BillButtons, ShiftStats, TeacherCard, Logo, Admin shell, HelpPanel, TourButton. PaymentChoice and StaffCardCheck (3.7) |
 | Casing | Student-facing labels sentence case in every theme; `.btn` text-transform reset |
 
 ## 7. UX rules (non-negotiable, this audience is the point)

@@ -49,3 +49,32 @@ export async function setPrimaryColor(input: unknown, by: string): Promise<SetPr
     });
   return { ok: true, color };
 }
+
+/** Whether teachers may pay with a staff card. False if the setting cannot be read. */
+export async function cardPaymentsEnabled(): Promise<boolean> {
+  try {
+    const [row] = await db
+      .select({ enabled: siteSettings.cardPaymentsEnabled })
+      .from(siteSettings)
+      .where(eq(siteSettings.id, 1))
+      .limit(1);
+    return row?.enabled ?? false;
+  } catch (error) {
+    console.error("[settings] could not read card payments; treating them as off", error);
+    return false;
+  }
+}
+
+export type SetCardPaymentsResult = { ok: true } | { ok: false; error: "invalid" };
+
+export async function setCardPaymentsEnabled(enabled: unknown, by: string): Promise<SetCardPaymentsResult> {
+  if (typeof enabled !== "boolean") return { ok: false, error: "invalid" };
+  await db
+    .insert(siteSettings)
+    .values({ id: 1, cardPaymentsEnabled: enabled, updatedBy: by, updatedAt: new Date() })
+    .onConflictDoUpdate({
+      target: siteSettings.id,
+      set: { cardPaymentsEnabled: enabled, updatedBy: by, updatedAt: new Date() },
+    });
+  return { ok: true };
+}

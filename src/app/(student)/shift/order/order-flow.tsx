@@ -12,6 +12,8 @@ import {
   MenuIcon,
   MoneyDisplay,
   NoteBanner,
+  PaymentChoice,
+  StaffCardCheck,
   StepHeader,
 } from "@/components";
 import type { Addon, MenuItem } from "@/db/schema";
@@ -29,6 +31,8 @@ export interface OrderFlowProps {
   teachers: TeacherSummary[];
   menu: MenuItem[];
   addons: Addon[];
+  /** When false the order goes straight to making change, as before 3.7. */
+  cardPaymentsEnabled: boolean;
 }
 
 /** One menu item in the order, with the add-ons chosen for it. */
@@ -38,11 +42,13 @@ interface Line {
   addonIds: string[];
 }
 
-type Stage = "teacher" | "build" | "pay" | "done";
+/** `method` asks how the teacher pays; `pay` makes change; `card` checks a staff card. */
+type Stage = "teacher" | "build" | "method" | "pay" | "card" | "done";
 
 interface Completed {
   totalCents: number;
-  changeCents: number;
+  /** Null when paid by staff card. */
+  changeCents: number | null;
 }
 
 /**
@@ -51,7 +57,12 @@ interface Completed {
  * leave nothing in the database. Totals shown here are a preview; the server
  * recomputes them from its own prices.
  */
-export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
+export function OrderFlow({
+  teachers,
+  menu,
+  addons,
+  cardPaymentsEnabled,
+}: OrderFlowProps) {
   const router = useRouter();
   const [stage, setStage] = useState<Stage>("teacher");
   const [teacher, setTeacher] = useState<TeacherSummary | null>(null);
@@ -122,30 +133,34 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
     });
   }
 
-  function submit() {
+  function submit(paymentMethod: "cash" | "card") {
     if (!teacher) return;
     setError(null);
     startTransition(async () => {
       let result: Awaited<ReturnType<typeof completeOrder>>;
       try {
-        result = await completeOrder({
-          orderId,
-          teacherId: teacher.id,
-          receivedCents,
-          lines,
-        });
+        result = await completeOrder(
+          paymentMethod === "cash"
+            ? { orderId, teacherId: teacher.id, paymentMethod, receivedCents, lines }
+            : { orderId, teacherId: teacher.id, paymentMethod, lines },
+        );
       } catch {
         // The sale may have saved before the connection dropped; the order stays on screen.
         setError("Something went wrong. Check Today's orders before trying again.");
         return;
       }
       if (result.ok) {
+        // Shown from the recorded order: a retry may return a sale first saved another way.
         setCompleted({ totalCents: result.totalCents, changeCents: result.changeCents });
         setStage("done");
       } else if (result.error === "no_shift") {
         router.replace("/cart");
       } else if (result.error === "insufficient") {
         setError("That is not enough money for this order. Count it again.");
+      } else if (result.error === "card_disabled") {
+        // Staff turned card payments off mid-sale; cash still works.
+        setError("Staff cards are turned off. Take cash instead.");
+        setStage("pay");
       } else {
         setError("The order did not save. Ask a teacher for help.");
       }
@@ -345,12 +360,70 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
             <BigButton
               variant="primary"
               disabled={lines.length === 0}
-              onClick={() => setStage("pay")}
+              onClick={() => setStage(cardPaymentsEnabled ? "method" : "pay")}
               className="min-h-[72px]"
             >
               Go to payment
             </BigButton>
           </aside>
+        </div>
+      </div>
+    );
+  }
+
+  /* --- Step 3: how the teacher pays (only when staff cards are on) --------- */
+  if (stage === "method" && teacher) {
+    return (
+      <div className="flex flex-1 flex-col">
+        <StepHeader
+          step={3}
+          totalSteps={4}
+          title="Take payment"
+          subtitle={teacher.room ? `${teacher.name} · Room ${teacher.room}` : teacher.name}
+          backLabel="Back to the order"
+          steps={STEPS}
+          onBack={() => setStage("build")}
+        />
+        {/* DESIGN.md §3: question, Total, two choices. Nothing else. */}
+        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center gap-6 p-4 text-center md:p-8">
+          <h2 className="text-[44px] font-extrabold leading-tight">How is {teacher.name} paying?</h2>
+          <div>
+            <p className="text-[18px] font-bold opacity-70">Total</p>
+            <MoneyDisplay cents={totalCents} size="total" />
+          </div>
+          <PaymentChoice
+            cardNote={teacher.prefersCard ? "Usually pays by card" : undefined}
+            onChoose={(method) => {
+              setError(null);
+              setStage(method === "cash" ? "pay" : "card");
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  /* --- Step 3: check the staff card ---------------------------------------- */
+  if (stage === "card" && teacher) {
+    return (
+      <div className="flex flex-1 flex-col">
+        <StepHeader
+          step={3}
+          totalSteps={4}
+          title="Staff card"
+          subtitle={`${teacher.name} owes ${formatUSD(totalCents)}`}
+          backLabel="Back to how they pay"
+          steps={STEPS}
+          onBack={() => setStage("method")}
+        />
+        <div className="flex flex-1 flex-col items-center justify-center p-4 md:p-8">
+          <StaffCardCheck
+            teacherName={teacher.name}
+            totalCents={totalCents}
+            pending={pending}
+            error={error}
+            onConfirm={() => submit("card")}
+          />
         </div>
       </div>
     );
@@ -365,9 +438,9 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
           totalSteps={4}
           title="Make change"
           subtitle={`${teacher.name} owes ${formatUSD(totalCents)}`}
-          backLabel="Back to the order"
+          backLabel={cardPaymentsEnabled ? "Back to how they pay" : "Back to the order"}
           steps={STEPS}
-          onBack={() => setStage("build")}
+          onBack={() => setStage(cardPaymentsEnabled ? "method" : "build")}
         />
 
         {/* DESIGN.md §3: one column below md (owed, change, input, button);
@@ -425,7 +498,7 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
           <BigButton
             variant="primary"
             disabled={!enough || pending}
-            onClick={submit}
+            onClick={() => submit("cash")}
             className="md:col-start-1 md:row-start-2"
           >
             {pending ? "Saving…" : "Change given, print receipt"}
@@ -444,12 +517,26 @@ export function OrderFlow({ teachers, menu, addons }: OrderFlowProps) {
           <span className="grid size-[150px] place-items-center rounded-full bg-success text-success-content">
             <Check size={80} aria-hidden="true" />
           </span>
-          <h2 className="text-[44px] font-extrabold text-success">Change given</h2>
-          <p className="text-[22px] font-bold">
-            {teacher.name} paid {formatUSD(completed.totalCents + completed.changeCents)}
-            {" · "}change {formatUSD(completed.changeCents)}
-            {" · "}receipt is on its way
-          </p>
+          {completed.changeCents === null ? (
+            <>
+              <h2 className="text-[52px] font-extrabold leading-tight text-success md:text-[68px]">
+                Paid by staff card
+              </h2>
+              <p className="text-[22px] font-bold">
+                {teacher.name} paid {formatUSD(completed.totalCents)}
+                {" · "}receipt is on its way
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-[44px] font-extrabold text-success">Change given</h2>
+              <p className="text-[22px] font-bold">
+                {teacher.name} paid {formatUSD(completed.totalCents + completed.changeCents)}
+                {" · "}change {formatUSD(completed.changeCents)}
+                {" · "}receipt is on its way
+              </p>
+            </>
+          )}
           <div className="flex w-full max-w-xl flex-col gap-4">
             <BigButton variant="primary" onClick={startNextOrder}>
               Done, next order

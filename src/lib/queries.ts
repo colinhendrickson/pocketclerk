@@ -98,6 +98,8 @@ export interface TeacherSummary {
   room: string | null;
   email: string | null;
   notes: string[];
+  /** Shown as a hint on the staff card choice; never chooses for the student. */
+  prefersCard: boolean;
 }
 
 export async function listTeachers(): Promise<TeacherSummary[]> {
@@ -108,6 +110,7 @@ export async function listTeachers(): Promise<TeacherSummary[]> {
       room: teacherProfiles.room,
       email: persons.email,
       notes: teacherProfiles.notes,
+      prefersCard: teacherProfiles.prefersCard,
     })
     .from(teacherProfiles)
     .innerJoin(persons, eq(persons.id, teacherProfiles.personId))
@@ -121,6 +124,7 @@ export async function listShiftOrders(shiftId: string) {
     .select({
       id: orders.id,
       totalCents: orders.totalCents,
+      paymentMethod: orders.paymentMethod,
       createdAt: orders.createdAt,
       teacherName: persons.name,
       room: teacherProfiles.room,

@@ -9,6 +9,7 @@ import {
   addTeacherNote,
   removeTeacherNote,
   setTeacherActive,
+  setTeacherPrefersCard,
   updateTeacher,
 } from "./actions";
 
@@ -106,9 +107,14 @@ function TeacherRows({ row, isOpen, onToggle }: TeacherRowsProps) {
           {row.email ?? <span className="opacity-75">no email</span>}
         </td>
         <td>
-          <span className={`badge badge-sm whitespace-nowrap ${row.active ? "badge-success" : "badge-ghost"}`}>
-            {row.active ? "Active" : "Inactive"}
-          </span>
+          <div className="flex flex-wrap gap-1">
+            <span className={`badge badge-sm whitespace-nowrap ${row.active ? "badge-success" : "badge-ghost"}`}>
+              {row.active ? "Active" : "Inactive"}
+            </span>
+            {row.prefersCard ? (
+              <span className="badge badge-sm badge-info whitespace-nowrap">Pays by card</span>
+            ) : null}
+          </div>
         </td>
         <td className="text-right tabular">{row.notes.length}</td>
         <td className="text-right tabular">{row.orderCount}</td>
@@ -153,7 +159,10 @@ interface TeacherDetailProps {
 function TeacherDetail({ row }: TeacherDetailProps) {
   return (
     <div className="grid gap-6 py-3 lg:grid-cols-3">
-      <EditTeacherForm row={row} />
+      <div className="flex flex-col gap-4">
+        <EditTeacherForm row={row} />
+        <CardPreference row={row} />
+      </div>
       <NotesPanel row={row} />
       <RecentOrders orders={row.recentOrders} />
     </div>
@@ -256,6 +265,58 @@ function EditTeacherForm({ row }: EditTeacherFormProps) {
         </p>
       ) : null}
     </form>
+  );
+}
+
+interface CardPreferenceProps {
+  row: TeacherView;
+}
+
+/** Saves on change, like Deactivate; the whole label is the touch target. */
+function CardPreference({ row }: CardPreferenceProps) {
+  const [checked, setChecked] = useState(row.prefersCard);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function change(next: boolean) {
+    setError(null);
+    setChecked(next);
+    startTransition(async () => {
+      const result = await setTeacherPrefersCard({ teacherId: row.id, prefersCard: next });
+      if (!result.ok) {
+        setChecked(!next);
+        setError(
+          result.error === "not_found"
+            ? "That teacher no longer exists. Reload the page."
+            : "That did not save. Try again.",
+        );
+      }
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="flex min-h-11 cursor-pointer items-center gap-3 self-start">
+        <input
+          type="checkbox"
+          role="switch"
+          className="toggle toggle-primary toggle-sm"
+          checked={checked}
+          disabled={pending}
+          onChange={(event) => change(event.target.checked)}
+        />
+        <span className="text-sm font-bold">Usually pays with a staff card</span>
+      </label>
+      <span className="text-xs opacity-75">
+        Only a reminder for students. Cash always works, and a card works only
+        while staff card payments are on (Menu page).
+      </span>
+      {error ? (
+        <p role="alert" className="text-sm font-bold text-error">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }
 

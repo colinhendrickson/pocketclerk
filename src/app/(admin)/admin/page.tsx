@@ -89,6 +89,11 @@ export default async function AdminHomePage() {
           <div className="stat">
             <span className="stat-title">Sales today</span>
             <span className="stat-value tabular">{formatUSD(stats.salesTodayCents)}</span>
+            {stats.cardSalesTodayCents > 0 ? (
+              <span className="stat-desc tabular">
+                {formatUSD(stats.cashSalesTodayCents)} cash, {formatUSD(stats.cardSalesTodayCents)} staff card
+              </span>
+            ) : null}
           </div>
           <div className="stat">
             <span className="stat-title">Shifts open now</span>

@@ -1,10 +1,12 @@
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lt, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
   addons,
   inventoryItems,
   menuItems,
+  orderItemAddons,
+  orderItems,
   orders,
   persons,
   shifts,
@@ -59,6 +61,9 @@ export async function listStudentsWithTotals(): Promise<StudentRow[]> {
 export interface DashboardStats {
   ordersToday: number;
   salesTodayCents: number;
+  /** Cash and card parts of `salesTodayCents`; only the cash part is in the drawer. */
+  cashSalesTodayCents: number;
+  cardSalesTodayCents: number;
   openShifts: number;
   failedReceipts: number;
 }
@@ -75,21 +80,121 @@ export async function getDashboardStats(since: Date): Promise<DashboardStats> {
   const [row] = await db.execute<{
     orders_today: number;
     sales_today: number;
+    cash_today: number;
+    card_today: number;
     open_shifts: number;
     failed_receipts: number;
   }>(sql`
     SELECT
       (SELECT count(*)::int FROM orders WHERE created_at >= ${from}::timestamptz) AS orders_today,
       (SELECT coalesce(sum(total_cents), 0)::int FROM orders WHERE created_at >= ${from}::timestamptz) AS sales_today,
+      (SELECT coalesce(sum(total_cents), 0)::int FROM orders
+        WHERE created_at >= ${from}::timestamptz AND payment_method = 'cash') AS cash_today,
+      (SELECT coalesce(sum(total_cents), 0)::int FROM orders
+        WHERE created_at >= ${from}::timestamptz AND payment_method = 'card') AS card_today,
       (SELECT count(*)::int FROM shifts WHERE clock_out IS NULL) AS open_shifts,
       (SELECT count(*)::int FROM receipt_jobs WHERE status = 'failed') AS failed_receipts
   `);
   return {
     ordersToday: row?.orders_today ?? 0,
     salesTodayCents: row?.sales_today ?? 0,
+    cashSalesTodayCents: row?.cash_today ?? 0,
+    cardSalesTodayCents: row?.card_today ?? 0,
     openShifts: row?.open_shifts ?? 0,
     failedReceipts: row?.failed_receipts ?? 0,
   };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Orders                                                                     */
+/* -------------------------------------------------------------------------- */
+
+export interface SalesTotals {
+  orderCount: number;
+  totalCents: number;
+  cashCents: number;
+  cardCents: number;
+}
+
+/**
+ * Sales in `[from, to)`, split by how they were paid. Dates go in as ISO
+ * strings for the reason given on `getDashboardStats`.
+ */
+export async function getSalesBetween(from: Date, to: Date): Promise<SalesTotals> {
+  const [row] = await db.execute<{
+    order_count: number;
+    total: number;
+    cash: number;
+    card: number;
+  }>(sql`
+    SELECT
+      count(*)::int AS order_count,
+      coalesce(sum(total_cents), 0)::int AS total,
+      coalesce(sum(total_cents) FILTER (WHERE payment_method = 'cash'), 0)::int AS cash,
+      coalesce(sum(total_cents) FILTER (WHERE payment_method = 'card'), 0)::int AS card
+    FROM orders
+    WHERE created_at >= ${from.toISOString()}::timestamptz
+      AND created_at < ${to.toISOString()}::timestamptz
+  `);
+  return {
+    orderCount: row?.order_count ?? 0,
+    totalCents: row?.total ?? 0,
+    cashCents: row?.cash ?? 0,
+    cardCents: row?.card ?? 0,
+  };
+}
+
+export interface AdminOrderRow {
+  id: string;
+  teacherId: string;
+  totalCents: number;
+  paymentMethod: "cash" | "card";
+  /** Null for card orders, which take no cash. */
+  receivedCents: number | null;
+  changeCents: number | null;
+  createdAt: Date;
+  teacherName: string;
+  room: string | null;
+  studentName: string;
+  items: string | null;
+  extras: string | null;
+}
+
+/**
+ * Orders in `[from, to)`, newest first. Line items come from the snapshot
+ * columns, so this shows what was charged rather than current menu prices.
+ */
+export async function listOrdersBetween(from: Date, to: Date): Promise<AdminOrderRow[]> {
+  return db
+    .select({
+      id: orders.id,
+      teacherId: orders.teacherId,
+      totalCents: orders.totalCents,
+      paymentMethod: orders.paymentMethod,
+      receivedCents: orders.receivedCents,
+      changeCents: orders.changeCents,
+      createdAt: orders.createdAt,
+      teacherName: persons.name,
+      room: teacherProfiles.room,
+      studentName: students.displayName,
+      items: sql<string | null>`(
+        SELECT string_agg(oi.qty || ' x ' || oi.name_snapshot, ', ' ORDER BY oi.id)
+        FROM ${orderItems} oi WHERE oi.order_id = ${orders.id}
+      )`,
+      extras: sql<string | null>`(
+        SELECT string_agg(DISTINCT oa.name_snapshot, ', ')
+        FROM ${orderItemAddons} oa
+        JOIN ${orderItems} oi2 ON oi2.id = oa.order_item_id
+        WHERE oi2.order_id = ${orders.id}
+      )`,
+    })
+    .from(orders)
+    .innerJoin(teacherProfiles, eq(teacherProfiles.personId, orders.teacherId))
+    .innerJoin(persons, eq(persons.id, teacherProfiles.personId))
+    .innerJoin(shifts, eq(shifts.id, orders.shiftId))
+    .innerJoin(students, eq(students.id, shifts.studentId))
+    .where(and(gte(orders.createdAt, from), lt(orders.createdAt, to)))
+    .orderBy(desc(orders.createdAt));
 }
 
 /* -------------------------------------------------------------------------- */
@@ -109,6 +214,8 @@ export interface TeacherRow {
   room: string | null;
   email: string | null;
   active: boolean;
+  /** Usually pays with a staff card; the cart reminds students to ask for it. */
+  prefersCard: boolean;
   notes: string[];
   orderCount: number;
   totalSpentCents: number;
@@ -131,6 +238,7 @@ export async function listTeachersWithTotals(): Promise<TeacherRow[]> {
       room: teacherProfiles.room,
       email: persons.email,
       active: teacherProfiles.active,
+      prefersCard: teacherProfiles.prefersCard,
       notes: teacherProfiles.notes,
       orderCount: sql<number>`count(${orders.id})::int`,
       totalSpentCents: sql<number>`coalesce(sum(${orders.totalCents}), 0)::int`,
@@ -144,6 +252,7 @@ export async function listTeachersWithTotals(): Promise<TeacherRow[]> {
       teacherProfiles.room,
       persons.email,
       teacherProfiles.active,
+      teacherProfiles.prefersCard,
       teacherProfiles.notes,
     )
     .orderBy(asc(persons.name));

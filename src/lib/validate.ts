@@ -32,13 +32,17 @@ export interface OrderLineInput {
   addonIds: string[];
 }
 
-export interface CompleteOrderInput {
+interface OrderBase {
   /** Chosen by the cart once per order, so a retry after a lost response is recognized. */
   orderId: string;
   teacherId: string;
-  receivedCents: number;
   lines: OrderLineInput[];
 }
+
+/** Cash records the money handed over; a staff card hands over none. */
+export type CompleteOrderInput =
+  | (OrderBase & { paymentMethod: "cash"; receivedCents: number })
+  | (OrderBase & { paymentMethod: "card"; receivedCents: null });
 
 /** $1,000: more than any real payment, and far below the int4 column limit. */
 export const MAX_RECEIVED_CENTS = 100_000;
@@ -49,10 +53,19 @@ export const MAX_RECEIVED_CENTS = 100_000;
  */
 export function parseCompleteOrder(input: unknown): CompleteOrderInput | null {
   if (typeof input !== "object" || input === null) return null;
-  const { orderId, teacherId, receivedCents, lines } = input as Record<string, unknown>;
+  const { orderId, teacherId, paymentMethod = "cash", receivedCents, lines } = input as Record<
+    string,
+    unknown
+  >;
 
   if (!isUuid(orderId) || !isUuid(teacherId)) return null;
-  if (!isCents(receivedCents) || receivedCents > MAX_RECEIVED_CENTS) return null;
+  if (paymentMethod === "cash") {
+    if (!isCents(receivedCents) || receivedCents > MAX_RECEIVED_CENTS) return null;
+  } else if (paymentMethod === "card") {
+    if (receivedCents !== undefined && receivedCents !== null) return null;
+  } else {
+    return null;
+  }
   if (!Array.isArray(lines) || lines.length === 0 || lines.length > 20) return null;
 
   const parsed: OrderLineInput[] = [];
@@ -68,7 +81,9 @@ export function parseCompleteOrder(input: unknown): CompleteOrderInput | null {
     parsed.push({ menuItemId, qty, addonIds: addonIds as string[] });
   }
 
-  return { orderId, teacherId, receivedCents, lines: parsed };
+  return paymentMethod === "cash"
+    ? { orderId, teacherId, paymentMethod, receivedCents: receivedCents as number, lines: parsed }
+    : { orderId, teacherId, paymentMethod, receivedCents: null, lines: parsed };
 }
 
 export interface ClockInInput {
@@ -220,6 +235,19 @@ export function parseTeacherNote(input: unknown): TeacherNoteInput | null {
   if (trimmed.length < 2 || trimmed.length > 200) return null;
 
   return { teacherId, note: trimmed };
+}
+
+export interface TeacherCardPreferenceInput {
+  teacherId: string;
+  prefersCard: boolean;
+}
+
+/** Marks a teacher who usually pays with a staff card (3.7). */
+export function parseTeacherCardPreference(input: unknown): TeacherCardPreferenceInput | null {
+  if (typeof input !== "object" || input === null) return null;
+  const { teacherId, prefersCard } = input as Record<string, unknown>;
+  if (!isUuid(teacherId) || !isBoolean(prefersCard)) return null;
+  return { teacherId, prefersCard };
 }
 
 export interface TeacherNoteRemovalInput {

@@ -21,8 +21,16 @@ const receipt: Receipt = {
     { name: "Non-dairy creamer", qty: 1, amountCents: 0, isAddon: true },
   ],
   totalCents: 200,
+  paymentMethod: "cash",
   receivedCents: 500,
   changeCents: 300,
+};
+
+const cardReceipt: Receipt = {
+  ...receipt,
+  paymentMethod: "card",
+  receivedCents: null,
+  changeCents: null,
 };
 
 describe("renderReceiptText", () => {
@@ -76,6 +84,29 @@ describe("renderReceiptText", () => {
     for (const line of long.split("\n")) {
       expect(line.length).toBeLessThanOrEqual(RECEIPT_WIDTH);
     }
+  });
+});
+
+describe("a staff card receipt", () => {
+  // The email body and the printed slip share one layout, so both are checked.
+  for (const [name, render] of [
+    ["email text", renderReceiptText],
+    ["printed text", renderPrintableReceiptText],
+  ] as const) {
+    it(`says it was paid by staff card, with no cash lines, in the ${name}`, () => {
+      const text = render(cardReceipt);
+      expect(text).toMatch(/TOTAL\s+\$2\.00/);
+      expect(text).toContain("Paid by staff card");
+      expect(text).not.toMatch(/^Paid\s+\$/m);
+      expect(text).not.toContain("Change");
+      for (const line of text.split("\n")) {
+        expect(line.length).toBeLessThanOrEqual(RECEIPT_WIDTH);
+      }
+    });
+  }
+
+  it("leaves cash receipts without the card line", () => {
+    expect(renderReceiptText(receipt)).not.toContain("staff card");
   });
 });
 

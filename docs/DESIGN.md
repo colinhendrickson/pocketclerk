@@ -160,7 +160,7 @@ Breakpoints (Tailwind defaults): `<md` phone portrait (≤ 767), `md–lg` iPad 
 - <md: single column. StepHeader compresses to back button + "Step 2 of 4 / Mrs. Smith · Rm 114"; NoteBanner stays directly under it (never hidden, never collapsed); menu = full-width 64px rows; add-ons wrap (`flex-wrap`, 60px pills); order summary becomes a fixed bottom sheet (`bg-base-100`, top border) showing the item line, total at 52px and the 72px primary button. No horizontal scroll at any width.
 
 **Payment method** *(deferred to ticket 3.7: V1 is cash only, ADR 5; kept as the design for when the client asks)*
-- All widths: centered stack — question, Total, two `PaymentChoice` buttons. lg+: two columns 250px tall; <md: stack vertically, each 160px tall, full width. Nothing else is ever added to this screen.
+- All widths: centered stack — question, Total, two `PaymentChoice` buttons. lg+: two columns 250px tall; <md: stack vertically, each 160px tall, full width. Nothing else is ever added to this screen, and it has no `btn-primary`: the two choices are equal, so the one-primary rule is waived here.
 
 **Cash change**
 - lg+: `grid-cols-[1fr_420px]`; left = owed/received `table`, change card, primary; right = bill quick-buttons row + 3×4 keypad.
@@ -186,12 +186,12 @@ Breakpoints (Tailwind defaults): `<md` phone portrait (≤ 767), `md–lg` iPad 
 | **MoneyDisplay** | plain text inside `stat-value` / `card` / `table td` | `tabular-nums`, weight 800, sizes from the scale; `size="change"` is only allowed once in the app | color via `base-content` or `neutral-content` |
 | **NoteBanner** | `alert alert-warning` with `role="alert"` | Lucide `triangle-alert` 32px, 22px/800 text, always directly under the StepHeader, never collapsible | warning color, `--radius-box` |
 | **StepHeader** | `navbar`-style bar on `bg-base-100 border-b border-base-300` + `steps` (`steps-vertical` in the rail on lg+) | back `btn btn-ghost` 60×60, "Step n of 4" (15px) over the title (26px); `steps` collapse to that text line <md | `step-primary` color, font |
-| **PaymentChoice** *(3.7, not built)* | `btn` tile, `bg-base-100 border-2 border-base-300` | exactly two, equal width, 250px tall (160px <md), Lucide `banknote` (success) / `id-card` (info) 80px, 40px/800 label | colors, `--radius-box` |
+| **PaymentChoice** *(3.7)* | `btn` tile, `bg-base-100 border-2 border-base-300` | exactly two, equal width, 250px tall (160px <md), Lucide `banknote` (success) / `id-card` (info) 80px, 40px/800 label | colors, `--radius-box` |
 | **ChangeCard** | `card bg-neutral text-neutral-content` | MoneyDisplay size="change", denomination hint line beneath ("3 one-dollar bills") | neutral colors, `--radius-box` |
 | **Keypad / BillButtons** | `btn` grid (`grid-cols-3` / `grid-cols-4`) | 60px minimum keys, 34px numerals; bill buttons `btn-outline btn-secondary`, selected → `btn-secondary` | colors, `--radius-field` |
 | **ShiftStats** | `stats` → `stat` / `stat-title` / `stat-value` | `tabular-nums`; 3 stats max on student screens | `bg-base-100 border-base-300` |
 | **TeacherCard** | `card card-border` + `avatar avatar-placeholder` | initials disc 52–60px, name 22–26px, room below | colors, radius |
-| **BadgeModal** *(3.7, not built)* | `modal modal-open` → `modal-box` | dashed `info` ring around `id-card`, Total, Back + "Type badge number instead" | colors, `--radius-box` |
+| **StaffCardCheck** *(3.7, was BadgeModal)* | a full step, not a `modal` (Back and focus behave like the other steps) | dashed `info` ring around Lucide `id-card`, "Ask {teacher} for their staff card", the Total, one primary "Card checked, done"; no typing, so no badge-number fallback | colors, `--radius-box` |
 | **Admin shell** | `drawer` + `navbar` + `table` | denser type allowed (14px min) | all |
 | **HelpPanel** | native `details` in a `rounded-box border` | "About this page" under every admin page's heading (not Admin home, which lists every guide); open by default, closed state remembered per device; guides inside as nested `details` | `info` icon color, `--radius-box` |
 | **TourButton** | `btn btn-ghost btn-sm` + native modal `dialog` | in the admin header, labeled "Show me around" ("Tour" below sm, so the cart name keeps its room); never opens by itself; dialog docked at the bottom with a transparent backdrop, target outlined in `primary` and scrolled to the top; steps in `src/lib/help/tours.ts` against `data-tour` attributes | `primary` outline, `--radius-box` |

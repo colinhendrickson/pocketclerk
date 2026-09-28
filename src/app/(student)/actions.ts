@@ -92,8 +92,17 @@ export async function clockIn(input: unknown): Promise<ClockInResult> {
 /* -------------------------------------------------------------------------- */
 
 export type CompleteOrderResult =
-  | { ok: true; orderId: string; totalCents: number; changeCents: number }
-  | { ok: false; error: "no_shift" | "invalid" | "insufficient" | "unknown_item" };
+  | {
+      ok: true;
+      orderId: string;
+      totalCents: number;
+      paymentMethod: "cash" | "card";
+      changeCents: number | null;
+    }
+  | {
+      ok: false;
+      error: "no_shift" | "invalid" | "insufficient" | "unknown_item" | "card_disabled";
+    };
 
 /**
  * Records a sale. Pricing, idempotency and receipt jobs live in
@@ -112,8 +121,8 @@ export async function completeOrder(input: unknown): Promise<CompleteOrderResult
 
   const result = await placeOrder(shift.id, parsed);
   if (!result.ok) return result;
-  const { orderId, totalCents, changeCents } = result;
-  if (!result.created) return { ok: true, orderId, totalCents, changeCents };
+  const { orderId, totalCents, paymentMethod, changeCents } = result;
+  if (!result.created) return { ok: true, orderId, totalCents, paymentMethod, changeCents };
 
   // Send email receipts after the response so a slow provider never delays the
   // cart. Failures leave jobs queued for the daily cron sweep, which on the free
@@ -131,7 +140,7 @@ export async function completeOrder(input: unknown): Promise<CompleteOrderResult
   });
 
   revalidatePath("/shift");
-  return { ok: true, orderId, totalCents, changeCents };
+  return { ok: true, orderId, totalCents, paymentMethod, changeCents };
 }
 
 /* -------------------------------------------------------------------------- */

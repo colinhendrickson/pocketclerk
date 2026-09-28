@@ -191,6 +191,7 @@ export async function buildReceipt(orderId: string): Promise<Receipt | null> {
     .select({
       id: orders.id,
       totalCents: orders.totalCents,
+      paymentMethod: orders.paymentMethod,
       receivedCents: orders.receivedCents,
       changeCents: orders.changeCents,
       createdAt: orders.createdAt,
@@ -261,8 +262,9 @@ export async function buildReceipt(orderId: string): Promise<Receipt | null> {
     placedAt: order.createdAt,
     lines,
     totalCents: order.totalCents,
-    receivedCents: order.receivedCents ?? order.totalCents,
-    changeCents: order.changeCents ?? 0,
+    paymentMethod: order.paymentMethod,
+    receivedCents: order.receivedCents,
+    changeCents: order.changeCents,
   };
 }
 

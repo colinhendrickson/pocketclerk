@@ -9,6 +9,7 @@ import { insertTeacher } from "@/lib/teachers";
 import {
   parseActiveToggle,
   parseNewTeacher,
+  parseTeacherCardPreference,
   parseTeacherEdit,
   parseTeacherNote,
   parseTeacherNoteRemoval,
@@ -196,5 +197,34 @@ export async function setTeacherActive(
   if (updated.length === 0) return { ok: false, error: "not_found" };
 
   revalidatePath("/admin/teachers");
+  return { ok: true };
+}
+
+export type SetTeacherPrefersCardResult =
+  | { ok: true }
+  | { ok: false; error: "invalid" | "not_found" };
+
+/**
+ * Marks a teacher who usually pays with a staff card, so the cart reminds
+ * students to ask for it. Only a hint: either method works whatever it says.
+ */
+export async function setTeacherPrefersCard(
+  input: unknown,
+): Promise<SetTeacherPrefersCardResult> {
+  await requireAdmin();
+
+  const parsed = parseTeacherCardPreference(input);
+  if (!parsed) return { ok: false, error: "invalid" };
+
+  const updated = await db
+    .update(teacherProfiles)
+    .set({ prefersCard: parsed.prefersCard })
+    .where(eq(teacherProfiles.personId, parsed.teacherId))
+    .returning({ id: teacherProfiles.personId });
+
+  if (updated.length === 0) return { ok: false, error: "not_found" };
+
+  revalidatePath("/admin/teachers");
+  revalidatePath("/shift/order");
   return { ok: true };
 }

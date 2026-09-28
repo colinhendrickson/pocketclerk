@@ -46,3 +46,13 @@ pass, read plausibly, and survived into a design review because it looked like
 something a point-of-sale system would have. It was caught by going back to what
 the client actually wrote. Requirements that nobody asked for are still
 requirements that somebody has to maintain.
+
+## Amendment: staff card payment (3.7)
+
+After launch the program's teacher asked for it: some teachers will not use
+pretend cash. A teacher can now pay with their staff ID card, which the student
+checks before pressing Card checked, done; no money changes hands and no change
+is given. It uses the column and constraint this ADR left in place, so the
+migration only added the on/off switch and a per-teacher preference. It is off
+until staff turn it on, and cash is always offered, so making change stays the
+default lesson. The server refuses a card sale while the switch is off.

@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { db, getClient } from "@/db";
 import { hashPin } from "@/lib/auth";
 import { placeOrder } from "@/lib/orders";
+import type { CompleteOrderInput } from "@/lib/validate";
 
 /**
  * Placing an order. The cart retries when a response is lost, so the same
@@ -69,6 +70,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  await db.execute(sql`UPDATE site_settings SET card_payments_enabled = false`);
   await db.execute(
     sql`DELETE FROM receipt_jobs WHERE order_id IN (SELECT id FROM orders WHERE teacher_id = ${teacherId})`,
   );
@@ -82,14 +84,29 @@ afterAll(async () => {
   await getClient().end();
 });
 
-function order(overrides: Partial<Parameters<typeof placeOrder>[1]> = {}) {
+function order(overrides: { receivedCents?: number; lines?: CompleteOrderInput["lines"] } = {}) {
   return {
     orderId: randomUUID(),
     teacherId,
+    paymentMethod: "cash" as const,
     receivedCents: 1000,
     lines: [{ menuItemId: itemId, qty: 2, addonIds: [addonId] }],
     ...overrides,
   };
+}
+
+function cardOrder(): CompleteOrderInput {
+  return {
+    orderId: randomUUID(),
+    teacherId,
+    paymentMethod: "card",
+    receivedCents: null,
+    lines: [{ menuItemId: itemId, qty: 2, addonIds: [addonId] }],
+  };
+}
+
+async function setCardPayments(enabled: boolean): Promise<void> {
+  await db.execute(sql`UPDATE site_settings SET card_payments_enabled = ${enabled}`);
 }
 
 async function count(table: "orders" | "receipt_jobs", orderId: string): Promise<number> {
@@ -110,6 +127,7 @@ describe("placeOrder", () => {
       ok: true,
       orderId: input.orderId,
       totalCents: 600,
+      paymentMethod: "cash",
       changeCents: 400,
       created: true,
     });
@@ -167,5 +185,55 @@ describe("placeOrder", () => {
     const input = order({ receivedCents: 100 });
     expect(await placeOrder(shiftId, input)).toEqual({ ok: false, error: "insufficient" });
     expect(await count("orders", input.orderId)).toBe(0);
+  });
+});
+
+describe("placeOrder with a staff card", () => {
+  it("records a card order with no money received or change, and still queues receipts", async () => {
+    await setCardPayments(true);
+    const input = cardOrder();
+    const result = await placeOrder(shiftId, input);
+    expect(result).toEqual({
+      ok: true,
+      orderId: input.orderId,
+      totalCents: 600,
+      paymentMethod: "card",
+      changeCents: null,
+      created: true,
+    });
+    const [row] = await db.execute<{
+      payment_method: string;
+      received_cents: number | null;
+      change_cents: number | null;
+    }>(sql`SELECT payment_method, received_cents, change_cents FROM orders WHERE id = ${input.orderId}`);
+    expect(row).toEqual({ payment_method: "card", received_cents: null, change_cents: null });
+    expect(await count("receipt_jobs", input.orderId)).toBe(2);
+  });
+
+  it("returns the recorded card order on a retry, even if card payments were turned off since", async () => {
+    await setCardPayments(true);
+    const input = cardOrder();
+    const first = await placeOrder(shiftId, input);
+    await setCardPayments(false);
+    expect(await placeOrder(shiftId, input)).toEqual({ ...first, created: false });
+    expect(await count("orders", input.orderId)).toBe(1);
+  });
+
+  it("refuses a card order while card payments are off, recording nothing", async () => {
+    await setCardPayments(false);
+    const input = cardOrder();
+    expect(await placeOrder(shiftId, input)).toEqual({ ok: false, error: "card_disabled" });
+    expect(await count("orders", input.orderId)).toBe(0);
+  });
+
+  it("leaves cash orders unchanged while card payments are on", async () => {
+    await setCardPayments(true);
+    const input = order();
+    expect(await placeOrder(shiftId, input)).toMatchObject({
+      ok: true,
+      paymentMethod: "cash",
+      changeCents: 400,
+    });
+    await setCardPayments(false);
   });
 });

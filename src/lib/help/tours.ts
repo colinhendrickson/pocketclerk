@@ -36,7 +36,7 @@ export const TOURS: Record<AdminRoute, TourStep[]> = {
     {
       target: "today",
       title: "Today at a glance",
-      body: "Orders and sales so far today, anyone still clocked in, and any receipts that could not be sent.",
+      body: "Orders and sales so far today, split into cash and staff card, anyone still clocked in, and any receipts that could not be sent.",
     },
     MENU_STEP,
     {
@@ -69,7 +69,7 @@ export const TOURS: Record<AdminRoute, TourStep[]> = {
     {
       target: "teacher-table",
       title: "The teacher list",
-      body: "Press Details on a teacher to fix their email, add a note students will see (such as an allergy), and see what they have bought.",
+      body: "Press Details on a teacher to fix their email, mark that they usually pay with a staff card, add a note students will see (such as an allergy), and see what they have bought.",
     },
     MENU_STEP,
   ],
@@ -85,6 +85,11 @@ export const TOURS: Record<AdminRoute, TourStep[]> = {
       title: "Add-ons",
       body: "Extras a student adds to a drink, such as syrup or milk. Give free extras a price of 0.00.",
     },
+    {
+      target: "card-payments",
+      title: "How teachers pay",
+      body: "Cash always works. Turn this on to let teachers pay with their staff ID card instead; students check the card rather than making change.",
+    },
     MENU_STEP,
   ],
   "/admin/orders": [
@@ -97,7 +102,7 @@ export const TOURS: Record<AdminRoute, TourStep[]> = {
     {
       target: "orders-table",
       title: "Every sale that day",
-      body: "When it was, which teacher, which student served it, what was bought, and the change given.",
+      body: "When it was, which teacher, which student served it, what was bought, and how it was paid: cash with the change given, or a staff card. The totals above split cash from card.",
     },
     MENU_STEP,
   ],

@@ -13,6 +13,7 @@ import {
   type MenuItem,
 } from "@/db/schema";
 import { changeCents, orderTotalCents } from "@/lib/money";
+import { cardPaymentsEnabled } from "@/lib/settings";
 import type { CompleteOrderInput } from "@/lib/validate";
 
 export type PlaceOrderResult =
@@ -20,26 +21,35 @@ export type PlaceOrderResult =
       ok: true;
       orderId: string;
       totalCents: number;
-      changeCents: number;
+      paymentMethod: "cash" | "card";
+      /** Null for a staff card, which takes no money and gives no change. */
+      changeCents: number | null;
       /** False when this id was already recorded, i.e. a retry. */
       created: boolean;
     }
-  | { ok: false; error: "invalid" | "insufficient" | "unknown_item" };
+  | { ok: false; error: "invalid" | "insufficient" | "unknown_item" | "card_disabled" };
 
 /**
  * Writes the order, lines, add-ons, and receipt jobs in one transaction.
  * Prices come from active menu rows and the total and change are recomputed
  * here; client arithmetic is never trusted. The cart-chosen order id makes a
  * retry return the recorded order instead of counting the sale twice.
+ * Card orders are refused here, not only hidden in the cart, while staff card
+ * payments are off.
  */
 export async function placeOrder(
   shiftId: string,
   input: CompleteOrderInput,
 ): Promise<PlaceOrderResult> {
-  const { orderId, teacherId, receivedCents, lines } = input;
+  const { orderId, teacherId, paymentMethod, receivedCents, lines } = input;
 
+  // A recorded order is returned before the setting is checked, so a retry
+  // still succeeds if card payments were turned off in between.
   const existing = await recordedOrder(orderId, shiftId);
   if (existing) return existing;
+  if (paymentMethod === "card" && !(await cardPaymentsEnabled())) {
+    return { ok: false, error: "card_disabled" };
+  }
 
   const itemIds = [...new Set(lines.map((line) => line.menuItemId))];
   const addonIds = [...new Set(lines.flatMap((line) => line.addonIds))];
@@ -75,8 +85,11 @@ export async function placeOrder(
       addonPriceCents: p.addons.map((a) => a.priceCents),
     })),
   );
-  if (receivedCents < totalCents) return { ok: false, error: "insufficient" };
-  const change = changeCents(totalCents, receivedCents);
+  let change: number | null = null;
+  if (receivedCents !== null) {
+    if (receivedCents < totalCents) return { ok: false, error: "insufficient" };
+    change = changeCents(totalCents, receivedCents);
+  }
 
   const created = await db.transaction(async (tx) => {
     // A concurrent retry with the same id waits on the primary key, then does nothing.
@@ -87,7 +100,7 @@ export async function placeOrder(
         shiftId,
         teacherId,
         totalCents,
-        paymentMethod: "cash",
+        paymentMethod,
         receivedCents,
         changeCents: change,
       })
@@ -136,7 +149,7 @@ export async function placeOrder(
   });
 
   if (!created) return (await recordedOrder(orderId, shiftId)) ?? { ok: false, error: "invalid" };
-  return { ok: true, orderId, totalCents, changeCents: change, created: true };
+  return { ok: true, orderId, totalCents, paymentMethod, changeCents: change, created: true };
 }
 
 /** The recorded result for an order id, or an error if another shift owns it. */
@@ -148,6 +161,7 @@ async function recordedOrder(
     .select({
       shiftId: orders.shiftId,
       totalCents: orders.totalCents,
+      paymentMethod: orders.paymentMethod,
       changeCents: orders.changeCents,
     })
     .from(orders)
@@ -158,7 +172,8 @@ async function recordedOrder(
     ok: true,
     orderId,
     totalCents: row.totalCents,
-    changeCents: row.changeCents ?? 0,
+    paymentMethod: row.paymentMethod,
+    changeCents: row.changeCents,
     created: false,
   };
 }

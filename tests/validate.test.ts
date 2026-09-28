@@ -71,8 +71,35 @@ describe("parseCompleteOrder", () => {
     lines: [{ menuItemId: uuid, qty: 2, addonIds: [] }],
   };
 
-  it("accepts a well-formed order", () => {
-    expect(parseCompleteOrder(valid)).toEqual(valid);
+  it("accepts a well-formed order, as cash when no method is sent", () => {
+    expect(parseCompleteOrder(valid)).toEqual({ ...valid, paymentMethod: "cash" });
+    expect(parseCompleteOrder({ ...valid, paymentMethod: "cash" })).toEqual({
+      ...valid,
+      paymentMethod: "cash",
+    });
+  });
+
+  it("accepts a staff card order with no money received", () => {
+    const card = { orderId: valid.orderId, teacherId: valid.teacherId, lines: valid.lines };
+    expect(parseCompleteOrder({ ...card, paymentMethod: "card" })).toEqual({
+      ...card,
+      paymentMethod: "card",
+      receivedCents: null,
+    });
+    expect(parseCompleteOrder({ ...card, paymentMethod: "card", receivedCents: null })).toEqual({
+      ...card,
+      paymentMethod: "card",
+      receivedCents: null,
+    });
+  });
+
+  it("refuses a staff card order that claims money was handed over", () => {
+    expect(parseCompleteOrder({ ...valid, paymentMethod: "card" })).toBeNull();
+  });
+
+  it("refuses an unknown payment method, and cash without money received", () => {
+    expect(parseCompleteOrder({ ...valid, paymentMethod: "badge" })).toBeNull();
+    expect(parseCompleteOrder({ ...valid, paymentMethod: "cash", receivedCents: null })).toBeNull();
   });
 
   it("rejects an id that is not a uuid", () => {

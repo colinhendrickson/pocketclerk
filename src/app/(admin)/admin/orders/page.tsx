@@ -1,4 +1,3 @@
-import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
 import Link from "next/link";
 
 import {
@@ -8,16 +7,7 @@ import {
   startOfLocalDay,
   today,
 } from "@/lib/time";
-import { db } from "@/db";
-import {
-  orderItemAddons,
-  orderItems,
-  orders,
-  persons,
-  shifts,
-  students,
-  teacherProfiles,
-} from "@/db/schema";
+import { getSalesBetween, listOrdersBetween, type AdminOrderRow } from "@/lib/admin-queries";
 import { formatUSD } from "@/lib/money";
 
 import { requireAdmin } from "../require-admin";
@@ -25,10 +15,7 @@ import { HelpPanel } from "../_help/help-panel";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Orders, paged by day. Line items come from the snapshot columns, so this
- * shows what was charged rather than current menu prices.
- */
+/** Orders, paged by day, with cash and staff card sales totaled apart. */
 export default async function AdminOrdersPage({
   searchParams,
 }: {
@@ -42,36 +29,10 @@ export default async function AdminOrdersPage({
   const day = startOfLocalDay(date);
   const next = startOfLocalDay(addDays(date, 1));
 
-  const rows = await db
-    .select({
-      id: orders.id,
-      totalCents: orders.totalCents,
-      receivedCents: orders.receivedCents,
-      changeCents: orders.changeCents,
-      createdAt: orders.createdAt,
-      teacherName: persons.name,
-      room: teacherProfiles.room,
-      studentName: students.displayName,
-      items: sql<string>`(
-        SELECT string_agg(oi.qty || ' x ' || oi.name_snapshot, ', ' ORDER BY oi.id)
-        FROM ${orderItems} oi WHERE oi.order_id = ${orders.id}
-      )`,
-      extras: sql<string>`(
-        SELECT string_agg(DISTINCT oa.name_snapshot, ', ')
-        FROM ${orderItemAddons} oa
-        JOIN ${orderItems} oi2 ON oi2.id = oa.order_item_id
-        WHERE oi2.order_id = ${orders.id}
-      )`,
-    })
-    .from(orders)
-    .innerJoin(teacherProfiles, eq(teacherProfiles.personId, orders.teacherId))
-    .innerJoin(persons, eq(persons.id, teacherProfiles.personId))
-    .innerJoin(shifts, eq(shifts.id, orders.shiftId))
-    .innerJoin(students, eq(students.id, shifts.studentId))
-    .where(and(gte(orders.createdAt, day), lt(orders.createdAt, next)))
-    .orderBy(desc(orders.createdAt));
-
-  const totalCents = rows.reduce((sum, r) => sum + r.totalCents, 0);
+  const [rows, sales] = await Promise.all([
+    listOrdersBetween(day, next),
+    getSalesBetween(day, next),
+  ]);
   const time = cartFormatter({
     hour: "numeric",
     minute: "2-digit",
@@ -112,14 +73,22 @@ export default async function AdminOrdersPage({
 
       <HelpPanel route="/admin/orders" />
 
-      <div className="stats border border-base-300 bg-base-100">
+      <div className="stats stats-vertical border border-base-300 bg-base-100 sm:stats-horizontal">
         <div className="stat">
           <span className="stat-title">Orders</span>
-          <span className="stat-value tabular">{rows.length}</span>
+          <span className="stat-value tabular">{sales.orderCount}</span>
         </div>
         <div className="stat">
           <span className="stat-title">Sales</span>
-          <span className="stat-value tabular">{formatUSD(totalCents)}</span>
+          <span className="stat-value tabular">{formatUSD(sales.totalCents)}</span>
+        </div>
+        <div className="stat">
+          <span className="stat-title">Cash</span>
+          <span className="stat-value tabular">{formatUSD(sales.cashCents)}</span>
+        </div>
+        <div className="stat">
+          <span className="stat-title">Staff card</span>
+          <span className="stat-value tabular">{formatUSD(sales.cardCents)}</span>
         </div>
       </div>
 
@@ -138,14 +107,13 @@ export default async function AdminOrdersPage({
               <th>Served by</th>
               <th>Items</th>
               <th className="text-right">Total</th>
-              <th className="text-right">Paid</th>
-              <th className="text-right">Change</th>
+              <th>Paid by</th>
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="opacity-70">
+                <td colSpan={6} className="opacity-70">
                   No orders on this day.
                 </td>
               </tr>
@@ -169,12 +137,7 @@ export default async function AdminOrdersPage({
                   ) : null}
                 </td>
                 <td className="text-right tabular">{formatUSD(row.totalCents)}</td>
-                <td className="text-right tabular">
-                  {row.receivedCents === null ? "" : formatUSD(row.receivedCents)}
-                </td>
-                <td className="text-right tabular">
-                  {row.changeCents === null ? "" : formatUSD(row.changeCents)}
-                </td>
+                <td className="whitespace-nowrap">{paymentSummary(row)}</td>
               </tr>
             ))}
           </tbody>
@@ -184,3 +147,9 @@ export default async function AdminOrdersPage({
   );
 }
 
+/** "Cash, $5.00 received, $1.50 change" or "Staff card". */
+function paymentSummary(row: AdminOrderRow): string {
+  if (row.paymentMethod === "card") return "Staff card";
+  if (row.receivedCents === null || row.changeCents === null) return "Cash";
+  return `Cash, ${formatUSD(row.receivedCents)} received, ${formatUSD(row.changeCents)} change`;
+}

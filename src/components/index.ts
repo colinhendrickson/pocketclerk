@@ -37,3 +37,7 @@ export type { LogoProps } from "./logo";
 export { DemoBanner } from "./demo-banner";
 export { MenuIcon } from "./menu-icon";
 export type { MenuIconProps } from "./menu-icon";
+export { PaymentChoice } from "./payment-choice";
+export type { PaymentChoiceProps, PaymentChoiceMethod } from "./payment-choice";
+export { StaffCardCheck } from "./staff-card-check";
+export type { StaffCardCheckProps } from "./staff-card-check";

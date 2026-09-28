@@ -14,6 +14,7 @@ import {
 } from "@/lib/validate";
 
 import { isUniqueViolation } from "@/lib/pg-errors";
+import { setCardPaymentsEnabled, type SetCardPaymentsResult } from "@/lib/settings";
 
 import { requireAdmin } from "../require-admin";
 
@@ -205,4 +206,15 @@ export async function setMenuItemSpecial(
 
   revalidatePath("/admin/menu");
   return { ok: true };
+}
+
+/** Turns staff card payments on or off for the whole cart (3.7). */
+export async function saveCardPayments(enabled: unknown): Promise<SetCardPaymentsResult> {
+  const admin = await requireAdmin();
+  const result = await setCardPaymentsEnabled(enabled, admin.personId);
+  if (result.ok) {
+    revalidatePath("/admin/menu");
+    revalidatePath("/shift/order");
+  }
+  return result;
 }

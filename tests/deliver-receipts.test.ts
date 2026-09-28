@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { db, getClient } from "@/db";
 import { hashPin } from "@/lib/auth";
 import { deliverQueuedEmails } from "@/lib/deliver-receipts";
+import { buildReceipt } from "@/lib/receipt-jobs";
 import type { EmailSender, SendResult } from "@/providers/email";
 import type { Receipt } from "@/providers/renderer/receipt";
 
@@ -169,3 +170,29 @@ describe("deliverQueuedEmails", () => {
   });
 });
 
+describe("buildReceipt", () => {
+  it("marks a staff card order as such, with no money received or change", async () => {
+    const [shift] = await db.execute<{ id: string }>(
+      sql`SELECT id FROM shifts WHERE student_id = ${studentId} LIMIT 1`,
+    );
+    const [card] = await db.execute<{ id: string }>(
+      sql`INSERT INTO orders (shift_id, teacher_id, total_cents, payment_method)
+          VALUES (${shift.id}, ${teacherId}, 300, 'card') RETURNING id`,
+    );
+    try {
+      expect(await buildReceipt(card.id)).toMatchObject({
+        totalCents: 300,
+        paymentMethod: "card",
+        receivedCents: null,
+        changeCents: null,
+      });
+      expect(await buildReceipt(orderId)).toMatchObject({
+        paymentMethod: "cash",
+        receivedCents: 500,
+        changeCents: 200,
+      });
+    } finally {
+      await db.execute(sql`DELETE FROM orders WHERE id = ${card.id}`);
+    }
+  });
+});

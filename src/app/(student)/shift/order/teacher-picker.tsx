@@ -112,7 +112,8 @@ function AddTeacherForm({ onCancel, onCreated }: AddTeacherFormProps) {
     startTransition(async () => {
       const result = await createTeacher({ name, room, email });
       if (result.ok) {
-        onCreated({ ...result.teacher });
+        // A teacher added here has no card preference yet.
+        onCreated({ ...result.teacher, prefersCard: false });
         return;
       }
       setError(

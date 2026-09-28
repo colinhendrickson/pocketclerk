@@ -158,6 +158,8 @@ export async function seedDatabase(
       id: 1,
       isDemo: options.demo,
       demoResetAt: new Date(),
+      // The public demo shows staff card payment; a school turns it on itself.
+      cardPaymentsEnabled: options.demo,
     });
 
     onSeeded?.({
