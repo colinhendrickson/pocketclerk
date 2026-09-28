@@ -1,0 +1,2 @@
+ALTER TABLE "site_settings" ADD COLUMN "card_payments_enabled" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "teacher_profiles" ADD COLUMN "prefers_card" boolean DEFAULT false NOT NULL;

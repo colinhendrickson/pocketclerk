@@ -53,6 +53,8 @@ export const teacherProfiles = pgTable(
     room: text("room"),
     /** Customer notes (e.g. dietary needs), shown above the menu on every order. */
     notes: text("notes").array().notNull().default([]),
+    /** Usually pays with a staff card; the cart points this out at payment (3.7). */
+    prefersCard: boolean("prefers_card").notNull().default(false),
     active: boolean("active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -348,6 +350,8 @@ export const siteSettings = pgTable("site_settings", {
   isDemo: boolean("is_demo").notNull().default(false),
   // Last demo data reset; drives the hourly reset.
   demoResetAt: timestamp("demo_reset_at", { withTimezone: true }),
+  /** Whether teachers may pay with a staff card instead of cash (3.7). Off until staff turn it on. */
+  cardPaymentsEnabled: boolean("card_payments_enabled").notNull().default(false),
 });
 
 /* -------------------------------------------------------------------------- */
