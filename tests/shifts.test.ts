@@ -23,6 +23,12 @@ const ZONE = "America/New_York";
 const NOW = new Date("2026-03-10T16:00:00Z");
 const EARLIER_TODAY = new Date("2026-03-10T13:30:00Z");
 const DAYS_AGO = new Date("2026-03-07T15:00:00Z");
+/**
+ * Postgres keeps microseconds and `clock_in` defaults to `now()`, so real rows
+ * carry them; a JavaScript Date keeps only milliseconds. Written as a literal
+ * because `toISOString()` would drop the last three digits.
+ */
+const DAYS_AGO_WITH_MICROS = "2026-03-07 15:00:00.011518+00";
 
 let studentId: string;
 
@@ -43,10 +49,11 @@ afterAll(async () => {
   await getClient().end();
 });
 
-async function openShiftAt(clockIn: Date): Promise<string> {
+async function openShiftAt(clockIn: Date | string): Promise<string> {
+  const literal = typeof clockIn === "string" ? clockIn : clockIn.toISOString();
   const [row] = await db.execute<{ id: string }>(
     sql`INSERT INTO shifts (student_id, clock_in)
-        VALUES (${studentId}, ${clockIn.toISOString()}::timestamptz) RETURNING id`,
+        VALUES (${studentId}, ${literal}::timestamptz) RETURNING id`,
   );
   return row.id;
 }
@@ -102,6 +109,20 @@ describe("startShift", () => {
     expect(await openCount()).toBe(1);
   });
 
+  it("closes a stale shift whose clock-in carries microseconds", async () => {
+    // Rounding clock_in to milliseconds on the way through JavaScript and
+    // writing it back as clock_out lands before clock_in, and the database
+    // refuses the row (shifts_ordered_check). This is what production does.
+    const stale = await openShiftAt(DAYS_AGO_WITH_MICROS);
+    const result = await startShift(studentId, NOW, ZONE);
+    expect(result.closedStale).toBe(true);
+
+    const closed = await shiftRow(stale);
+    expect(closed.clock_out).toBe(closed.clock_in);
+    expect(closed.auto_closed).toBe(true);
+    expect(await openCount()).toBe(1);
+  });
+
   it("treats a shift from before local midnight as stale, even within 24 hours", async () => {
     // 11pm the night before, local time (EDT, UTC-4).
     const stale = await openShiftAt(new Date("2026-03-10T03:00:00Z"));
@@ -139,6 +160,17 @@ describe("clockOutShift", () => {
       autoClosed: true,
     });
     expect((await shiftRow(stale)).auto_closed).toBe(true);
+  });
+
+  it("credits no hours to a stale shift whose clock-in carries microseconds", async () => {
+    const stale = await openShiftAt(DAYS_AGO_WITH_MICROS);
+    expect(await clockOutShift(stale, NOW, ZONE)).toEqual({
+      hoursHundredths: 0,
+      tickets: 0,
+      autoClosed: true,
+    });
+    const closed = await shiftRow(stale);
+    expect(closed.clock_out).toBe(closed.clock_in);
   });
 
   it("does not rewrite a shift that is already closed", async () => {

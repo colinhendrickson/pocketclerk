@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { shifts, students } from "@/db/schema";
@@ -11,6 +11,14 @@ import { localDate, startOfLocalDay, TIME_ZONE } from "@/lib/time";
  * forgotten clock-out: it is closed with no hours and flagged for staff
  * (`auto_closed`) instead of being resumed and paid as one long shift.
  */
+
+/**
+ * Closing a stale shift sets `clock_out = clock_in`, copied inside Postgres.
+ * The column keeps microseconds and a JavaScript Date keeps milliseconds, so
+ * writing the Date back lands a fraction before `clock_in` and
+ * `shifts_ordered_check` refuses the row.
+ */
+const CLOCK_OUT_AT_CLOCK_IN = sql`${shifts.clockIn}`;
 
 function isStale(clockIn: Date, now: Date, timeZone: string): boolean {
   return clockIn < startOfLocalDay(localDate(now, timeZone), timeZone);
@@ -61,7 +69,12 @@ async function startShiftOnce(
     if (open) {
       await tx
         .update(shifts)
-        .set({ clockOut: open.clockIn, hoursHundredths: 0, rewardTickets: 0, autoClosed: true })
+        .set({
+          clockOut: CLOCK_OUT_AT_CLOCK_IN,
+          hoursHundredths: 0,
+          rewardTickets: 0,
+          autoClosed: true,
+        })
         .where(and(eq(shifts.id, open.id), isNull(shifts.clockOut)));
     }
 
@@ -100,7 +113,7 @@ export async function clockOutShift(
     .update(shifts)
     .set(
       stale
-        ? { clockOut: open.clockIn, hoursHundredths, rewardTickets: tickets, autoClosed: true }
+        ? { clockOut: CLOCK_OUT_AT_CLOCK_IN, hoursHundredths, rewardTickets: tickets, autoClosed: true }
         : { clockOut: now, hoursHundredths, rewardTickets: tickets },
     )
     .where(and(eq(shifts.id, shiftId), isNull(shifts.clockOut)))
