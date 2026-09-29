@@ -172,6 +172,7 @@ Built after the first deployment met real staff and students. Each came from som
 | 4.16 | Shifts and sales that survive real use | A pre-launch review found a forgotten clock-out would resume days later and credit days of hours, and a lost response could count a sale twice. Stale shifts now close with no hours and are flagged for staff; orders carry a client id; error screens for both sides | Done |
 | 4.17 | Keeping it running | Free Supabase projects pause when idle and their backups cannot be downloaded: a keep-alive health check every six hours, Export everything for staff, pairing that renews itself; receipts print from every screen (4.8) | Done |
 | 4.18 | An owner for each cart | Any admin could remove any other, including the teacher responsible for the cart. One admin is now the owner: only the owner gives and removes access, nobody can remove the owner, and the role can be handed on | Done |
+| 4.19 | Expenses | The first program asked how to track what the cart cost to start and what it spends on product. Staff log expenses (date, what, category, amount, note; taken off, never deleted) and an Expenses page sets them against sales: sold, spent and net for all time, by month with a running total, and whether the cart has paid for itself. Exported with everything else | Done |
 
 ---
 

@@ -143,6 +143,25 @@ export const TOURS: Record<AdminRoute, TourStep[]> = {
     },
     MENU_STEP,
   ],
+  "/admin/expenses": [
+    HELP_STEP,
+    {
+      target: "money",
+      title: "Is it paying for itself?",
+      body: "Everything sold against everything spent, then the same by month with a running total. Sales come from Orders on their own.",
+    },
+    {
+      target: "add-expense",
+      title: "Log an expense",
+      body: "Anything bought for the cart, from the coffee pots on day one to this week's cups. Type the amount in dollars, like 24.99.",
+    },
+    {
+      target: "expenses",
+      title: "What was spent",
+      body: "Every entry, newest first, and who logged it. Edit a mistake, or Take off something that was returned.",
+    },
+    MENU_STEP,
+  ],
   "/admin/colors": [
     HELP_STEP,
     {

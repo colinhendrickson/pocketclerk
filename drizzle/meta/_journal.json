@@ -120,6 +120,13 @@
       "when": 1790611610350,
       "tag": "0016_staff_card_payments",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790705424730,
+      "tag": "0017_expenses",
+      "breakpoints": true
     }
   ]
 }

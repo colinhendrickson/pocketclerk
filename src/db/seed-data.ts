@@ -2,10 +2,12 @@ import { faker } from "@faker-js/faker";
 import { sql } from "drizzle-orm";
 
 import { hashPin } from "../lib/auth";
+import { addDays, today } from "../lib/time";
 import { db } from "./index";
 import {
   addons,
   adminUsers,
+  expenses,
   inventoryItems,
   menuItems,
   persons,
@@ -62,7 +64,7 @@ export async function seedDatabase(
     // site_settings references persons, so it is truncated too and rewritten below.
     await tx.execute(
       sql`TRUNCATE order_item_addons, order_items, receipt_jobs, orders,
-          inventory_counts, inventory_items, shifts, students, teacher_profiles,
+          inventory_counts, inventory_items, expenses, shifts, students, teacher_profiles,
           admin_users, persons, menu_items, addons, site_settings
           RESTART IDENTITY CASCADE`,
     );
@@ -152,6 +154,19 @@ export async function seedDatabase(
     // The first teacher is also the admin, exercising one person with two roles.
     const [adminPerson] = seededPersons;
     await tx.insert(adminUsers).values({ personId: adminPerson.id, isOwner: true });
+
+    // --- Expenses ---------------------------------------------------------
+    // What it cost to start, then ongoing product, so the ledger has a story:
+    // in the red at first, paying itself back as sales come in.
+    const start = today();
+    await tx.insert(expenses).values([
+      { spentOn: addDays(start, -42), description: "Coffee pots (2)", category: "equipment", amountCents: 8_999, createdBy: adminPerson.id },
+      { spentOn: addDays(start, -42), description: "Cart cash box", category: "equipment", amountCents: 2_499, createdBy: adminPerson.id },
+      { spentOn: addDays(start, -40), description: "Cups, lids and sleeves", category: "supplies", amountCents: 3_450, note: "Warehouse club", createdBy: adminPerson.id },
+      { spentOn: addDays(start, -35), description: "Coffee and hot chocolate mix", category: "product", amountCents: 4_275, createdBy: adminPerson.id },
+      { spentOn: addDays(start, -14), description: "Coffee and creamer", category: "product", amountCents: 3_120, createdBy: adminPerson.id },
+      { spentOn: addDays(start, -7), description: "Friday donuts", category: "treat", amountCents: 1_800, note: "This week's special", createdBy: adminPerson.id },
+    ]);
 
     // --- Settings ---------------------------------------------------------
     await tx.insert(siteSettings).values({

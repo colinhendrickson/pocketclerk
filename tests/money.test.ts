@@ -8,8 +8,10 @@ import {
   formatHours,
   formatUSD,
   hoursHundredthsBetween,
+  netCents,
   orderTotalCents,
   rewardTickets,
+  withRunningNet,
 } from "@/lib/money";
 
 /**
@@ -202,5 +204,39 @@ describe("formatHours", () => {
   it("renders hundredths as decimal hours", () => {
     expect(formatHours(325)).toBe("3.25");
     expect(formatHours(300)).toBe("3.00");
+  });
+});
+
+describe("netCents", () => {
+  it("is what was sold less what was spent", () => {
+    expect(netCents(12_000, 4_500)).toBe(7_500);
+  });
+
+  it("goes negative while the cart is still paying off what it cost to start", () => {
+    expect(netCents(3_000, 25_000)).toBe(-22_000);
+  });
+
+  it("is zero when nothing has happened", () => {
+    expect(netCents(0, 0)).toBe(0);
+  });
+});
+
+describe("withRunningNet", () => {
+  it("adds each month's net and a running total, oldest first", () => {
+    expect(
+      withRunningNet([
+        { month: "2026-08", soldCents: 0, spentCents: 20_000 },
+        { month: "2026-09", soldCents: 15_000, spentCents: 2_500 },
+        { month: "2026-10", soldCents: 9_000, spentCents: 0 },
+      ]),
+    ).toEqual([
+      { month: "2026-08", soldCents: 0, spentCents: 20_000, netCents: -20_000, runningNetCents: -20_000 },
+      { month: "2026-09", soldCents: 15_000, spentCents: 2_500, netCents: 12_500, runningNetCents: -7_500 },
+      { month: "2026-10", soldCents: 9_000, spentCents: 0, netCents: 9_000, runningNetCents: 1_500 },
+    ]);
+  });
+
+  it("is empty for no months", () => {
+    expect(withRunningNet([])).toEqual([]);
   });
 });

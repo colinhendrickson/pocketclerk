@@ -2,9 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import {
   dollarsToCents,
+  EXPENSE_CATEGORIES,
+  MAX_EXPENSE_CENTS,
   MAX_RECEIVED_CENTS,
   parseCompleteOrder,
+  parseExpenseEdit,
   parseMenuEdit,
+  parseNewExpense,
   parseNewMenuEntry,
   parseNewTeacher,
 } from "@/lib/validate";
@@ -255,5 +259,77 @@ describe("parseMenuEdit", () => {
   it("rejects a price that is not whole cents, and the old field", () => {
     expect(parseMenuEdit({ kind: "item", id, name: "Coffee", priceCents: 1.5 })).toBeNull();
     expect(parseMenuEdit({ kind: "item", id, name: "Coffee", price: 100 })).toBeNull();
+  });
+});
+
+describe("parseNewExpense", () => {
+  const good = {
+    spentOn: "2026-09-14",
+    description: "  Coffee pots (2)  ",
+    category: "equipment",
+    amountCents: 8_999,
+  };
+
+  it("accepts a dated, categorized amount and trims the description", () => {
+    expect(parseNewExpense(good)).toEqual({
+      spentOn: "2026-09-14",
+      description: "Coffee pots (2)",
+      category: "equipment",
+      amountCents: 8_999,
+      note: null,
+    });
+  });
+
+  it("keeps a note when one is given, trimmed, and treats blank as none", () => {
+    expect(parseNewExpense({ ...good, note: " From the school store " })?.note).toBe(
+      "From the school store",
+    );
+    expect(parseNewExpense({ ...good, note: "   " })?.note).toBeNull();
+  });
+
+  it("refuses an amount of nothing, a negative, a fraction, or too much", () => {
+    expect(parseNewExpense({ ...good, amountCents: 0 })).toBeNull();
+    expect(parseNewExpense({ ...good, amountCents: -100 })).toBeNull();
+    expect(parseNewExpense({ ...good, amountCents: 12.5 })).toBeNull();
+    expect(parseNewExpense({ ...good, amountCents: MAX_EXPENSE_CENTS + 1 })).toBeNull();
+    expect(parseNewExpense({ ...good, amountCents: "89.99" })).toBeNull();
+  });
+
+  it("refuses a category that is not on the list", () => {
+    expect(EXPENSE_CATEGORIES).toContain("product");
+    expect(parseNewExpense({ ...good, category: "bribes" })).toBeNull();
+    expect(parseNewExpense({ ...good, category: undefined })).toBeNull();
+  });
+
+  it("refuses a date that is not a real calendar day", () => {
+    expect(parseNewExpense({ ...good, spentOn: "2026-02-30" })).toBeNull();
+    expect(parseNewExpense({ ...good, spentOn: "9/14/2026" })).toBeNull();
+    expect(parseNewExpense({ ...good, spentOn: undefined })).toBeNull();
+  });
+
+  it("refuses a blank or overlong description", () => {
+    expect(parseNewExpense({ ...good, description: " " })).toBeNull();
+    expect(parseNewExpense({ ...good, description: "x".repeat(81) })).toBeNull();
+  });
+
+  it("refuses anything that is not an object", () => {
+    expect(parseNewExpense(null)).toBeNull();
+    expect(parseNewExpense("coffee")).toBeNull();
+  });
+});
+
+describe("parseExpenseEdit", () => {
+  const good = {
+    id: "3b6d2a2e-2a3c-4b6e-9a2e-0d1f2a3b4c5d",
+    spentOn: "2026-09-14",
+    description: "Cups",
+    category: "supplies",
+    amountCents: 1_250,
+  };
+
+  it("needs a valid id on top of a valid expense", () => {
+    expect(parseExpenseEdit(good)).toMatchObject({ id: good.id, amountCents: 1_250 });
+    expect(parseExpenseEdit({ ...good, id: "42" })).toBeNull();
+    expect(parseExpenseEdit({ ...good, amountCents: 0 })).toBeNull();
   });
 });

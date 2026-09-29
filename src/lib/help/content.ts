@@ -33,6 +33,7 @@ export const TOPICS: GuideTopic[] = [
   "Menu",
   "Inventory",
   "Orders and receipts",
+  "Expenses",
   "Access and signing in",
   "Colors",
 ];
@@ -424,6 +425,43 @@ export const GUIDES: Guide[] = [
 
   /* Access and signing in ------------------------------------------------ */
   {
+    id: "log-expense",
+    topic: "Expenses",
+    title: "Logging what the cart spends",
+    steps: [
+      "Open Expenses.",
+      "Set the date it was bought, what it was, such as Coffee pots, and pick a category.",
+      "Under Amount in dollars, type what it cost, like 24.99. Add a note if it helps, such as where it was bought.",
+      "Press Add expense. It counts toward Spent straight away.",
+    ],
+    note: "Log everything from the start, including what was bought before the cart opened. That is what makes the paid-back line honest.",
+    page: "/admin/expenses",
+  },
+  {
+    id: "paying-for-itself",
+    topic: "Expenses",
+    title: "Seeing whether the cart is paying for itself",
+    steps: [
+      "Open Expenses. The three numbers at the top are everything sold, everything spent, and the difference.",
+      "The line under them says how far the cart is from paying back what was spent on it, or by how much it already has.",
+      "The table below shows the same by month, with a running total, so you can see the month it turned the corner.",
+    ],
+    note: "Sales come from Orders on their own. Only expenses need logging.",
+    page: "/admin/expenses",
+  },
+  {
+    id: "change-expense",
+    topic: "Expenses",
+    title: "Changing or taking off an expense",
+    steps: [
+      "Open Expenses and find the entry.",
+      "Press Edit to change the date, what it was, the category, the amount or the note, then Save.",
+      "Press Take off if it was logged by mistake or returned. Put back brings it back.",
+    ],
+    note: "An entry taken off stays in the list, marked, and leaves the totals. Nothing is deleted.",
+    page: "/admin/expenses",
+  },
+  {
     id: "sign-in",
     topic: "Access and signing in",
     title: "Signing in",
@@ -535,6 +573,11 @@ export const PAGE_HELP: Record<AdminRoute, PageHelp> = {
   "/admin/orders": {
     purpose: "Every sale, one day at a time: who served it, what was bought, and the change given.",
     tasks: ["day-sales"],
+  },
+  "/admin/expenses": {
+    purpose:
+      "What the cart spends, set against what it sells, so you can see whether it is paying for itself.",
+    tasks: ["log-expense", "paying-for-itself", "change-expense"],
   },
   "/admin/receipts": {
     purpose:

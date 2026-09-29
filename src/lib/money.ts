@@ -107,6 +107,34 @@ export function rewardTickets(hoursHundredths: number): number {
   return Math.floor(hoursHundredths / 100);
 }
 
+/** What the cart has made: sales less expenses. Negative until startup costs are paid back. */
+export function netCents(soldCents: number, spentCents: number): number {
+  return soldCents - spentCents;
+}
+
+export interface MonthMoney {
+  /** `YYYY-MM` in the cart's time zone. */
+  month: string;
+  soldCents: number;
+  spentCents: number;
+}
+
+export interface MonthMoneyRow extends MonthMoney {
+  netCents: number;
+  /** Net of this month and every month before it. */
+  runningNetCents: number;
+}
+
+/** Each month's net and the running total, in the order given (oldest first). */
+export function withRunningNet(months: readonly MonthMoney[]): MonthMoneyRow[] {
+  let running = 0;
+  return months.map((month) => {
+    const net = netCents(month.soldCents, month.spentCents);
+    running += net;
+    return { ...month, netCents: net, runningNetCents: running };
+  });
+}
+
 /** Formats cents as dollars. Call only from components, never server code. */
 export function formatUSD(cents: number): string {
   const sign = cents < 0 ? "-" : "";

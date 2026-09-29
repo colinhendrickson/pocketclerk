@@ -44,6 +44,7 @@ export default async function AdminHomePage() {
     { href: "/admin/menu", title: "Menu", body: "Items, prices, the special and add-ons." },
     { href: "/admin/inventory", title: "Inventory", body: "Supplies students count at the end of a shift." },
     { href: "/admin/orders", title: "Orders", body: "Every sale, one day at a time." },
+    { href: "/admin/expenses", title: "Expenses", body: "What the cart spends, and whether it is paying for itself." },
     { href: "/admin/receipts", title: "Receipts", body: "Whether each teacher's receipt arrived." },
     { href: "/admin/admins", title: "Admins", body: "Which staff can use this admin side." },
     { href: "/admin/colors", title: "Colors", body: "Set buttons and highlights to the school's color." },

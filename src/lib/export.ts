@@ -21,6 +21,7 @@ export const EXPORT_TABLES = [
   "order_item_addons",
   "inventory_items",
   "inventory_counts",
+  "expenses",
   "receipt_jobs",
   "site_settings",
 ] as const;

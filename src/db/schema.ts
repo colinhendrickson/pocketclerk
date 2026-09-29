@@ -1,5 +1,6 @@
 import {
   boolean,
+  date,
   index,
   integer,
   pgEnum,
@@ -22,6 +23,14 @@ import {
 
 export const paymentMethod = pgEnum("payment_method", ["cash", "card"]);
 export const receiptChannel = pgEnum("receipt_channel", ["print", "email"]);
+/** What the cart spends on. Mirrored by EXPENSE_CATEGORIES in src/lib/validate.ts. */
+export const expenseCategory = pgEnum("expense_category", [
+  "product",
+  "supplies",
+  "equipment",
+  "treat",
+  "other",
+]);
 export const receiptStatus = pgEnum("receipt_status", [
   "queued",
   "processing",
@@ -371,3 +380,29 @@ export type InventoryItem = typeof inventoryItems.$inferSelect;
 export type InventoryCount = typeof inventoryCounts.$inferSelect;
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type SiteSettings = typeof siteSettings.$inferSelect;
+
+/**
+ * What the cart spends: startup equipment and ongoing product. Logged by staff
+ * so the ledger can show sales against costs. Entries are taken off with
+ * `active = false`, never deleted; `amount_cents > 0` is a CHECK in the
+ * migration.
+ */
+export const expenses = pgTable(
+  "expenses",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** The calendar day of the purchase, as staff wrote it. */
+    spentOn: date("spent_on", { mode: "string" }).notNull(),
+    description: text("description").notNull(),
+    category: expenseCategory("category").notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    note: text("note"),
+    /** The admin who logged it. */
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => persons.id, { onDelete: "restrict" }),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("expenses_active_idx").on(t.active, t.spentOn)],
+);

@@ -5,6 +5,7 @@
  */
 
 import { isMenuIconKey, type MenuIconKey } from "@/lib/menu-icons";
+import { parseLocalDate, type LocalDate } from "@/lib/time";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -467,4 +468,70 @@ export function parseNewAdmin(input: unknown): NewAdminInput | null {
   if (at <= 0 || at === candidate.length - 1 || candidate.includes(" ")) return null;
 
   return { name: trimmedName, email: candidate };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Expenses                                                                   */
+/* -------------------------------------------------------------------------- */
+
+/** What the cart spends money on. A fixed list so the ledger can be grouped. */
+export const EXPENSE_CATEGORIES = [
+  "product",
+  "supplies",
+  "equipment",
+  "treat",
+  "other",
+] as const;
+
+export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
+
+export function isExpenseCategory(value: unknown): value is ExpenseCategory {
+  return typeof value === "string" && (EXPENSE_CATEGORIES as readonly string[]).includes(value);
+}
+
+/** $99,999.99: the dollars input allows five whole digits. */
+export const MAX_EXPENSE_CENTS = 9_999_999;
+const MAX_EXPENSE_NOTE_LENGTH = 200;
+
+export interface ExpenseInput {
+  spentOn: LocalDate;
+  description: string;
+  category: ExpenseCategory;
+  amountCents: number;
+  note: string | null;
+}
+
+export function parseNewExpense(input: unknown): ExpenseInput | null {
+  if (typeof input !== "object" || input === null) return null;
+  const { spentOn, description, category, amountCents, note } = input as Record<string, unknown>;
+
+  const date = typeof spentOn === "string" ? parseLocalDate(spentOn) : null;
+  if (date === null) return null;
+
+  const trimmedDescription = parseName(description, 80);
+  if (trimmedDescription === null) return null;
+
+  if (!isExpenseCategory(category)) return null;
+
+  if (!isPositiveIntWithin(amountCents, MAX_EXPENSE_CENTS)) return null;
+
+  if (note !== undefined && note !== null && typeof note !== "string") return null;
+  const trimmedNote = (note ?? "").trim();
+  if (trimmedNote.length > MAX_EXPENSE_NOTE_LENGTH) return null;
+
+  return {
+    spentOn: date,
+    description: trimmedDescription,
+    category,
+    amountCents,
+    note: trimmedNote || null,
+  };
+}
+
+export function parseExpenseEdit(input: unknown): (ExpenseInput & { id: string }) | null {
+  if (typeof input !== "object" || input === null) return null;
+  const { id } = input as Record<string, unknown>;
+  if (!isUuid(id)) return null;
+  const expense = parseNewExpense(input);
+  return expense ? { id, ...expense } : null;
 }
