@@ -155,7 +155,7 @@ Breakpoints (Tailwind defaults): `<md` phone portrait (≤ 767), `md–lg` iPad 
 - <md: top bar keeps name + avatar only; steps become a single text line "Step 2 of 4 · Take orders"; `stats` remain one row (3 compact stats, 22px values); all five buttons stack full-width, 64px tall, icon-left; Clock out pinned to bottom with `mt-auto`.
 
 **Order builder**
-- lg+: `grid-cols-[1fr_400px]`; menu 2×2 tiles; order summary is a sticky right `aside` with total + Go to payment.
+- lg+: `grid-cols-[1fr_400px]`; menu rows one column until xl, then 2×2 tiles (at 1180px a two-column row clipped "Coffee" behind its − 1 + counter); order summary is a sticky right `aside` with total + Go to payment.
 - Add-ons (4.20): adding a drink opens its own Add-ons page, same frame. Each add-on is a row like a menu item (picture · name · price or "Free" · − count +), one column until xl so long names fit beside the counter. The `aside` lists the order with repeats counted ("2 × Sugar") and ends in Add another item (secondary) above Go to payment (the one primary).
 - md: same two columns with the aside at 340px; menu tiles become horizontal rows (icon · name · price · qty badge).
 - <md: single column. StepHeader compresses to back button + "Step 2 of 4 / Mrs. Smith · Rm 114"; NoteBanner stays directly under it (never hidden, never collapsed); menu = full-width 64px rows; order summary becomes a fixed bottom sheet (`bg-base-100`, top border) showing the item line, total at 52px and the 72px primary button. No horizontal scroll at any width.

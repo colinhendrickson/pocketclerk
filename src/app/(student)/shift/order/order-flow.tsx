@@ -290,7 +290,8 @@ export function OrderFlow({
           <div className="flex min-w-0 flex-col gap-4">
             {notes}
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {/* One column until xl: a name like Coffee needs the room beside − 1 +. */}
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
               {menu.map((item) => (
                 <CountRow
                   key={item.id}
