@@ -289,7 +289,7 @@ export const GUIDES: Guide[] = [
       "Type the name, such as Vanilla syrup, and the price. For a free extra such as sugar, enter 0.00.",
       "Press Add add-on.",
     ],
-    note: "At the cart, a student adds an add-on to the drink they just added. Free extras are listed for the student but do not change the total.",
+    note: "At the cart, adding a drink opens its Add-ons page, where a student presses + once for each one: two sugars is + two times. Free extras are listed for the student but do not change the total.",
     page: "/admin/menu",
   },
   {

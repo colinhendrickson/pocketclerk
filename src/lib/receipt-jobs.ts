@@ -11,6 +11,7 @@ import {
   students,
   teacherProfiles,
 } from "@/db/schema";
+import { countRepeats } from "@/lib/addons";
 import { branding } from "@/lib/branding";
 import type { Receipt, ReceiptLine } from "@/providers/renderer/receipt";
 
@@ -243,11 +244,15 @@ export async function buildReceipt(orderId: string): Promise<Receipt | null> {
       qty: item.qty,
       amountCents: item.unitPriceCents * item.qty,
     });
-    for (const extra of extras.filter((e) => e.orderItemId === item.id)) {
+    // Two sugars are two rows; the receipt says "2 x Sugar" once.
+    const mine = extras.filter((e) => e.orderItemId === item.id);
+    const keys = mine.map((e) => JSON.stringify([e.name, e.priceCents]));
+    for (const { id: key, count } of countRepeats(keys)) {
+      const [name, priceCents] = JSON.parse(key) as [string, number];
       lines.push({
-        name: extra.name,
+        name: count > 1 ? `${count} x ${name}` : name,
         qty: item.qty,
-        amountCents: extra.priceCents * item.qty,
+        amountCents: priceCents * count * item.qty,
         isAddon: true,
       });
     }

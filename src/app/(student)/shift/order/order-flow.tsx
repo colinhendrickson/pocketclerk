@@ -2,7 +2,7 @@
 
 import { Check, Minus, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, type ReactNode } from "react";
 
 import {
   BigButton,
@@ -17,10 +17,11 @@ import {
   StepHeader,
 } from "@/components";
 import type { Addon, MenuItem } from "@/db/schema";
+import { addOne, countRepeats, removeOne } from "@/lib/addons";
 import { isMenuIconKey } from "@/lib/menu-icons";
 import { formatUSD, orderTotalCents } from "@/lib/money";
 import type { TeacherSummary } from "@/lib/queries";
-import { MAX_RECEIVED_CENTS } from "@/lib/validate";
+import { MAX_ADDONS_PER_LINE, MAX_RECEIVED_CENTS } from "@/lib/validate";
 
 import { completeOrder } from "../../actions";
 import { TeacherPicker } from "./teacher-picker";
@@ -35,15 +36,18 @@ export interface OrderFlowProps {
   cardPaymentsEnabled: boolean;
 }
 
-/** One menu item in the order, with the add-ons chosen for it. */
+/** One menu item in the order, with the add-ons chosen for it. A repeated id is another one: two sugars. */
 interface Line {
   menuItemId: string;
   qty: number;
   addonIds: string[];
 }
 
-/** `method` asks how the teacher pays; `pay` makes change; `card` checks a staff card. */
-type Stage = "teacher" | "build" | "method" | "pay" | "card" | "done";
+/**
+ * `addons` picks the extras for the drink just added; `method` asks how the
+ * teacher pays; `pay` makes change; `card` checks a staff card.
+ */
+type Stage = "teacher" | "build" | "addons" | "method" | "pay" | "card" | "done";
 
 interface Completed {
   totalCents: number;
@@ -67,6 +71,8 @@ export function OrderFlow({
   const [stage, setStage] = useState<Stage>("teacher");
   const [teacher, setTeacher] = useState<TeacherSummary | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
+  // The line whose add-ons are on screen, while stage is "addons".
+  const [editing, setEditing] = useState<number | null>(null);
   const [entry, setEntry] = useState("");
   const [selectedBill, setSelectedBill] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +99,19 @@ export function OrderFlow({
   const receivedCents = entry === "" ? 0 : Number.parseInt(entry, 10);
   const enough = entry !== "" && receivedCents >= totalCents;
 
+  const paymentStage: Stage = cardPaymentsEnabled ? "method" : "pay";
+
+  /**
+   * With add-ons on the menu, each drink gets its own line and opens the
+   * Add-ons page, so two sugars in the coffee and none in the tea stay apart.
+   */
   function addItem(menuItemId: string) {
+    if (addons.length > 0) {
+      setEditing(lines.length);
+      setLines([...lines, { menuItemId, qty: 1, addonIds: [] }]);
+      setStage("addons");
+      return;
+    }
     setLines((current) => {
       const existing = current.find(
         (l) => l.menuItemId === menuItemId && l.addonIds.length === 0,
@@ -107,30 +125,54 @@ export function OrderFlow({
     });
   }
 
+  /** Takes one away from the most recent line of this item. */
   function removeItem(menuItemId: string) {
+    setLines((current) => {
+      let at = -1;
+      current.forEach((l, i) => {
+        if (l.menuItemId === menuItemId) at = i;
+      });
+      if (at === -1) return current;
+      return current
+        .map((l, i) => (i === at ? { ...l, qty: l.qty - 1 } : l))
+        .filter((l) => l.qty > 0);
+    });
+  }
+
+  /** One more, or one fewer, of an add-on on the drink being edited. */
+  function changeAddon(addonId: string, change: "add" | "remove") {
+    if (editing === null) return;
     setLines((current) =>
-      current
-        .map((l) => (l.menuItemId === menuItemId ? { ...l, qty: l.qty - 1 } : l))
-        .filter((l) => l.qty > 0),
+      current.map((line, i) =>
+        i !== editing
+          ? line
+          : {
+              ...line,
+              addonIds:
+                change === "add"
+                  ? addOne(line.addonIds, addonId, MAX_ADDONS_PER_LINE)
+                  : removeOne(line.addonIds, addonId),
+            },
+      ),
     );
   }
 
-  /** Add-ons attach to the most recently added line, which is the one on screen. */
-  function toggleAddon(addonId: string) {
+  /** Leaves the Add-ons page. A drink with none rejoins an earlier plain one: 2 × Coffee, not two lines. */
+  function finishAddons(next: Stage) {
+    const at = editing;
     setLines((current) => {
-      if (current.length === 0) return current;
-      const last = current.length - 1;
-      return current.map((line, i) => {
-        if (i !== last) return line;
-        const has = line.addonIds.includes(addonId);
-        return {
-          ...line,
-          addonIds: has
-            ? line.addonIds.filter((id) => id !== addonId)
-            : [...line.addonIds, addonId],
-        };
-      });
+      const line = at === null ? undefined : current[at];
+      if (!line || line.addonIds.length > 0) return current;
+      const twin = current.findIndex(
+        (l, i) => i !== at && l.menuItemId === line.menuItemId && l.addonIds.length === 0,
+      );
+      if (twin === -1) return current;
+      return current
+        .map((l, i) => (i === twin ? { ...l, qty: l.qty + line.qty } : l))
+        .filter((_, i) => i !== at);
     });
+    setEditing(null);
+    setStage(next);
   }
 
   function submit(paymentMethod: "cash" | "card") {
@@ -170,6 +212,7 @@ export function OrderFlow({
   function startNextOrder() {
     setTeacher(null);
     setLines([]);
+    setEditing(null);
     setEntry("");
     setSelectedBill(null);
     setCompleted(null);
@@ -201,16 +244,42 @@ export function OrderFlow({
     );
   }
 
+  const subtitle = teacher
+    ? teacher.room
+      ? `${teacher.name} · Room ${teacher.room}`
+      : teacher.name
+    : undefined;
+
+  /** Customer notes are always visible above the menu and the add-ons. */
+  const notes = teacher
+    ? teacher.notes.map((note) => (
+        <NoteBanner key={note}>
+          Note for {teacher.name}: {note}
+        </NoteBanner>
+      ))
+    : null;
+
+  /** Read aloud each time an item or add-on changes the total. */
+  const total = (
+    <div
+      aria-live="polite"
+      aria-atomic="true"
+      className="flex items-baseline justify-between gap-4 md:mt-auto md:block md:border-t md:border-base-300 md:pt-4"
+    >
+      <p className="text-[18px] font-bold opacity-70">Total</p>
+      <MoneyDisplay cents={totalCents} size="running" />
+    </div>
+  );
+
   /* --- Step 2: build the order -------------------------------------------- */
   if (stage === "build" && teacher) {
-    const lastLine = lines[lines.length - 1];
     return (
       <div className="flex flex-1 flex-col">
         <StepHeader
           step={2}
           totalSteps={4}
           title="Build the order"
-          subtitle={teacher.room ? `${teacher.name} · Room ${teacher.room}` : teacher.name}
+          subtitle={subtitle}
           backLabel="Back to teachers"
           steps={STEPS}
           onBack={() => setStage("teacher")}
@@ -219,92 +288,31 @@ export function OrderFlow({
         {/* Bottom padding clears the fixed order sheet below md. */}
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-[260px] md:grid md:grid-cols-[1fr_340px] md:items-start md:p-6 lg:grid-cols-[1fr_400px]">
           <div className="flex min-w-0 flex-col gap-4">
-            {/* Customer notes are always visible above the menu. */}
-            {teacher.notes.map((note) => (
-              <NoteBanner key={note}>
-                Note for {teacher.name}: {note}
-              </NoteBanner>
-            ))}
+            {notes}
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {menu.map((item) => {
-                const qty = lines
-                  .filter((l) => l.menuItemId === item.id)
-                  .reduce((n, l) => n + l.qty, 0);
-                return (
-                  <div
-                    key={item.id}
-                    className="flex min-h-[64px] items-center gap-4 rounded-box border border-base-300 bg-base-100 p-3 md:min-h-[110px] md:p-4"
-                  >
-                    {isMenuIconKey(item.icon) ? (
-                      <MenuIcon icon={item.icon} size={44} className="shrink-0 text-primary" />
-                    ) : null}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[26px] font-extrabold">{item.name}</p>
-                      {item.isSpecial ? (
-                        <p className="text-[15px] font-bold text-accent">Special treat</p>
-                      ) : null}
-                      <p className="text-[20px] font-bold tabular">
-                        {formatUSD(item.priceCents)}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {qty > 0 ? (
-                        <>
-                          <button
-                            type="button"
-                            aria-label={`Remove one ${item.name}`}
-                            onClick={() => removeItem(item.id)}
-                            className="btn size-[60px] rounded-field bg-base-200"
-                          >
-                            <Minus size={28} aria-hidden="true" />
-                          </button>
-                          <span className="min-w-[2ch] text-center text-[26px] font-extrabold tabular">
-                            {qty}
-                          </span>
-                        </>
-                      ) : null}
-                      <button
-                        type="button"
-                        aria-label={`Add one ${item.name}`}
-                        onClick={() => addItem(item.id)}
-                        className="btn btn-primary size-[60px] rounded-field"
-                      >
-                        <Plus size={28} aria-hidden="true" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+              {menu.map((item) => (
+                <CountRow
+                  key={item.id}
+                  name={item.name}
+                  icon={item.icon}
+                  price={formatUSD(item.priceCents)}
+                  detail={
+                    item.isSpecial ? (
+                      <p className="text-[15px] font-bold text-accent">Special treat</p>
+                    ) : null
+                  }
+                  count={lines
+                    .filter((l) => l.menuItemId === item.id)
+                    .reduce((n, l) => n + l.qty, 0)}
+                  onAdd={() => addItem(item.id)}
+                  onRemove={() => removeItem(item.id)}
+                />
+              ))}
             </div>
-
-            {lastLine ? (
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-[18px] font-bold opacity-70">Add-ons</span>
-                {addons.map((addon) => {
-                  const on = lastLine.addonIds.includes(addon.id);
-                  return (
-                    <button
-                      key={addon.id}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => toggleAddon(addon.id)}
-                      className={`btn min-h-[60px] rounded-field text-[20px] font-extrabold ${
-                        on ? "btn-secondary" : "btn-outline btn-secondary"
-                      }`}
-                    >
-                      {on ? <Check size={22} aria-hidden="true" /> : null}
-                      {isMenuIconKey(addon.icon) ? <MenuIcon icon={addon.icon} size={26} /> : null}
-                      {addon.name}
-                      {addon.priceCents > 0 ? ` (${formatUSD(addon.priceCents)})` : ""}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null}
           </div>
 
-          <aside className="flex flex-col gap-3 border-base-300 bg-base-100 max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-10 max-md:border-t max-md:p-4 md:sticky md:top-6 md:gap-4 md:rounded-box md:border md:p-6">
+          <aside className={SHEET_CLASS}>
             {/* One-line summary below md; the full list shows from md up. */}
             <p className="truncate text-[20px] font-bold md:hidden">
               {lines.length === 0
@@ -313,54 +321,91 @@ export function OrderFlow({
                     .map((line) => `${line.qty} × ${menuById.get(line.menuItemId)?.name ?? ""}`)
                     .join(", ")}
             </p>
-            <ul className="hidden flex-col gap-2 md:flex">
-              {lines.map((line, i) => {
-                const item = menuById.get(line.menuItemId);
-                if (!item) return null;
-                return (
-                  <li key={`${line.menuItemId}-${i}`} className="flex flex-col">
-                    <span className="flex justify-between text-[22px] font-extrabold">
-                      <span>
-                        {line.qty} × {item.name}
-                      </span>
-                      <span className="tabular">
-                        {formatUSD(item.priceCents * line.qty)}
-                      </span>
-                    </span>
-                    {line.addonIds.map((id) => {
-                      const addon = addonById.get(id);
-                      if (!addon) return null;
-                      return (
-                        <span
-                          key={id}
-                          className="flex justify-between pl-4 text-[18px] font-bold opacity-80"
-                        >
-                          <span>{addon.name}</span>
-                          <span className="tabular">
-                            {formatUSD(addon.priceCents * line.qty)}
-                          </span>
-                        </span>
-                      );
-                    })}
-                  </li>
-                );
-              })}
-            </ul>
+            <OrderLines lines={lines} menuById={menuById} addonById={addonById} />
 
-            {/* Read aloud each time an item or add-on changes the total. */}
-            <div
-              aria-live="polite"
-              aria-atomic="true"
-              className="flex items-baseline justify-between gap-4 md:mt-auto md:block md:border-t md:border-base-300 md:pt-4"
-            >
-              <p className="text-[18px] font-bold opacity-70">Total</p>
-              <MoneyDisplay cents={totalCents} size="running" />
-            </div>
+            {total}
 
             <BigButton
               variant="primary"
               disabled={lines.length === 0}
-              onClick={() => setStage(cardPaymentsEnabled ? "method" : "pay")}
+              onClick={() => setStage(paymentStage)}
+              className="min-h-[72px]"
+            >
+              Go to payment
+            </BigButton>
+          </aside>
+        </div>
+      </div>
+    );
+  }
+
+  /* --- Step 2: add-ons for the drink just added ---------------------------- */
+  const editingLine = editing === null ? undefined : lines[editing];
+  if (stage === "addons" && teacher && editingLine) {
+    const item = menuById.get(editingLine.menuItemId);
+    const full = editingLine.addonIds.length >= MAX_ADDONS_PER_LINE;
+    return (
+      <div className="flex flex-1 flex-col">
+        <StepHeader
+          step={2}
+          totalSteps={4}
+          title={`Add-ons for the ${item?.name ?? "drink"}`}
+          subtitle={subtitle}
+          backLabel="Back to the order"
+          steps={STEPS}
+          onBack={() => finishAddons("build")}
+        />
+
+        {/* The sheet below md holds two buttons here, so it needs more room. */}
+        <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 pb-[340px] md:grid md:grid-cols-[1fr_340px] md:items-start md:p-6 lg:grid-cols-[1fr_400px]">
+          <div className="flex min-w-0 flex-col gap-4">
+            {notes}
+
+            <p className="text-[20px] font-bold">
+              Press + once for each one. Two sugars is + two times.
+            </p>
+
+            {/* One column until xl: names like Sweetener need the room beside − 2 +. */}
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              {addons.map((addon) => (
+                <CountRow
+                  key={addon.id}
+                  name={addon.name}
+                  icon={addon.icon}
+                  price={addon.priceCents > 0 ? `${formatUSD(addon.priceCents)} each` : "Free"}
+                  count={editingLine.addonIds.filter((id) => id === addon.id).length}
+                  addDisabled={full}
+                  onAdd={() => changeAddon(addon.id, "add")}
+                  onRemove={() => changeAddon(addon.id, "remove")}
+                />
+              ))}
+            </div>
+
+            {full ? (
+              <p role="status" className="text-[20px] font-bold">
+                That is as many add-ons as one drink can have.
+              </p>
+            ) : null}
+          </div>
+
+          <aside className={SHEET_CLASS}>
+            {/* Below md: just this drink and its add-ons. */}
+            <p className="truncate text-[20px] font-bold md:hidden">
+              {item?.name ?? ""}
+              {editingLine.addonIds.length === 0
+                ? ", no add-ons yet"
+                : `, ${countRepeats(editingLine.addonIds)
+                    .map(({ id, count }) => `${count} ${addonById.get(id)?.name ?? ""}`)
+                    .join(", ")}`}
+            </p>
+            <OrderLines lines={lines} menuById={menuById} addonById={addonById} />
+
+            {total}
+
+            <BigButton onClick={() => finishAddons("build")}>Add another item</BigButton>
+            <BigButton
+              variant="primary"
+              onClick={() => finishAddons(paymentStage)}
               className="min-h-[72px]"
             >
               Go to payment
@@ -379,7 +424,7 @@ export function OrderFlow({
           step={3}
           totalSteps={4}
           title="Take payment"
-          subtitle={teacher.room ? `${teacher.name} · Room ${teacher.room}` : teacher.name}
+          subtitle={subtitle}
           backLabel="Back to the order"
           steps={STEPS}
           onBack={() => setStage("build")}
@@ -560,4 +605,111 @@ export function OrderFlow({
 function appendDigit(current: string, digit: string): string {
   const next = (current + digit).replace(/^0+(?=\d)/, "");
   return Number.parseInt(next, 10) > MAX_RECEIVED_CENTS ? current : next;
+}
+
+/** The order sheet: below md a fixed bottom bar, from md up a sticky side panel. */
+const SHEET_CLASS =
+  "flex flex-col gap-3 border-base-300 bg-base-100 max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-10 max-md:border-t max-md:p-4 md:sticky md:top-6 md:gap-4 md:rounded-box md:border md:p-6";
+
+interface CountRowProps {
+  name: string;
+  icon: string | null;
+  /** Shown under the name, e.g. "$1.00" or "Free". */
+  price: string;
+  detail?: ReactNode;
+  count: number;
+  addDisabled?: boolean;
+  onAdd: () => void;
+  onRemove: () => void;
+}
+
+/** A menu item or add-on: picture, name, price, and − count + to change how many. */
+function CountRow({ name, icon, price, detail, count, addDisabled, onAdd, onRemove }: CountRowProps) {
+  return (
+    <div className="flex min-h-[64px] items-center gap-4 rounded-box border border-base-300 bg-base-100 p-3 md:min-h-[110px] md:p-4">
+      {isMenuIconKey(icon) ? (
+        <MenuIcon icon={icon} size={44} className="shrink-0 text-primary" />
+      ) : null}
+      <div className="min-w-0 flex-1">
+        <p className="text-[26px] font-extrabold">{name}</p>
+        {detail}
+        <p className="text-[20px] font-bold tabular">{price}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        {count > 0 ? (
+          <>
+            <button
+              type="button"
+              aria-label={`Remove one ${name}`}
+              onClick={onRemove}
+              className="btn size-[60px] rounded-field bg-base-200"
+            >
+              <Minus size={28} aria-hidden="true" />
+            </button>
+            <span className="min-w-[2ch] text-center text-[26px] font-extrabold tabular">
+              {count}
+            </span>
+          </>
+        ) : null}
+        <button
+          type="button"
+          aria-label={`Add one ${name}`}
+          disabled={addDisabled}
+          onClick={onAdd}
+          className="btn btn-primary size-[60px] rounded-field"
+        >
+          <Plus size={28} aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface OrderLinesProps {
+  lines: Line[];
+  menuById: Map<string, MenuItem>;
+  addonById: Map<string, Addon>;
+}
+
+/**
+ * Each drink with its add-ons underneath, a repeat shown once with its count
+ * ("2 × Sugar"). Hidden below md, where the sheet has room for one line only.
+ */
+function OrderLines({ lines, menuById, addonById }: OrderLinesProps) {
+  return (
+    <ul className="hidden flex-col gap-2 md:flex">
+      {lines.map((line, i) => {
+        const item = menuById.get(line.menuItemId);
+        if (!item) return null;
+        return (
+          <li key={`${line.menuItemId}-${i}`} className="flex flex-col">
+            <span className="flex justify-between text-[22px] font-extrabold">
+              <span>
+                {line.qty} × {item.name}
+              </span>
+              <span className="tabular">{formatUSD(item.priceCents * line.qty)}</span>
+            </span>
+            {countRepeats(line.addonIds).map(({ id, count }) => {
+              const addon = addonById.get(id);
+              if (!addon) return null;
+              return (
+                <span
+                  key={id}
+                  className="flex justify-between pl-4 text-[18px] font-bold opacity-80"
+                >
+                  <span>
+                    {count > 1 ? `${count} × ` : ""}
+                    {addon.name}
+                  </span>
+                  <span className="tabular">
+                    {formatUSD(addon.priceCents * count * line.qty)}
+                  </span>
+                </span>
+              );
+            })}
+          </li>
+        );
+      })}
+    </ul>
+  );
 }

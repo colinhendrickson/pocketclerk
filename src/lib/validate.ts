@@ -48,6 +48,9 @@ export type CompleteOrderInput =
 /** $1,000: more than any real payment, and far below the int4 column limit. */
 export const MAX_RECEIVED_CENTS = 100_000;
 
+/** Add-ons on one drink, counting repeats: two sugars is two. */
+export const MAX_ADDONS_PER_LINE = 10;
+
 /**
  * Validates an order completion payload. Array sizes are capped so a request
  * cannot drive an unbounded loop inside the order transaction.
@@ -76,7 +79,7 @@ export function parseCompleteOrder(input: unknown): CompleteOrderInput | null {
 
     if (!isUuid(menuItemId)) return null;
     if (!isPositiveIntWithin(qty, 20)) return null;
-    if (!Array.isArray(addonIds) || addonIds.length > 10) return null;
+    if (!Array.isArray(addonIds) || addonIds.length > MAX_ADDONS_PER_LINE) return null;
     if (!addonIds.every(isUuid)) return null;
 
     parsed.push({ menuItemId, qty, addonIds: addonIds as string[] });

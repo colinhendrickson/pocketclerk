@@ -44,24 +44,28 @@ test("a student works a whole shift", async ({ page }) => {
 
     await page.locator("button:has(.card-body)").first().click();
     // Pictures beside the names, for students who cannot read them yet. The
-    // seed gives decaf its own mug with a D, and sugar a sugar cube.
+    // seed gives decaf its own mug with a D.
     await expect(page.locator('svg[data-menu-icon="decaf"]')).toBeVisible();
 
+    // A drink opens its own Add-ons page, listed like the menu, so two sugars
+    // is + twice. The seed gives sugar a sugar cube.
     await page.getByRole("button", { name: /Add one Coffee$/i }).first().click();
-    await expect(
-      page.getByRole("button", { name: "Sugar", exact: true }).locator('svg[data-menu-icon="sugar"]'),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Add-ons for the Coffee" })).toBeVisible();
+    await expect(page.locator('svg[data-menu-icon="sugar"]')).toBeVisible();
+    await page.getByRole("button", { name: "Add one Sugar", exact: true }).click();
+    await page.getByRole("button", { name: "Add one Sugar", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Remove one Sugar" })).toBeVisible();
 
-    // A dollar coffee.
-    await expect(page.getByText("$1.00").first()).toBeVisible();
-
+    // Back to the menu for a second coffee with nothing in it.
+    await page.getByRole("button", { name: "Add another item" }).click();
+    await page.getByRole("button", { name: /Add one Coffee$/i }).first().click();
     await page.getByRole("button", { name: /Go to payment/i }).click();
 
     // The teacher hands over a five. Three dollars back, and the hint has to
     // name the actual bills, because that line is the teaching surface.
     await page.getByRole("button", { name: /^\$5/ }).click();
-    await expect(page.getByText("$4.00")).toBeVisible();
-    await expect(page.getByText("4 one-dollar bills")).toBeVisible();
+    await expect(page.getByText("$3.00")).toBeVisible();
+    await expect(page.getByText("3 one-dollar bills")).toBeVisible();
 
     await page.getByRole("button", { name: /Change given/i }).click();
     await expect(page.getByRole("heading", { name: /Change given/ })).toBeVisible({

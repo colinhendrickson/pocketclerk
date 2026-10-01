@@ -173,6 +173,7 @@ Built after the first deployment met real staff and students. Each came from som
 | 4.17 | Keeping it running | Free Supabase projects pause when idle and their backups cannot be downloaded: a keep-alive health check every six hours, Export everything for staff, pairing that renews itself; receipts print from every screen (4.8) | Done |
 | 4.18 | An owner for each cart | Any admin could remove any other, including the teacher responsible for the cart. One admin is now the owner: only the owner gives and removes access, nobody can remove the owner, and the role can be handed on | Done |
 | 4.19 | Expenses | The first program asked how to track what the cart cost to start and what it spends on product. Staff log expenses (date, what, category, amount, note; taken off, never deleted) and an Expenses page sets them against sales: sold, spent and net for all time, by month with a running total, and whether the cart has paid for itself. Exported with everything else | Done |
+| 4.20 | Add-ons on their own page | The first program asked for add-ons listed like the drinks, so two sugars can be marked. Adding a drink opens an Add-ons page for that drink: each add-on is a row with its picture, price and − count +; then Add another item or Go to payment. Each drink keeps its own add-ons (two sugars in the coffee, none in the tea); a repeat is saved once per sugar and printed as "2 x Sugar" | Done |
 
 ---
 

@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { db, getClient } from "@/db";
 import { hashPin } from "@/lib/auth";
 import { placeOrder } from "@/lib/orders";
+import { buildReceipt } from "@/lib/receipt-jobs";
 import type { CompleteOrderInput } from "@/lib/validate";
 
 /**
@@ -235,5 +236,26 @@ describe("placeOrder with a staff card", () => {
       changeCents: 400,
     });
     await setCardPayments(false);
+  });
+});
+
+describe("placeOrder with the same add-on more than once", () => {
+  it("charges and saves each one, and the receipt counts them on one line", async () => {
+    // Two of the add-on on one item: the add-ons page sends the id twice.
+    const input = order({ lines: [{ menuItemId: itemId, qty: 1, addonIds: [addonId, addonId] }] });
+    const result = await placeOrder(shiftId, input);
+    expect(result).toMatchObject({ ok: true, totalCents: 350, changeCents: 650 });
+
+    const [row] = await db.execute<{ n: number }>(sql`
+      SELECT count(*)::int AS n FROM order_item_addons oa
+      JOIN order_items oi ON oi.id = oa.order_item_id
+      WHERE oi.order_id = ${input.orderId}`);
+    expect(row.n).toBe(2);
+
+    const receipt = await buildReceipt(input.orderId);
+    const extras = receipt?.lines.filter((line) => line.isAddon) ?? [];
+    expect(extras).toHaveLength(1);
+    expect(extras[0].name).toMatch(/^2 x /);
+    expect(extras[0].amountCents).toBe(100);
   });
 });
