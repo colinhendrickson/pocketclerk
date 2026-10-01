@@ -59,6 +59,17 @@ test("a student works a whole shift", async ({ page }) => {
     // Back to the menu for a second coffee with nothing in it.
     await page.getByRole("button", { name: "Add another item" }).click();
     await page.getByRole("button", { name: /Add one Coffee$/i }).first().click();
+    await page.getByRole("button", { name: "Add another item" }).click();
+
+    // Minus takes away the latest coffee only; the one with two sugars stays.
+    // It used to take one from every coffee line, emptying both.
+    const coffee = page.locator("div.rounded-box", { has: page.getByRole("button", { name: /Add one Coffee$/i }) }).first();
+    await expect(coffee.getByText("2", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: /Remove one Coffee$/i }).first().click();
+    await expect(coffee.getByText("1", { exact: true })).toBeVisible();
+    await expect(page.getByText("2 × Sugar")).toBeVisible();
+
+    await page.getByRole("button", { name: /Add one Coffee$/i }).first().click();
     await page.getByRole("button", { name: /Go to payment/i }).click();
 
     // The teacher hands over a five. Three dollars back, and the hint has to
