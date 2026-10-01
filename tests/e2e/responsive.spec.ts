@@ -110,6 +110,10 @@ for (const size of SIZES) {
 
       await page.locator("button:has(.card-body)").first().click();
       await page.getByRole("button", { name: /Add one Coffee$/i }).first().click();
+      await page.getByRole("button", { name: "Add one Sugar", exact: true }).click();
+      await checkScreen(page, "add-ons", problems);
+
+      await page.getByRole("button", { name: "Add another item" }).click();
       await checkScreen(page, "order builder", problems);
 
       await page.getByRole("button", { name: /Go to payment/i }).click();
