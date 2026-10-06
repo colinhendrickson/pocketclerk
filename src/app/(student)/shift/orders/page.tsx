@@ -3,15 +3,16 @@ import { redirect } from "next/navigation";
 import { cartFormatter } from "@/lib/time";
 import { StepHeader } from "@/components";
 import { formatUSD } from "@/lib/money";
-import { getActiveShift, getShiftTotals, listShiftOrders } from "@/lib/queries";
+import { getActiveShift, getTodaysTotals, listTodaysOrders } from "@/lib/queries";
 import { getShiftSession } from "@/lib/session";
 import { requirePairedDevice } from "@/app/(student)/require-device";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Orders completed this shift. The order count and running sales total are the
- * focus of the screen, as business-math practice for students.
+ * The cart's orders today, by every student who worked it, with who served
+ * each. The order count and running sales total are the focus of the screen,
+ * as business-math practice for students.
  */
 export default async function TodaysOrdersPage() {
   await requirePairedDevice();
@@ -22,8 +23,8 @@ export default async function TodaysOrdersPage() {
   if (!shift) redirect("/cart");
 
   const [rows, totals] = await Promise.all([
-    listShiftOrders(shift.id),
-    getShiftTotals(shift.id),
+    listTodaysOrders(),
+    getTodaysTotals(),
   ]);
 
   const time = cartFormatter({
@@ -44,7 +45,7 @@ export default async function TodaysOrdersPage() {
       <main className="flex flex-1 flex-col gap-6 p-6">
         {rows.length === 0 ? (
           <p className="text-[22px] font-bold opacity-70">
-            No orders yet this shift.
+            No orders yet today.
           </p>
         ) : (
           <ul className="flex flex-col gap-3">
@@ -58,6 +59,7 @@ export default async function TodaysOrdersPage() {
                   <span className="text-[18px] font-bold opacity-70">
                     {row.room ? `Room ${row.room} · ` : ""}
                     <span className="tabular">{time.format(row.createdAt)}</span>
+                    {` · Served by ${row.studentName}`}
                     {row.paymentMethod === "card" ? " · Paid by staff card" : ""}
                   </span>
                 </span>

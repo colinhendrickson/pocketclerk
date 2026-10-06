@@ -2,9 +2,9 @@ import { redirect } from "next/navigation";
 
 import { cartFormatter } from "@/lib/time";
 import { branding } from "@/lib/branding";
-import { getActiveShift } from "@/lib/queries";
-import { getShiftSession } from "@/lib/session";
+import { loadCrew } from "@/app/(student)/crew-session";
 
+import { CrewPanel } from "./crew-panel";
 import { DashboardActions } from "./dashboard-actions";
 import { LiveHours } from "./live-hours";
 import { PrinterBar } from "./printer-bar";
@@ -22,10 +22,7 @@ const CURRENT_STEP = 2;
  */
 export default async function ShiftPage() {
   await requirePairedDevice();
-  const shiftId = await getShiftSession();
-  if (!shiftId) redirect("/cart");
-
-  const shift = await getActiveShift(shiftId);
+  const { current: shift, crew } = await loadCrew();
   // A cookie for a closed or missing shift returns to sign-in.
   if (!shift) redirect("/cart");
 
@@ -76,6 +73,11 @@ export default async function ShiftPage() {
         </header>
 
         <PrinterBar />
+
+        <CrewPanel
+          crew={crew.map((member) => ({ id: member.id, studentName: member.studentName }))}
+          currentId={shift.id}
+        />
 
         <DashboardActions />
       </main>

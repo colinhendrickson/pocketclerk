@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -34,10 +34,6 @@ export interface ActiveShift {
 }
 
 /**
- * The open shift for a session's shift id, or null if unknown or closed (so a
- * stale cookie leads back to sign-in).
- */
-/**
  * The session's shift, if it is open and started today in the cart's time zone.
  * A shift left open from an earlier day is not active: the student signs in
  * again, which closes it with no hours (src/lib/shifts.ts).
@@ -63,15 +59,50 @@ export async function getActiveShift(
   return row[0] ?? null;
 }
 
-/** Order count and sales for the dashboard stats. */
-export async function getShiftTotals(shiftId: string) {
+/**
+ * The crew's open shifts among `shiftIds`, longest-working first. Shifts since
+ * closed, or left open from an earlier day, drop out, the same rule as
+ * `getActiveShift`.
+ */
+export async function listCrew(
+  shiftIds: readonly string[],
+  now: Date = new Date(),
+  timeZone: string = TIME_ZONE,
+): Promise<ActiveShift[]> {
+  if (shiftIds.length === 0) return [];
+  const startOfToday = startOfLocalDay(localDate(now, timeZone), timeZone);
+  return db
+    .select({
+      id: shifts.id,
+      clockIn: shifts.clockIn,
+      studentId: shifts.studentId,
+      studentName: students.displayName,
+    })
+    .from(shifts)
+    .innerJoin(students, eq(students.id, shifts.studentId))
+    .where(
+      and(
+        inArray(shifts.id, [...shiftIds]),
+        isNull(shifts.clockOut),
+        gte(shifts.clockIn, startOfToday),
+      ),
+    )
+    .orderBy(asc(shifts.clockIn));
+}
+
+/**
+ * Order count and sales for the cart today, across every student who worked
+ * it: with several on one shift, "my orders" would hide half the morning.
+ */
+export async function getTodaysTotals(now: Date = new Date(), timeZone: string = TIME_ZONE) {
+  const startOfToday = startOfLocalDay(localDate(now, timeZone), timeZone);
   const row = await db
     .select({
       orderCount: sql<number>`count(*)::int`,
       salesCents: sql<number>`coalesce(sum(${orders.totalCents}), 0)::int`,
     })
     .from(orders)
-    .where(eq(orders.shiftId, shiftId));
+    .where(gte(orders.createdAt, startOfToday));
 
   return row[0] ?? { orderCount: 0, salesCents: 0 };
 }
@@ -118,8 +149,9 @@ export async function listTeachers(): Promise<TeacherSummary[]> {
     .orderBy(asc(persons.name));
 }
 
-/** Orders completed during this shift, newest first, for the "today" screen. */
-export async function listShiftOrders(shiftId: string) {
+/** The cart's orders today, newest first, with who rang each up. */
+export async function listTodaysOrders(now: Date = new Date(), timeZone: string = TIME_ZONE) {
+  const startOfToday = startOfLocalDay(localDate(now, timeZone), timeZone);
   return db
     .select({
       id: orders.id,
@@ -128,11 +160,14 @@ export async function listShiftOrders(shiftId: string) {
       createdAt: orders.createdAt,
       teacherName: persons.name,
       room: teacherProfiles.room,
+      studentName: students.displayName,
     })
     .from(orders)
     .innerJoin(teacherProfiles, eq(teacherProfiles.personId, orders.teacherId))
     .innerJoin(persons, eq(persons.id, teacherProfiles.personId))
-    .where(eq(orders.shiftId, shiftId))
+    .innerJoin(shifts, eq(shifts.id, orders.shiftId))
+    .innerJoin(students, eq(students.id, shifts.studentId))
+    .where(gte(orders.createdAt, startOfToday))
     .orderBy(desc(orders.createdAt));
 }
 

@@ -4,16 +4,21 @@ import { Logo } from "@/components";
 import { branding } from "@/lib/branding";
 import { listActiveStudents } from "@/lib/queries";
 import { requirePairedDevice } from "@/app/(student)/require-device";
+import { loadCrew } from "@/app/(student)/crew-session";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Sign-in: students tap their name in a grid of large targets. No free-text
  * entry; the only thing recalled from memory is the PIN on the next screen.
+ *
+ * While someone is working, the same screen adds a worker: signing in joins
+ * the crew instead of replacing them (ticket 4.21).
  */
 export default async function SignInPage() {
   await requirePairedDevice();
-  const students = await listActiveStudents();
+  const [students, { current, crew }] = await Promise.all([listActiveStudents(), loadCrew()]);
+  const working = new Set(crew.map((member) => member.studentId));
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-10 p-8">
@@ -23,8 +28,16 @@ export default async function SignInPage() {
         <h1 className="text-[44px] font-extrabold leading-tight">
           {branding.cartName}
         </h1>
-        <p className="text-[22px] font-bold">Tap your name to start your shift</p>
+        <p className="text-[22px] font-bold">
+          {current ? "Tap your name to join the shift" : "Tap your name to start your shift"}
+        </p>
       </header>
+
+      {current ? (
+        <Link href="/shift" className="btn btn-ghost min-h-[60px] text-[20px] font-bold">
+          Back to the shift
+        </Link>
+      ) : null}
 
       {students.length === 0 ? (
         <p className="text-[20px] font-bold opacity-70">
@@ -46,7 +59,12 @@ export default async function SignInPage() {
                     {student.displayName.charAt(0)}
                   </span>
                 </span>
-                {student.displayName}
+                <span className="flex flex-col items-start">
+                  {student.displayName}
+                  {working.has(student.id) ? (
+                    <span className="text-[16px] font-bold opacity-70">Working now</span>
+                  ) : null}
+                </span>
               </Link>
             </li>
           ))}

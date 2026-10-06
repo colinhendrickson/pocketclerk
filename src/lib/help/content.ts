@@ -181,6 +181,20 @@ export const GUIDES: Guide[] = [
     note: `A student earns one of the ${rewardLower} for each whole hour of a shift, counted when they clock out. A 90-minute shift earns one; a partial hour earns nothing.`,
     page: "/admin/students",
   },
+  {
+    id: "several-students",
+    topic: "Students",
+    title: "Several students working at once",
+    steps: [
+      "The first student signs in at the cart as usual.",
+      "On their shift screen, under Working now, press Add a worker. The next student taps their name and enters their PIN.",
+      "Repeat for anyone else. Each student is on their own shift and earns their own hours.",
+      "The student at the register is the one whose sales are recorded. To change who is taking orders, press Switch to and their name. No PIN is needed.",
+      "When a student leaves, put them at the register and press Clock out. Only the last student to leave does the closing checklist.",
+    ],
+    note: "Students who have joined on this iPad stay listed under Working now until they clock out, so nobody is left clocked in by mistake. Signing in on the cart never replaces whoever is already working.",
+    page: "/admin/students",
+  },
 
   /* Teachers ------------------------------------------------------------- */
   {
@@ -553,7 +567,7 @@ export const PAGE_HELP: Record<AdminRoute, PageHelp> = {
   "/admin/students": {
     purpose:
       "Everyone who can sign in at the cart. Add students, reset a forgotten PIN, and see each student's hours.",
-    tasks: ["add-student", "forgot-pin", "student-leaves", "hours-rewards"],
+    tasks: ["add-student", "forgot-pin", "student-leaves", "hours-rewards", "several-students"],
   },
   "/admin/teachers": {
     purpose:
