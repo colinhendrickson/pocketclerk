@@ -55,6 +55,11 @@ enforces it rather than trusting the student to look. The pictures beside the
 names were asked for by the program's teacher; decaf gets a mug with a D.
 → [ADR 15](docs/adr/0015-menu-pictures.md)
 
+Carts are run by two or three students at once. Each signs in with their own
+PIN and keeps their own hours; one tap changes who is at the register, so
+receipts still say who served, and only the last one out does the closing
+checklist. → [ADR 16](docs/adr/0016-several-students-on-one-shift.md)
+
 ## For the staff who run it
 
 Several staff share the admin side, and some open it a few times a term, so it

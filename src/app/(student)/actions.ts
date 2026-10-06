@@ -11,10 +11,17 @@ import { isLockedOut, lockoutMinutesRemaining, verifyPin } from "@/lib/auth";
 import { deliverQueuedEmails } from "@/lib/deliver-receipts";
 import { placeOrder } from "@/lib/orders";
 import { acceptCorrectPin, recordFailedPin } from "@/lib/pin-lockout";
-import { getActiveShift } from "@/lib/queries";
+import { getActiveShift, listCrew } from "@/lib/queries";
+import { nextAtRegister, withShift, withoutShift } from "@/lib/crew";
 import { clockOutShift, startShift } from "@/lib/shifts";
-import { parseClockIn, parseCompleteOrder, parseNewTeacher } from "@/lib/validate";
-import { clearShiftSession, getShiftSession, setShiftSession } from "@/lib/session";
+import { isUuid, parseClockIn, parseCompleteOrder, parseNewTeacher } from "@/lib/validate";
+import {
+  clearShiftSession,
+  getCrewSession,
+  getShiftSession,
+  setCrewSession,
+  setShiftSession,
+} from "@/lib/session";
 import { insertTeacher } from "@/lib/teachers";
 
 /**
@@ -83,8 +90,42 @@ export async function clockIn(input: unknown): Promise<ClockInResult> {
   // Resumes today's open shift (double tap or lost cookie); a forgotten shift
   // from an earlier day is closed with no hours. See src/lib/shifts.ts.
   const shift = await startShift(student.id);
+
+  // Joins the crew on this iPad, rather than replacing whoever is already
+  // working, and takes the register (ticket 4.21). Shifts that have since
+  // closed are dropped so the cookie stays small.
+  const crew = await listCrew(withShift(await getCrewSession(), shift.shiftId));
+  await setCrewSession(crew.map((member) => member.id));
   await setShiftSession(shift.shiftId);
   return { ok: true, resumed: shift.resumed };
+}
+
+/* -------------------------------------------------------------------------- */
+/* Switch who is at the register                                              */
+/* -------------------------------------------------------------------------- */
+
+export type SwitchWorkerResult = { ok: true } | { ok: false; error: "invalid" | "not_working" };
+
+/**
+ * Puts another crew member at the register; their sales go on their shift. No
+ * PIN, because they entered it on this iPad to join the crew, and only crew
+ * members on this iPad can be chosen. Nobody's hours change.
+ */
+export async function switchWorker(input: unknown): Promise<SwitchWorkerResult> {
+  await assertPairedDevice();
+  const shiftId = (input as { shiftId?: unknown } | null)?.shiftId;
+  if (!isUuid(shiftId)) return { ok: false, error: "invalid" };
+
+  const crewIds = await getCrewSession();
+  if (!crewIds.includes(shiftId)) return { ok: false, error: "invalid" };
+
+  const crew = await listCrew(crewIds);
+  if (!crew.some((member) => member.id === shiftId)) return { ok: false, error: "not_working" };
+
+  await setCrewSession(crew.map((member) => member.id));
+  await setShiftSession(shiftId);
+  revalidatePath("/shift");
+  return { ok: true };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -167,10 +208,29 @@ export async function clockOut(): Promise<ClockOutResult> {
   return { ok: true, hoursHundredths: closed.hoursHundredths, tickets: closed.tickets };
 }
 
-/** Ends the session once the student has seen their shift summary. */
-export async function finishShift(): Promise<void> {
+export type FinishShiftResult = { next: "/shift" | "/cart" };
+
+/**
+ * Called once the student has seen their shift summary. If anyone else is
+ * still working, the one who has been there longest takes the register and the
+ * cart carries on; otherwise the iPad goes back to sign-in.
+ */
+export async function finishShift(): Promise<FinishShiftResult> {
   await assertPairedDevice();
-  await clearShiftSession();
+  const leaving = await getShiftSession();
+  const crewIds = await getCrewSession();
+  const crew = await listCrew(leaving ? withoutShift(crewIds, leaving) : crewIds);
+  const next = nextAtRegister(crew, leaving ?? "");
+
+  if (!next) {
+    await setCrewSession([]);
+    await clearShiftSession();
+    return { next: "/cart" };
+  }
+
+  await setCrewSession(crew.map((member) => member.id));
+  await setShiftSession(next.id);
+  return { next: "/shift" };
 }
 
 /* -------------------------------------------------------------------------- */
