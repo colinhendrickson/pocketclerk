@@ -37,32 +37,32 @@
   },
   "dependencies": {
     "@faker-js/faker": "^10.6.0",
-    "@vercel/functions": "^3.9.9",
+    "@vercel/functions": "^3.9.11",
     "drizzle-orm": "^0.45.3",
-    "lucide-react": "^1.47.0",
-    "next": "16.3.6",
+    "lucide-react": "^1.52.0",
+    "next": "16.3.8",
     "postgres": "^3.4.9",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "resend": "^6.28.1"
+    "resend": "^6.32.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/web-bluetooth": "^0.0.21",
-    "daisyui": "^5.7.44",
-    "dotenv": "^18.0.3",
+    "daisyui": "^5.7.47",
+    "dotenv": "^18.0.5",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
-    "eslint-config-next": "16.3.6",
+    "eslint-config-next": "16.3.8",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^6",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.3"
   },
   "packageManager": "pnpm@9.4.0",
   "pnpm": {
