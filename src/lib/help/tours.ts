@@ -53,9 +53,14 @@ export const TOURS: Record<AdminRoute, TourStep[]> = {
       body: "Their name as it should appear at the cart, and a four-digit PIN typed twice. Tell them the PIN in person: it is never shown again.",
     },
     {
+      target: "pay-period",
+      title: "Pay periods",
+      body: "After paychecks go out, press Start new pay period. Hours on the roster then count again from zero; nothing is deleted.",
+    },
+    {
       target: "student-table",
       title: "Everyone on the roster",
-      body: "Shifts, hours and rewards for each student. Reset PIN is for a forgotten PIN or a lockout; Deactivate is for someone who has left.",
+      body: "This pay period's shifts and hours, all-time hours and rewards for each student. Edit name fixes a name; Reset PIN is for a forgotten PIN or a lockout; Deactivate is for someone who has left.",
     },
     MENU_STEP,
   ],

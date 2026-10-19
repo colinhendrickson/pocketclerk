@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import type { StudentRow } from "@/lib/admin-queries";
 import { formatHours } from "@/lib/money";
 
-import { resetStudentPin, setStudentActive } from "./actions";
+import { renameStudent, resetStudentPin, setStudentActive } from "./actions";
 
 export interface StudentTableProps {
   rows: StudentRow[];
@@ -13,13 +13,16 @@ export interface StudentTableProps {
   rewardName: string;
 }
 
+/** Which inline form is open, and on whose row. One at a time. */
+type OpenForm = { studentId: string; form: "pin" | "name" } | null;
+
 /**
- * Roster table with lifetime totals, inline PIN reset, and deactivation.
- * Inactive students stay in the table, visibly marked, so it is clear why they
- * cannot sign in.
+ * Roster table with this pay period's shifts and hours, lifetime totals,
+ * inline name edit and PIN reset, and deactivation. Inactive students stay in
+ * the table, visibly marked, so it is clear why they cannot sign in.
  */
 export function StudentTable({ rows, rewardName }: StudentTableProps) {
-  const [resetting, setResetting] = useState<string | null>(null);
+  const [open, setOpen] = useState<OpenForm>(null);
 
   return (
     <div
@@ -36,6 +39,7 @@ export function StudentTable({ rows, rewardName }: StudentTableProps) {
             <th>Status</th>
             <th className="text-right">Shifts</th>
             <th className="text-right">Hours</th>
+            <th className="text-right">All-time hours</th>
             <th className="text-right">{rewardName}</th>
             <th className="text-right">Actions</th>
           </tr>
@@ -45,15 +49,20 @@ export function StudentTable({ rows, rewardName }: StudentTableProps) {
             <StudentRows
               key={row.id}
               row={row}
-              isResetting={resetting === row.id}
-              onToggleReset={() =>
-                setResetting((current) => (current === row.id ? null : row.id))
+              openForm={open?.studentId === row.id ? open.form : null}
+              onToggle={(form) =>
+                setOpen((current) =>
+                  current?.studentId === row.id && current.form === form
+                    ? null
+                    : { studentId: row.id, form },
+                )
               }
+              onClose={() => setOpen(null)}
             />
           ))}
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={6} className="py-6 text-center opacity-70">
+              <td colSpan={COLUMNS} className="py-6 text-center opacity-70">
                 No students yet. Add the first one above.
               </td>
             </tr>
@@ -64,17 +73,20 @@ export function StudentTable({ rows, rewardName }: StudentTableProps) {
   );
 }
 
+const COLUMNS = 7;
+
 interface StudentRowsProps {
   row: StudentRow;
-  isResetting: boolean;
-  onToggleReset: () => void;
+  openForm: "pin" | "name" | null;
+  onToggle: (form: "pin" | "name") => void;
+  onClose: () => void;
 }
 
 /**
- * One or two `<tr>`s: the student row, plus a full-width reset-form row when
+ * One or two `<tr>`s: the student row, plus a full-width form row when one is
  * open, keeping column alignment.
  */
-function StudentRows({ row, isResetting, onToggleReset }: StudentRowsProps) {
+function StudentRows({ row, openForm, onToggle, onClose }: StudentRowsProps) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -95,18 +107,29 @@ function StudentRows({ row, isResetting, onToggleReset }: StudentRowsProps) {
             {row.active ? "Active" : "Inactive"}
           </span>
         </td>
-        <td className="text-right tabular">{row.shiftCount}</td>
+        <td className="text-right tabular">{row.periodShiftCount}</td>
+        <td className="text-right tabular font-bold">
+          {formatHours(row.periodHoursHundredths)}
+        </td>
         <td className="text-right tabular">{formatHours(row.hoursHundredths)}</td>
         <td className="text-right tabular">{row.rewardTickets}</td>
         <td>
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              onClick={onToggleReset}
-              aria-expanded={isResetting}
+              onClick={() => onToggle("name")}
+              aria-expanded={openForm === "name"}
               className="btn btn-ghost btn-xs"
             >
-              {isResetting ? "Cancel" : "Reset PIN"}
+              {openForm === "name" ? "Cancel" : "Edit name"}
+            </button>
+            <button
+              type="button"
+              onClick={() => onToggle("pin")}
+              aria-expanded={openForm === "pin"}
+              className="btn btn-ghost btn-xs"
+            >
+              {openForm === "pin" ? "Cancel" : "Reset PIN"}
             </button>
             <button
               type="button"
@@ -122,24 +145,96 @@ function StudentRows({ row, isResetting, onToggleReset }: StudentRowsProps) {
 
       {error ? (
         <tr>
-          <td colSpan={6} role="alert" className="text-sm font-bold text-error">
+          <td colSpan={COLUMNS} role="alert" className="text-sm font-bold text-error">
             {error}
           </td>
         </tr>
       ) : null}
 
-      {isResetting ? (
+      {openForm === "name" ? (
         <tr>
-          <td colSpan={6} className="bg-base-200">
-            <ResetPinForm
-              studentId={row.id}
-              studentName={row.displayName}
-              onDone={onToggleReset}
-            />
+          <td colSpan={COLUMNS} className="bg-base-200">
+            <EditNameForm studentId={row.id} currentName={row.displayName} onDone={onClose} />
+          </td>
+        </tr>
+      ) : null}
+
+      {openForm === "pin" ? (
+        <tr>
+          <td colSpan={COLUMNS} className="bg-base-200">
+            <ResetPinForm studentId={row.id} studentName={row.displayName} onDone={onClose} />
           </td>
         </tr>
       ) : null}
     </>
+  );
+}
+
+interface EditNameFormProps {
+  studentId: string;
+  currentName: string;
+  onDone: () => void;
+}
+
+/**
+ * Name correction (4.22), such as adding a last name. The student keeps their
+ * PIN, shifts and hours; only the name on the sign-in list changes.
+ */
+function EditNameForm({ studentId, currentName, onDone }: EditNameFormProps) {
+  const [name, setName] = useState(currentName);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const trimmed = name.trim();
+  const ready = trimmed.length >= 2 && trimmed !== currentName;
+
+  function submit() {
+    setError(null);
+    startTransition(async () => {
+      const result = await renameStudent({ studentId, displayName: name });
+      if (result.ok) {
+        onDone();
+        return;
+      }
+      setError(
+        result.error === "duplicate"
+          ? "Another student on the roster already has that name."
+          : result.error === "not_found"
+            ? "That student no longer exists. Reload the page."
+            : "A name needs at least two letters.",
+      );
+    });
+  }
+
+  return (
+    <form
+      className="flex flex-wrap items-center gap-3 py-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (ready) submit();
+      }}
+    >
+      <label className="flex flex-wrap items-center gap-3">
+        <span className="text-sm font-bold">New name for {currentName}</span>
+        <input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          autoComplete="off"
+          autoFocus
+          maxLength={80}
+          className="input input-bordered input-sm w-56"
+        />
+      </label>
+      <button type="submit" disabled={!ready || pending} className="btn btn-primary btn-sm">
+        {pending ? "Saving…" : "Save name"}
+      </button>
+      <span className="text-sm opacity-70">Their PIN, shifts and hours stay the same.</span>
+      {error ? (
+        <span role="alert" className="text-sm font-bold text-error">
+          {error}
+        </span>
+      ) : null}
+    </form>
   );
 }
 

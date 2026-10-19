@@ -176,9 +176,35 @@ export const GUIDES: Guide[] = [
     title: `Checking a student's hours and ${rewardLower}`,
     steps: [
       "Open Students.",
-      `Each row shows the student's total shifts, total hours and total ${rewardLower}.`,
+      "Shifts and Hours show this pay period. All-time hours show every shift since the student was added.",
+      `The last column shows the student's total ${rewardLower}.`,
     ],
     note: `A student earns one of the ${rewardLower} for each whole hour of a shift, counted when they clock out. A 90-minute shift earns one; a partial hour earns nothing.`,
+    page: "/admin/students",
+  },
+  {
+    id: "fix-student-name",
+    topic: "Students",
+    title: "Fixing a student's name",
+    steps: [
+      "Open Students and find the student.",
+      "Press Edit name.",
+      "Type the name as it should appear at the cart, such as their first and last name, and press Save name.",
+    ],
+    note: "Only the name changes. Their PIN, shifts, hours and past sales stay theirs.",
+    page: "/admin/students",
+  },
+  {
+    id: "new-pay-period",
+    topic: "Students",
+    title: "Starting a new pay period after paychecks",
+    steps: [
+      "Open Students and check each student's Hours for this pay period. Those are the hours on this paycheck.",
+      "Under Pay period, press Start new pay period, then Yes, start a new pay period.",
+      "Shifts and Hours on the roster start again from zero.",
+      "To look back at a finished period, open it under Past pay periods at the bottom of the page.",
+    ],
+    note: "Nothing is deleted. A shift counts in the pay period it was clocked out in, and all-time hours never change.",
     page: "/admin/students",
   },
   {
@@ -566,8 +592,16 @@ export const PAGE_HELP: Record<AdminRoute, PageHelp> = {
   },
   "/admin/students": {
     purpose:
-      "Everyone who can sign in at the cart. Add students, reset a forgotten PIN, and see each student's hours.",
-    tasks: ["add-student", "forgot-pin", "student-leaves", "hours-rewards", "several-students"],
+      "Everyone who can sign in at the cart. Add students, fix a name or a forgotten PIN, see each student's hours, and start a new pay period after paychecks.",
+    tasks: [
+      "add-student",
+      "fix-student-name",
+      "forgot-pin",
+      "new-pay-period",
+      "student-leaves",
+      "hours-rewards",
+      "several-students",
+    ],
   },
   "/admin/teachers": {
     purpose:

@@ -140,7 +140,7 @@ Every commit names its ticket: `feat(4.8): ...`. Work that is not on this list g
 
 | # | Ticket | Status |
 |---|---|---|
-| 3.1 | Pay period generation + paycheck PDF (signature line blank, "SIMULATED — NO CASH VALUE") | Open |
+| 3.1 | Pay period generation + paycheck PDF (signature line blank, "SIMULATED — NO CASH VALUE") | Pay periods done in 4.23; paycheck PDF open |
 | 3.2 | Reports: student work, sales, teacher customer, inventory | Open |
 | 3.3 | Export All (CSV/JSON) button | Open |
 | 3.4 | Scheduled backup → JSON dump emailed to admin | Open |
@@ -175,6 +175,8 @@ Built after the first deployment met real staff and students. Each came from som
 | 4.19 | Expenses | The first program asked how to track what the cart cost to start and what it spends on product. Staff log expenses (date, what, category, amount, note; taken off, never deleted) and an Expenses page sets them against sales: sold, spent and net for all time, by month with a running total, and whether the cart has paid for itself. Exported with everything else | Done |
 | 4.20 | Add-ons on their own page | The first program asked for add-ons listed like the drinks, so two sugars can be marked. Adding a drink opens an Add-ons page for that drink: each add-on is a row with its picture, price and − count +; then Add another item or Go to payment. Each drink keeps its own add-ons (two sugars in the coffee, none in the tea); a repeat is saved once per sugar and printed as "2 x Sugar" | Done |
 | 4.21 | Several students on one shift | The first program found only one student could be clocked in: signing in a second replaced the first, whose shift was then stranded and later closed with no hours. Signing in while someone is working now joins the crew on that iPad (a signed cookie of shift ids, so no migration). Each student keeps their own shift, hours and rewards and clocks out on their own; a "Working now" panel puts any of them at the register with one tap, and sales go on that student's shift, so receipts still say who served. Only the last one out does the closing list; Today's orders shows the whole cart (ADR 16) | Done |
+| 4.22 | Fix a student's name | The first program added students by first name only and asked how to add last names. Edit name on the Students page changes the name in place: the student keeps their id, PIN, shifts and sales, and the same unique index as adding refuses a name another active student has | Done |
+| 4.23 | Pay periods | The first program asked how to reset the hours for the next paycheck. Nothing is reset: Start new pay period (with a confirm step) records when a period began, and the roster's Shifts and Hours count from then, beside all-time hours. A shift belongs to the period it was clocked out in. Finished periods are listed under Past pay periods with each student's hours. Each period names the one before it, and unique indexes on that link mean a double click or a stale tab cannot start two. Staff start periods by hand, so the cadence question no longer blocks; the paycheck PDF (3.1) is still open | Done |
 
 ---
 
@@ -258,4 +260,4 @@ The public repo never references the real school. The first deployment is privat
 | Test printing on the real PT-210 in Bluefy | Colin, with the program admin | 4.8 sign-off |
 | Real teacher/student list | Program admin | Go-live only, not development |
 | Clear practice orders and shifts before the first real shift | Colin | Go-live |
-| Pay period cadence (weekly? monthly?) | Program admin | 3.1 |
+| Pay period cadence (weekly? monthly?) | Program admin | Nothing since 4.23: staff start each period by hand. Only matters for a scheduled paycheck PDF |
