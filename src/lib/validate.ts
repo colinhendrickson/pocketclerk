@@ -186,6 +186,20 @@ export function parseResetPin(input: unknown): ResetPinInput | null {
   return { studentId, pin };
 }
 
+export interface RenameStudentInput {
+  studentId: string;
+  displayName: string;
+}
+
+/** A corrected name, such as a last name added after the student was set up (4.22). */
+export function parseRenameStudent(input: unknown): RenameStudentInput | null {
+  if (typeof input !== "object" || input === null) return null;
+  const { studentId, displayName } = input as Record<string, unknown>;
+  const name = parseName(displayName);
+  if (!isUuid(studentId) || name === null) return null;
+  return { studentId, displayName: name };
+}
+
 export interface ActiveToggleInput {
   id: string;
   active: boolean;

@@ -9,6 +9,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -162,6 +163,28 @@ export const shifts = pgTable(
     checklist: text("checklist").array().notNull().default([]),
   },
   (t) => [index("shifts_student_idx").on(t.studentId, t.clockIn)],
+);
+
+/**
+ * Pay periods (4.23). Each row marks when a period started; it runs until the
+ * next row starts. A shift belongs to the period it was clocked out in, which
+ * is when its hours were credited. Before the first row, every shift is in one
+ * open period. Each period names the one it followed, and `previous_id` is
+ * unique (with a partial unique index for the first), so a double click or a
+ * stale tab cannot start two.
+ */
+export const payPeriods = pgTable(
+  "pay_periods",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    previousId: uuid("previous_id").references((): AnyPgColumn => payPeriods.id, {
+      onDelete: "restrict",
+    }),
+    startedBy: uuid("started_by").references(() => persons.id, { onDelete: "set null" }),
+  },
+  // The partial unique index for the first period is in the migration.
+  (t) => [uniqueIndex("pay_periods_previous_idx").on(t.previousId)],
 );
 
 /* -------------------------------------------------------------------------- */

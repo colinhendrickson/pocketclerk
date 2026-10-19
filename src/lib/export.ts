@@ -14,6 +14,7 @@ export const EXPORT_TABLES = [
   "admin_users",
   "students",
   "shifts",
+  "pay_periods",
   "menu_items",
   "addons",
   "orders",

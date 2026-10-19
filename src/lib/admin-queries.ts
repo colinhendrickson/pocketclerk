@@ -32,13 +32,25 @@ export interface StudentRow {
   /** Lifetime hours, in hundredths. Formatted with `formatHours` at the edge. */
   hoursHundredths: number;
   rewardTickets: number;
+  /** Shifts clocked out in the current pay period (4.23). */
+  periodShiftCount: number;
+  /** Hours credited in the current pay period, in hundredths. */
+  periodHoursHundredths: number;
 }
 
 /**
- * Every student with lifetime totals. LEFT JOIN keeps students with no shifts;
- * open shifts have null hours/tickets and contribute nothing until closed.
+ * Every student with lifetime totals, plus shifts and hours since
+ * `periodStart` (the current pay period; null counts everything). LEFT JOIN
+ * keeps students with no shifts; open shifts have null hours/tickets and
+ * contribute nothing until closed.
  */
-export async function listStudentsWithTotals(): Promise<StudentRow[]> {
+export async function listStudentsWithTotals(
+  periodStart: Date | null = null,
+): Promise<StudentRow[]> {
+  // An ISO string with a cast, never a Date: see getDashboardStats.
+  const inPeriod = periodStart
+    ? sql`${shifts.clockOut} >= ${periodStart.toISOString()}::timestamptz`
+    : sql`true`;
   return db
     .select({
       id: students.id,
@@ -47,6 +59,8 @@ export async function listStudentsWithTotals(): Promise<StudentRow[]> {
       shiftCount: sql<number>`count(${shifts.id})::int`,
       hoursHundredths: sql<number>`coalesce(sum(${shifts.hoursHundredths}), 0)::int`,
       rewardTickets: sql<number>`coalesce(sum(${shifts.rewardTickets}), 0)::int`,
+      periodShiftCount: sql<number>`(count(${shifts.id}) FILTER (WHERE ${shifts.clockOut} IS NOT NULL AND ${inPeriod}))::int`,
+      periodHoursHundredths: sql<number>`coalesce(sum(${shifts.hoursHundredths}) FILTER (WHERE ${inPeriod}), 0)::int`,
     })
     .from(students)
     .leftJoin(shifts, eq(shifts.studentId, students.id))

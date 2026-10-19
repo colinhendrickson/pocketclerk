@@ -10,9 +10,11 @@ import {
   isUuid,
   parseActiveToggle,
   parseNewStudent,
+  parseRenameStudent,
   parseResetPin,
 } from "@/lib/validate";
 
+import { startPayPeriod } from "@/lib/pay-periods";
 import { isUniqueViolation } from "@/lib/pg-errors";
 import { closeShiftByStaff } from "@/lib/shifts";
 
@@ -84,6 +86,62 @@ export async function resetStudentPin(
     .returning({ id: students.id });
 
   if (updated.length === 0) return { ok: false, error: "not_found" };
+
+  revalidatePath("/admin/students");
+  return { ok: true };
+}
+
+export type RenameStudentResult =
+  | { ok: true }
+  | { ok: false; error: "invalid" | "duplicate" | "not_found" };
+
+/**
+ * Corrects a student's name (4.22). The student keeps their id, so their
+ * shifts, hours and sales stay theirs. The same unique index as
+ * `createStudent` refuses a name another active student already has.
+ */
+export async function renameStudent(input: unknown): Promise<RenameStudentResult> {
+  await requireAdmin();
+
+  const parsed = parseRenameStudent(input);
+  if (!parsed) return { ok: false, error: "invalid" };
+
+  let updated: { id: string }[];
+  try {
+    updated = await db
+      .update(students)
+      .set({ displayName: parsed.displayName })
+      .where(eq(students.id, parsed.studentId))
+      .returning({ id: students.id });
+  } catch (error) {
+    if (isUniqueViolation(error)) return { ok: false, error: "duplicate" };
+    throw error;
+  }
+
+  if (updated.length === 0) return { ok: false, error: "not_found" };
+
+  revalidatePath("/admin/students");
+  return { ok: true };
+}
+
+export type StartNewPayPeriodResult =
+  | { ok: true }
+  | { ok: false; error: "invalid" | "stale" };
+
+/**
+ * Starts a new pay period (4.23): from now on the roster counts hours from
+ * this moment. `previousId` is the period the page showed, so a second click
+ * or an old tab cannot start another one.
+ */
+export async function startNewPayPeriod(input: unknown): Promise<StartNewPayPeriodResult> {
+  const admin = await requireAdmin();
+
+  const raw = (input as { previousId?: unknown } | null)?.previousId;
+  const previousId = raw === null ? null : isUuid(raw) ? raw : undefined;
+  if (previousId === undefined) return { ok: false, error: "invalid" };
+
+  const result = await startPayPeriod({ previousId, startedBy: admin.personId });
+  if (!result.ok) return result;
 
   revalidatePath("/admin/students");
   return { ok: true };
