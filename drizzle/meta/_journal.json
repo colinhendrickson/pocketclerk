@@ -134,6 +134,13 @@
       "when": 1792364872688,
       "tag": "0018_pay_periods",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1795473724433,
+      "tag": "0019_least_privilege_floor",
+      "breakpoints": true
     }
   ]
 }
